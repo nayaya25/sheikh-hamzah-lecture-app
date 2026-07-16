@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@althaqalayn/theme": ["packages/theme/src/index.ts"],
+      "@althaqalayn/types": ["packages/types/src/index.ts"],
+      "@althaqalayn/api": ["packages/api/src/index.ts"],
+      "@althaqalayn/i18n": ["packages/i18n/src/index.ts"]
+    }
+  }
+}
