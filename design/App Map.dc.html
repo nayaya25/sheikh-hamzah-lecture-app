@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Mulish:wght@400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#efe9db;font-family:'Mulish',system-ui,sans-serif;color:#17231E}
+  a{color:#12634E;text-decoration:none}
+  a:hover{color:#C79A3B}
+</style>
+</helmet>
+
+<div style="width:1600px;padding:48px 56px 64px;background:radial-gradient(1400px 800px at 20% 0%, #f3eee2, #e7dfce)">
+
+  <!-- header -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #d9cfb6;padding-bottom:22px;margin-bottom:38px">
+    <div>
+      <div style="font-family:'Amiri',serif;font-size:22px;color:#C79A3B">خريطة التطبيق</div>
+      <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;margin-top:4px">Althaqalayn Lectures — App Map</div>
+      <div style="font-size:14px;color:#6a766e;margin-top:8px">Key screens, content model, and the admin/backend that feeds the app · Sheikh Hamzah Muhammad Lawal Archive</div>
+    </div>
+    <div style="text-align:right;font-size:12.5px;color:#8b978f;line-height:1.7">
+      <div><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#0B4634;vertical-align:-1px;margin-right:6px"></span>User-facing screen (no login)</div>
+      <div><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#C79A3B;vertical-align:-1px;margin-right:6px"></span>Data / content object</div>
+      <div><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#4a2f5e;vertical-align:-1px;margin-right:6px"></span>Admin / backend</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.15fr 0.9fr 0.95fr;gap:40px;align-items:start">
+
+    <!-- ============ COLUMN 1: USER APP ============ -->
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:30px;height:30px;border-radius:8px;background:#0B4634;color:#E4C77B;display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:17px">١</div>
+        <div style="font-family:'Lora',serif;font-size:20px;font-weight:600">User app · seamless, no sign-in</div>
+      </div>
+
+      <!-- bottom-nav tabs -->
+      <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#8b978f;margin-bottom:10px">FOUR TABS · PERSISTENT BOTTOM NAVIGATION</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+          <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B4634" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Home</span></div>
+          <div style="font-size:12.5px;color:#6a766e;line-height:1.55;margin-top:8px">Calm library. Greeting, search, <b>Continue listening</b>, Explore grid, Featured series, Latest lectures.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+          <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B4634" stroke-width="2"><path d="M4 5h5v14H4zM11 5h4v14h-4zM17 6l3.2.8-3 12.4-3.2-.8z"/></svg><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Library</span></div>
+          <div style="font-size:12.5px;color:#6a766e;line-height:1.55;margin-top:8px">Segments: <b>Recent · Occasions · Topics · Series</b>. The four ways to find lectures.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+          <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B4634" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Search</span></div>
+          <div style="font-size:12.5px;color:#6a766e;line-height:1.55;margin-top:8px">Full-text across titles & series. Media filters (Audio/Video/Text), recent searches, topic tiles.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+          <div style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B4634" stroke-width="2"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18v1a2 2 0 002 2h12a2 2 0 002-2v-1"/></svg><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Downloads</span></div>
+          <div style="font-size:12.5px;color:#6a766e;line-height:1.55;margin-top:8px">Offline storage meter, saved lectures, play without data.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:16px 0"><svg width="24" height="30" viewBox="0 0 24 30" fill="none" stroke="#c2b48f" stroke-width="2"><path d="M12 0v24m0 0l-7-7m7 7l7-7"/></svg></div>
+
+      <!-- detail -->
+      <div style="background:#0B4634;color:#fff;border-radius:16px;padding:18px;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-10px;top:-14px;font-family:'Amiri',serif;font-size:80px;color:rgba(255,255,255,.08)">تفسير</div>
+        <div style="font-family:'Lora',serif;font-size:18px;font-weight:600">Series detail</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.78);line-height:1.55;margin-top:8px;max-width:380px">Hero with kind, description, language & count. <b>Play all</b> / <b>Download all</b>. Full episode list (e.g. Tafsīr = 30 nights, newest first).</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:16px 0"><svg width="24" height="30" viewBox="0 0 24 30" fill="none" stroke="#c2b48f" stroke-width="2"><path d="M12 0v24m0 0l-7-7m7 7l7-7"/></svg></div>
+
+      <!-- player -->
+      <div style="background:linear-gradient(135deg,#0B4634,#4a2f5e);color:#fff;border-radius:16px;padding:18px">
+        <div style="font-family:'Lora',serif;font-size:18px;font-weight:600">Player &amp; mini-player</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.82);line-height:1.55;margin-top:8px">Full-screen audio/video player. Persistent mini-player above the nav.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Background + lock-screen</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Speed 0.75–2×</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Sleep timer</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Download offline</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Resume position</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Transcript (Hausa)</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);border-radius:14px;padding:4px 10px">Share</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ COLUMN 2: CONTENT MODEL ============ -->
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:30px;height:30px;border-radius:8px;background:#C79A3B;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:17px">٢</div>
+        <div style="font-family:'Lora',serif;font-size:20px;font-weight:600">Content model</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:18px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:3px;background:#C79A3B"></span><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Lecture</span> <span style="font-size:12px;color:#9aa69e">the atom</span></div>
+        <div style="font-size:12.5px;color:#6a766e;line-height:1.6;margin-top:8px">title (EN + Hausa) · media type <b>Audio / Video / Text</b> · duration · date · description · media file + transcript.</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:14px 0"><svg width="24" height="26" viewBox="0 0 24 26" fill="none" stroke="#c2b48f" stroke-width="2"><path d="M12 26V2m0 0l-7 7m7-7l7 7"/></svg></div>
+
+      <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:18px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:3px;background:#C79A3B"></span><span style="font-family:'Lora',serif;font-size:16px;font-weight:600">Series / collection</span></div>
+        <div style="font-size:12.5px;color:#6a766e;line-height:1.6;margin-top:8px">Groups lectures in order. A series has one <b>kind</b> that drives where it surfaces:</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">
+          <div style="display:flex;align-items:center;gap:10px;background:#f6f1e7;border-radius:10px;padding:9px 11px"><span style="font-family:'Amiri',serif;color:#C79A3B;font-size:18px">جديد</span><div><b style="font-size:12.5px">Recency</b><div style="font-size:11px;color:#8b978f">latest lectures feed</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#f6f1e7;border-radius:10px;padding:9px 11px"><span style="font-family:'Amiri',serif;color:#C79A3B;font-size:18px">مولد</span><div><b style="font-size:12.5px">Occasion</b><div style="font-size:11px;color:#8b978f">Maulud (yearly), Ramadhan Tafsīr (per-year)</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#f6f1e7;border-radius:10px;padding:9px 11px"><span style="font-family:'Amiri',serif;color:#C79A3B;font-size:18px">عدل</span><div><b style="font-size:12.5px">Topic</b><div style="font-size:11px;color:#8b978f">politics, morality, society</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#f6f1e7;border-radius:10px;padding:9px 11px"><span style="font-family:'Amiri',serif;color:#C79A3B;font-size:18px">كتب</span><div><b style="font-size:12.5px">Book series</b><div style="font-size:11px;color:#8b978f">multi-part commentary on a text</div></div></div>
+        </div>
+      </div>
+
+      <div style="background:#f6f1e7;border:1px dashed #ccbf9f;border-radius:14px;padding:15px;margin-top:16px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.8px;color:#8b978f">LANGUAGE</div>
+        <div style="font-size:12.5px;color:#5a665f;line-height:1.55;margin-top:6px">English-first UI with a Hausa toggle. Content is mostly Hausa, some English — each lecture is tagged so filters and transcripts follow.</div>
+      </div>
+    </div>
+
+    <!-- ============ COLUMN 3: ADMIN / BACKEND ============ -->
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:30px;height:30px;border-radius:8px;background:#4a2f5e;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Amiri',serif;font-size:17px">٣</div>
+        <div style="font-family:'Lora',serif;font-size:20px;font-weight:600">Admin &amp; backend</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e6ddc9;border-radius:16px;padding:18px;box-shadow:0 6px 18px rgba(11,70,52,.06)">
+        <div style="font-family:'Lora',serif;font-size:16px;font-weight:600;color:#4a2f5e">Admin console (login-protected)</div>
+        <div style="font-size:12.5px;color:#6a766e;line-height:1.6;margin-top:8px">A private web dashboard for the Foundation to control everything the public app shows:</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:12.5px;color:#3a463f">
+          <div style="display:flex;gap:9px"><span style="color:#4a2f5e;font-weight:800">＋</span>Upload a lecture (audio/video/text) with metadata</div>
+          <div style="display:flex;gap:9px"><span style="color:#4a2f5e;font-weight:800">▤</span>Create & order series; assign kind / topic / year</div>
+          <div style="display:flex;gap:9px"><span style="color:#4a2f5e;font-weight:800">◎</span>Publish / unpublish · schedule (e.g. nightly Tafsīr)</div>
+          <div style="display:flex;gap:9px"><span style="color:#4a2f5e;font-weight:800">★</span>Feature on Home · manage Explore categories</div>
+          <div style="display:flex;gap:9px"><span style="color:#4a2f5e;font-weight:800">✎</span>Edit transcripts & translations</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:14px 0"><svg width="24" height="26" viewBox="0 0 24 26" fill="none" stroke="#b7a9d0" stroke-width="2"><path d="M12 26V2m0 0l-7 7m7-7l7 7"/></svg></div>
+
+      <div style="background:#4a2f5e;color:#fff;border-radius:16px;padding:18px">
+        <div style="font-family:'Lora',serif;font-size:16px;font-weight:600">Backend services</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+          <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px"><b style="font-size:12.5px">Content API</b><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">serves catalog, series, search to the app (read-only, public)</div></div>
+          <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px"><b style="font-size:12.5px">Media storage + CDN</b><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">audio/video files streamed & cached near users</div></div>
+          <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px"><b style="font-size:12.5px">Database</b><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">lectures, series, categories, transcripts</div></div>
+        </div>
+      </div>
+
+      <div style="background:#eaf3ef;border:1px solid #cfe4da;border-radius:14px;padding:15px;margin-top:16px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.8px;color:#12634E">DEPLOYMENT</div>
+        <div style="font-size:12.5px;color:#3a5a4f;line-height:1.55;margin-top:6px">Build cross-platform (one codebase → Android + iOS). Ship the Android build to your <b>Google Play developer account</b>; the same code produces the iOS build later.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:34px;padding-top:18px;border-top:1px solid #d9cfb6;font-size:12px;color:#9aa69e">This map is a blueprint for engineering. It reflects the interactive prototype in <b>Althaqalayn Lectures.dc.html</b>. No user authentication — all lectures are public.</div>
+
+</div>
+</x-dc>
+</body>
+</html>
