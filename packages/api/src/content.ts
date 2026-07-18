@@ -53,6 +53,15 @@ export async function getLecture(
   return row ? mapLecture(row) : null;
 }
 
+/**
+ * Escape PostgREST filter metacharacters so a raw search string can't inject
+ * extra filters into an `.or()` expression (`,` `(` `)` split/group; `%` is an
+ * ilike wildcard; `\` is the escape char and must go first).
+ */
+export function escapePostgrestLike(value: string): string {
+  return value.replace(/[\\,()%]/g, (c) => `\\${c}`);
+}
+
 /** Free-text search over lecture titles, optionally filtered by media type. */
 export async function searchLectures(
   client: AlthaqalaynClient,
@@ -60,7 +69,10 @@ export async function searchLectures(
   mediaFilter?: MediaType,
 ): Promise<Lecture[]> {
   let q = client.from("lectures").select("*");
-  if (query.trim()) q = q.or(`title_en.ilike.%${query}%,title_ha.ilike.%${query}%`);
+  if (query.trim()) {
+    const safe = escapePostgrestLike(query.trim());
+    q = q.or(`title_en.ilike.%${safe}%,title_ha.ilike.%${safe}%`);
+  }
   if (mediaFilter) q = q.eq("type", mediaFilter);
   const rows = unwrap<LectureRow[]>(await q.order("date", { ascending: false }));
   return rows.map(mapLecture);

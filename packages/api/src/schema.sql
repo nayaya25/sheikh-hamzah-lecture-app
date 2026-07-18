@@ -27,10 +27,24 @@ create table admin_users (
   role  user_role not null default 'editor'
 );
 
--- Helper: is the current request an authenticated admin?
+-- Helpers: what is the current request's admin capability?
+--   is_admin()  — any admin account (read access to everything, incl. drafts)
+--   is_editor() — owner or editor (may create/update/delete content)
+--   is_owner()  — owner only (may manage the admin roster + roles)
 create or replace function is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from admin_users where id = auth.uid());
+$$;
+
+create or replace function is_editor() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from admin_users
+                 where id = auth.uid() and role in ('owner', 'editor'));
+$$;
+
+create or replace function is_owner() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from admin_users where id = auth.uid() and role = 'owner');
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -146,18 +160,29 @@ alter table categories  enable row level security;
 alter table albums      enable row level security;
 alter table photos      enable row level security;
 
--- Admins can do everything on every content table.
-create policy admin_all_programs    on programs    for all using (is_admin()) with check (is_admin());
-create policy admin_all_series      on series      for all using (is_admin()) with check (is_admin());
-create policy admin_all_lectures    on lectures    for all using (is_admin()) with check (is_admin());
-create policy admin_all_transcripts on transcripts for all using (is_admin()) with check (is_admin());
-create policy admin_all_categories  on categories  for all using (is_admin()) with check (is_admin());
-create policy admin_all_albums      on albums      for all using (is_admin()) with check (is_admin());
-create policy admin_all_photos      on photos      for all using (is_admin()) with check (is_admin());
+-- Content: any admin may READ everything (including drafts); only editors/owners
+-- may WRITE. Policies are OR-combined per command, so the `for select` read
+-- policy and the `for all` write policy compose to "viewers read, editors write".
+create policy read_programs    on programs    for select using (is_admin());
+create policy write_programs   on programs    for all    using (is_editor()) with check (is_editor());
+create policy read_series      on series      for select using (is_admin());
+create policy write_series     on series      for all    using (is_editor()) with check (is_editor());
+create policy read_lectures    on lectures    for select using (is_admin());
+create policy write_lectures   on lectures    for all    using (is_editor()) with check (is_editor());
+create policy read_transcripts on transcripts for select using (is_admin());
+create policy write_transcripts on transcripts for all   using (is_editor()) with check (is_editor());
+create policy read_categories  on categories  for select using (is_admin());
+create policy write_categories on categories  for all    using (is_editor()) with check (is_editor());
+create policy read_albums      on albums      for select using (is_admin());
+create policy write_albums     on albums      for all    using (is_editor()) with check (is_editor());
+create policy read_photos      on photos      for select using (is_admin());
+create policy write_photos     on photos      for all    using (is_editor()) with check (is_editor());
 
--- Admins manage the admin roster; each admin can read their own row.
-create policy admin_manage_users on admin_users for all
-  using (is_admin()) with check (is_admin());
+-- Admin roster: each admin may read their own row; only owners may read the full
+-- list or add/remove admins and change roles. Since no policy grants a non-owner
+-- write on admin_users, a non-owner cannot escalate their own `role`.
+create policy read_admins   on admin_users for select using (id = auth.uid() or is_owner());
+create policy manage_admins on admin_users for all    using (is_owner()) with check (is_owner());
 
 -- Public read of published content. Lectures gate on status; children gate on
 -- their parent being publicly visible.
@@ -168,9 +193,13 @@ create policy public_read_series on series for select
   using (exists (select 1 from lectures l
                  where l.series_id = series.id and l.status = 'published'));
 
+-- A program is public only if it has a series with at least one published
+-- lecture — otherwise a draft-only program's metadata would leak to the app.
 create policy public_read_programs on programs for select
   using (exists (select 1 from series s
-                 where s.program_id = programs.id));
+                 join lectures l on l.series_id = s.id
+                 where s.program_id = programs.id
+                   and l.status = 'published'));
 
 create policy public_read_transcripts on transcripts for select
   using (exists (select 1 from lectures l
