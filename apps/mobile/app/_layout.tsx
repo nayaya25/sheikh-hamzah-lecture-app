@@ -4,8 +4,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { colors } from "@althaqalayn/theme";
+import { MiniPlayer } from "@/components/MiniPlayer";
 import { useAppFonts } from "@/lib/fonts";
 import { I18nProvider } from "@/lib/i18n";
+import { PlayerProvider } from "@/lib/player";
 
 // Keep the native splash up until fonts resolve, so text never flashes unstyled.
 SplashScreen.preventAutoHideAsync();
@@ -23,14 +25,20 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <I18nProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.cream },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <PlayerProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.cream },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="series/[id]" />
+              <Stack.Screen name="player" options={{ animation: "slide_from_bottom" }} />
+            </Stack>
+            {/* Global mini-player; hides itself on the full player + when idle. */}
+            <MiniPlayer />
+          </PlayerProvider>
         </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

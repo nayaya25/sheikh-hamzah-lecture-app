@@ -7,8 +7,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
+import { lectureById } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { usePlayer } from "@/lib/player";
 import {
   categories,
   continueItem,
@@ -21,6 +23,15 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, arabic } = useI18n();
+  const { play } = usePlayer();
+
+  const openLecture = (lectureId: string) => {
+    const lecture = lectureById(lectureId);
+    if (!lecture) return;
+    play(lecture);
+    router.push("/player");
+  };
+  const openSeries = (seriesId: string) => router.push(`/series/${seriesId}`);
 
   return (
     <View style={styles.root}>
@@ -65,7 +76,7 @@ export default function HomeScreen() {
         </LinearGradient>
 
         {/* ── Continue listening ───────────────────────────────────── */}
-        <Pressable style={styles.continueCard}>
+        <Pressable style={styles.continueCard} onPress={() => openLecture("akhlaq-7")}>
           <GradientCover gradient={continueItem.gradient} style={styles.continueCover}>
             <Ionicons name="play" size={20} color="#fff" />
           </GradientCover>
@@ -87,7 +98,7 @@ export default function HomeScreen() {
         <SectionHeader title={t.home.explore} arabic="استكشف" />
         <View style={styles.grid}>
           {categories.map((cat) => (
-            <Pressable key={cat.label} style={styles.categoryTile}>
+            <Pressable key={cat.label} style={styles.categoryTile} onPress={() => openSeries(cat.seriesId)}>
               <Text style={styles.categoryAr} allowFontScaling={false}>
                 {cat.ar}
               </Text>
@@ -105,7 +116,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.railContent}
         >
           {featuredSeries.map((s) => (
-            <Pressable key={s.id} style={styles.featuredCard}>
+            <Pressable key={s.id} style={styles.featuredCard} onPress={() => openSeries(s.id)}>
               <GradientCover gradient={s.gradient} style={styles.featuredCover} arabic={s.ar}>
                 <View style={styles.kindChip}>
                   <Text style={styles.kindChipText}>{s.kind}</Text>
@@ -146,7 +157,7 @@ export default function HomeScreen() {
         <SectionHeader title={t.home.latestLectures} arabic="جديد" />
         <View>
           {latestLectures.map((l) => (
-            <Pressable key={l.id} style={styles.lectureRow}>
+            <Pressable key={l.id} style={styles.lectureRow} onPress={() => openLecture(l.id)}>
               <GradientCover gradient={l.gradient} style={styles.lectureCover} arabic={l.ar} arabicSize={34}>
                 <Ionicons name="play" size={18} color="#fff" />
               </GradientCover>

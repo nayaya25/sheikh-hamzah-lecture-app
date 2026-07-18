@@ -10,6 +10,8 @@ export interface HomeCategory {
   ar: string;
   label: string;
   meta: string;
+  /** Series this tile opens (see @/lib/catalog). */
+  seriesId: string;
 }
 
 export interface HomeSeries {
@@ -56,12 +58,12 @@ export const continueItem: ContinueItem = {
 };
 
 export const categories: HomeCategory[] = [
-  { ar: "تفسير", label: "Ramadan Tafsir", meta: "2 series · 60" },
-  { ar: "مولد", label: "Maulud", meta: "Yearly" },
-  { ar: "أخلاق", label: "Morality", meta: "12 lectures" },
-  { ar: "عدل", label: "Society", meta: "8 lectures" },
-  { ar: "كتب", label: "Books", meta: "Nahj & more" },
-  { ar: "نصوص", label: "Text", meta: "Read" },
+  { ar: "تفسير", label: "Ramadan Tafsir", meta: "2 series · 60", seriesId: "tafsir1445" },
+  { ar: "مولد", label: "Maulud", meta: "Yearly", seriesId: "maulud1445" },
+  { ar: "أخلاق", label: "Morality", meta: "12 lectures", seriesId: "akhlaq" },
+  { ar: "عدل", label: "Society", meta: "8 lectures", seriesId: "society" },
+  { ar: "كتب", label: "Books", meta: "Nahj & more", seriesId: "nahj" },
+  { ar: "نصوص", label: "Text", meta: "Read", seriesId: "akhlaq" },
 ];
 
 export const featuredSeries: HomeSeries[] = [
