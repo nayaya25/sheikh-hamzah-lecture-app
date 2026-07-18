@@ -51,6 +51,11 @@ export function seriesById(id: string): SampleSeries | undefined {
   return seriesList.find((s) => s.id === id);
 }
 
+/** The cover gradient a lecture inherits from its series (falls back to green). */
+export function gradientForLecture(p: Playable): Gradient {
+  return seriesById(p.seriesId)?.gradient ?? ["#0B4634", "#17795E"];
+}
+
 export function lectureById(id: string): Playable | undefined {
   return lecturesList.find((l) => l.id === id);
 }

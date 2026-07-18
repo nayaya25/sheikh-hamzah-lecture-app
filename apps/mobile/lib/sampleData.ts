@@ -81,6 +81,25 @@ export const latestLectures: HomeLecture[] = [
   { id: "l5", title: "The Sermon of the Two Weighty Things", sub: "Nahj al-Balāgha · Part 9", type: "audio", date: "3 weeks ago", ar: "نهج", gradient: ["#173a4f", "#2c7396"] },
 ];
 
+/** Recent-search suggestions on the Search empty state. */
+export const recentSearches = ["Tafsir Ramadan", "Sabr", "Justice", "Maulud"];
+
+export interface TopicChip {
+  label: string;
+  meta: string;
+  ar: string;
+  gradient: Gradient;
+  seriesId: string;
+}
+
+/** "Browse topics" grid on the Search empty state. */
+export const topicChips: TopicChip[] = [
+  { label: "Politics & Society", meta: "Governance, justice", ar: "عدل", gradient: ["#5e3a2f", "#a06a4a"], seriesId: "society" },
+  { label: "Morality & Ethics", meta: "Akhlaq of the self", ar: "أخلاق", gradient: ["#4a2f5e", "#7a4f9c"], seriesId: "akhlaq" },
+  { label: "Qur’an & Tafsir", meta: "Daily exegesis", ar: "تفسير", gradient: ["#0B4634", "#17795E"], seriesId: "tafsir1445" },
+  { label: "Books & Sermons", meta: "Nahj al-Balāgha", ar: "نهج", gradient: ["#173a4f", "#2c7396"], seriesId: "nahj" },
+];
+
 export const galleryAlbums: HomeAlbum[] = [
   { id: "maulud", title: "Maulud an-Nabī ﷺ 1445", date: "October 2024", count: 32, ar: "مولد", gradient: ["#7a5a12", "#c0932f"] },
   { id: "iftar", title: "Ramadan Iftar Gathering", date: "March 2024", count: 21, ar: "إفطار", gradient: ["#0B4634", "#17795E"] },
