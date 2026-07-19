@@ -57,11 +57,11 @@ export default function HomeScreen() {
               <Text style={styles.appTitle}>{t.home.greetingTitle}</Text>
               <Text style={styles.subtitle}>{t.home.subtitle}</Text>
             </View>
-            <View style={styles.emblem}>
+            <Pressable style={styles.emblem} onPress={() => router.push("/settings")}>
               <Text style={styles.emblemLetter} allowFontScaling={false}>
                 {arabic.emblemLetter}
               </Text>
-            </View>
+            </Pressable>
           </View>
 
           <Pressable style={styles.searchBar} onPress={() => router.push("/search")}>
@@ -69,9 +69,16 @@ export default function HomeScreen() {
             <Text style={styles.searchPlaceholder} numberOfLines={1}>
               {t.search.placeholder}
             </Text>
-            <View style={styles.langPill}>
+            <Pressable
+              hitSlop={8}
+              style={styles.langPill}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push("/language");
+              }}
+            >
               <Text style={styles.langPillText}>{lang.toUpperCase()}</Text>
-            </View>
+            </Pressable>
           </Pressable>
         </LinearGradient>
 

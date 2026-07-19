@@ -100,6 +100,20 @@ export const topicChips: TopicChip[] = [
   { label: "Books & Sermons", meta: "Nahj al-Balāgha", ar: "نهج", gradient: ["#173a4f", "#2c7396"], seriesId: "nahj" },
 ];
 
+export interface DownloadItem {
+  /** Lecture id (see @/lib/catalog). */
+  id: string;
+  /** Saved-file meta, e.g. "Audio · 41 min · 38 MB". */
+  meta: string;
+}
+
+/** Locally-saved lectures shown on Downloads (stand-in for the offline index). */
+export const downloads: DownloadItem[] = [
+  { id: "akhlaq-7", meta: "Audio · 41 min · 38 MB" },
+  { id: "l5", meta: "Audio · 47 min · 44 MB" },
+  { id: "l1", meta: "Video · 58 min · 420 MB" },
+];
+
 export const galleryAlbums: HomeAlbum[] = [
   { id: "maulud", title: "Maulud an-Nabī ﷺ 1445", date: "October 2024", count: 32, ar: "مولد", gradient: ["#7a5a12", "#c0932f"] },
   { id: "iftar", title: "Ramadan Iftar Gathering", date: "March 2024", count: 21, ar: "إفطار", gradient: ["#0B4634", "#17795E"] },
