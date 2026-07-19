@@ -8,4 +8,5 @@ dist/
 .env.local
 # local DB credentials for one-off setup scripts — never commit
 db-connection.local
+pat.local
 .secrets/

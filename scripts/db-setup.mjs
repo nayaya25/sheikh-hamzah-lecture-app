@@ -37,7 +37,7 @@ function connectionString() {
   }
 }
 
-const sql = (f) => readFileSync(join(root, "packages/api", f), "utf8");
+const sql = (rel) => readFileSync(join(root, "packages/api", rel), "utf8");
 
 async function main() {
   // Verify TLS against the public CA chain Supabase presents. If you use a
@@ -51,7 +51,7 @@ async function main() {
   try {
     if (only === "all") {
       try {
-        await client.query(sql("schema.sql"));
+        await client.query(sql("src/schema.sql"));
         console.log("✓ schema.sql applied");
       } catch (e) {
         if (/already exists/i.test(e.message)) console.log("• schema already present — skipping");
