@@ -27,6 +27,8 @@ export interface Playable {
   type: MediaType;
   durSec: number;
   ar: string;
+  /** Streamed media source; absent for sample data (falls back to a sim clock). */
+  mediaUrl?: string;
 }
 
 export const seriesList: SampleSeries[] = [

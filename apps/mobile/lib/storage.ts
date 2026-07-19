@@ -1,0 +1,30 @@
+// Thin typed wrapper over AsyncStorage for persisting small JSON preferences
+// (language, playback speed, resume positions). Failures are swallowed — a
+// preference that can't be read/written should never crash the app.
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const PREFIX = "althaqalayn:";
+
+export const StorageKeys = {
+  language: "language",
+  speed: "speed",
+  resume: "resume", // Record<lectureId, positionFraction>
+} as const;
+
+export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
+  try {
+    const raw = await AsyncStorage.getItem(PREFIX + key);
+    return raw == null ? fallback : (JSON.parse(raw) as T);
+  } catch {
+    return fallback;
+  }
+}
+
+export async function saveJSON<T>(key: string, value: T): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PREFIX + key, JSON.stringify(value));
+  } catch {
+    // Best-effort; ignore write failures.
+  }
+}

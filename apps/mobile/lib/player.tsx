@@ -8,10 +8,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+} from "expo-audio";
 import { seriesById, type Playable, type SampleSeries } from "@/lib/catalog";
+import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
 
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75] as const;
 const SLEEPS = [0, 15, 30, 45] as const;
+
+const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
 interface PlayerValue {
   current: Playable | null;
@@ -43,15 +51,53 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [sleep, setSleep] = useState(0);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
 
-  // Simulated playback clock. Real audio (expo-audio) replaces this once media
-  // URLs are wired; the context surface stays the same.
-  const durRef = useRef(0);
-  durRef.current = current?.durSec ?? 0;
+  // Real audio player (used when the current lecture has a mediaUrl).
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+  const hasAudio = Boolean(current?.mediaUrl);
+
+  // Saved resume positions (lectureId → fraction), loaded once.
+  const resumeRef = useRef<Record<string, number>>({});
+
+  // Configure background/lock-screen audio + restore saved prefs on mount.
   useEffect(() => {
-    if (!isPlaying || !current) return;
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: "doNotMix",
+    }).catch(() => {});
+    void (async () => {
+      resumeRef.current = await loadJSON<Record<string, number>>(StorageKeys.resume, {});
+      setSpeed(await loadJSON<number>(StorageKeys.speed, 1));
+    })();
+  }, []);
+
+  // Keep the exposed playback rate applied to the native player.
+  useEffect(() => {
+    try {
+      player.setPlaybackRate(speed);
+    } catch {
+      // player not ready with a source yet
+    }
+    void saveJSON(StorageKeys.speed, speed);
+  }, [speed, player]);
+
+  // Real audio: mirror native status into the exposed position/isPlaying.
+  useEffect(() => {
+    if (!hasAudio) return;
+    if (status.isLoaded && status.duration > 0) {
+      setPosition(clamp(status.currentTime / status.duration));
+    }
+    setIsPlaying(status.playing);
+  }, [hasAudio, status.currentTime, status.duration, status.playing, status.isLoaded]);
+
+  // Simulated clock: only when the current lecture has no real media.
+  useEffect(() => {
+    if (hasAudio || !isPlaying || !current) return;
+    const dur = current.durSec || 1;
     const id = setInterval(() => {
       setPosition((p) => {
-        const next = p + (speed * 1) / (durRef.current || 1);
+        const next = p + speed / dur;
         if (next >= 1) {
           setIsPlaying(false);
           return 1;
@@ -60,15 +106,54 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [isPlaying, current, speed]);
+  }, [hasAudio, isPlaying, current, speed]);
 
-  const play = useCallback((lecture: Playable) => {
-    setCurrent((prev) => {
-      if (!prev || prev.id !== lecture.id) setPosition(0);
-      return lecture;
-    });
-    setIsPlaying(true);
-  }, []);
+  // Track the latest position per lecture, and persist on pause.
+  useEffect(() => {
+    if (current) resumeRef.current[current.id] = position;
+  }, [current, position]);
+  useEffect(() => {
+    if (!isPlaying) void saveJSON(StorageKeys.resume, resumeRef.current);
+  }, [isPlaying]);
+
+  const play = useCallback(
+    (lecture: Playable) => {
+      const resume = resumeRef.current[lecture.id] ?? 0;
+      setCurrent(lecture);
+      setPosition(resume);
+      if (lecture.mediaUrl) {
+        player.replace({ uri: lecture.mediaUrl });
+        if (resume > 0 && lecture.durSec) player.seekTo(resume * lecture.durSec);
+        player.play();
+      } else {
+        setIsPlaying(true);
+      }
+    },
+    [player],
+  );
+
+  const togglePlay = useCallback(() => {
+    if (hasAudio) {
+      if (status.playing) player.pause();
+      else player.play();
+    } else {
+      setIsPlaying((p) => !p);
+    }
+  }, [hasAudio, status.playing, player]);
+
+  const seekTo = useCallback(
+    (fraction: number) => {
+      const f = clamp(fraction);
+      if (hasAudio && current?.durSec) player.seekTo(f * current.durSec);
+      else setPosition(f);
+    },
+    [hasAudio, current, player],
+  );
+
+  const nudge = useCallback(
+    (delta: number) => seekTo(position + delta),
+    [seekTo, position],
+  );
 
   const value = useMemo<PlayerValue>(
     () => ({
@@ -80,14 +165,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       sleep,
       transcriptOpen,
       play,
-      togglePlay: () => setIsPlaying((p) => !p),
-      seekTo: (f) => setPosition(Math.min(1, Math.max(0, f))),
-      nudge: (d) => setPosition((p) => Math.min(1, Math.max(0, p + d))),
+      togglePlay,
+      seekTo,
+      nudge,
       cycleSpeed: () => setSpeed((s) => SPEEDS[(SPEEDS.indexOf(s as (typeof SPEEDS)[number]) + 1) % SPEEDS.length]),
       cycleSleep: () => setSleep((s) => SLEEPS[(SLEEPS.indexOf(s as (typeof SLEEPS)[number]) + 1) % SLEEPS.length]),
       toggleTranscript: () => setTranscriptOpen((t) => !t),
     }),
-    [current, isPlaying, position, speed, sleep, transcriptOpen, play],
+    [current, isPlaying, position, speed, sleep, transcriptOpen, play, togglePlay, seekTo, nudge],
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
