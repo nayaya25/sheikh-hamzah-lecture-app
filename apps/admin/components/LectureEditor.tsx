@@ -5,6 +5,7 @@ import { admin, mapSeries, unwrap, type SeriesRow } from "@althaqalayn/api";
 import type { Language, Lecture, LectureScope, MediaType, Series } from "@althaqalayn/types";
 import { getClient } from "@/lib/supabase";
 import { brand, font } from "@/lib/ui";
+import { deleteMedia, storagePathFromUrl, uploadMedia } from "@/lib/upload";
 
 const YEARS = ["1446 AH · 2025", "1445 AH · 2024", "1444 AH · 2023", "1443 AH · 2022", "Ongoing"];
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
@@ -38,8 +39,29 @@ export function LectureEditor({
   const [scheduleFor, setScheduleFor] = useState(
     lecture?.scheduledFor ? lecture.scheduledFor.slice(0, 16) : "",
   );
+  const [uploading, setUploading] = useState(false);
+  const [uploadName, setUploadName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const { url } = await uploadMedia(file);
+      const oldPath = storagePathFromUrl(mediaUrl);
+      if (oldPath) await deleteMedia(oldPath); // replace: clean up the previous file
+      setMediaUrl(url);
+      setUploadName(file.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     void (async () => {
@@ -201,16 +223,35 @@ export function LectureEditor({
           </div>
 
           {type !== "text" ? (
-            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-              <div style={{ flex: 1 }}>
-                <Label>MEDIA URL</Label>
-                <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} placeholder="https://cdn/…/audio.mp3" style={inp} />
-              </div>
-              <div style={{ width: 110 }}>
-                <Label>LENGTH (MIN)</Label>
-                <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} placeholder="41" inputMode="numeric" style={inp} />
-              </div>
-            </div>
+            <>
+              <Field label="MEDIA FILE">
+                {mediaUrl ? (
+                  <div style={styles.uploaded}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{uploadName || "Current file"}</div>
+                      <div style={styles.uploadedUrl}>{mediaUrl}</div>
+                    </div>
+                    <label style={styles.replace}>
+                      {uploading ? "Uploading…" : "Replace"}
+                      <input type="file" accept="audio/*,video/*" hidden disabled={uploading} onChange={onFile} />
+                    </label>
+                  </div>
+                ) : (
+                  <label style={styles.dropzone}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>
+                      {uploading ? "Uploading…" : "Click to upload an audio or video file"}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--faint)", marginTop: 3 }}>
+                      MP3, MP4 · stored in your media bucket
+                    </div>
+                    <input type="file" accept="audio/*,video/*" hidden disabled={uploading} onChange={onFile} />
+                  </label>
+                )}
+              </Field>
+              <Field label="LENGTH (MIN, OPTIONAL)">
+                <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} placeholder="41" inputMode="numeric" style={{ ...inp, width: 140 }} />
+              </Field>
+            </>
           ) : null}
 
           <Field label="DATE">
@@ -313,6 +354,41 @@ const styles: Record<string, CSSProperties> = {
   close: { background: "transparent", border: "none", fontSize: 18, color: "var(--muted)", cursor: "pointer" },
   body: { flex: 1, overflowY: "auto", padding: 24 },
   label: { fontSize: 11, fontWeight: 800, letterSpacing: ".5px", color: "var(--faint)", marginBottom: 7 },
+  dropzone: {
+    display: "block",
+    border: "1.6px dashed var(--line)",
+    borderRadius: 14,
+    padding: 26,
+    textAlign: "center",
+    background: "var(--input)",
+    cursor: "pointer",
+  },
+  uploaded: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    border: "1.5px solid var(--line)",
+    borderRadius: 12,
+    padding: "12px 14px",
+    background: "var(--input)",
+  },
+  uploadedUrl: {
+    fontSize: 11,
+    color: "var(--muted)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  replace: {
+    flexShrink: 0,
+    fontSize: 12.5,
+    fontWeight: 700,
+    color: brand.greenMid,
+    cursor: "pointer",
+    padding: "8px 12px",
+    border: "1px solid var(--line)",
+    borderRadius: 9,
+  },
   pubRow: {
     display: "flex",
     alignItems: "center",
