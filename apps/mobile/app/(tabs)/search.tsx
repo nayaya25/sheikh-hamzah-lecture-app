@@ -10,7 +10,7 @@ import type { MediaType } from "@althaqalayn/types";
 import { FilterChips, type Chip } from "@/components/FilterChips";
 import { LectureListRow } from "@/components/LectureListRow";
 import { SearchField } from "@/components/SearchField";
-import { lecturesList } from "@/lib/catalog";
+import { useCatalog } from "@/lib/catalogProvider";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { openLecture } from "@/lib/openLecture";
@@ -24,6 +24,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { play } = usePlayer();
+  const { lectures: lecturesList } = useCatalog();
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<SearchFilter>("all");
@@ -40,7 +41,7 @@ export default function SearchScreen() {
       if (filter !== "all" && l.type !== filter) return false;
       return `${l.title} ${l.sub}`.toLowerCase().includes(q);
     });
-  }, [q, filter]);
+  }, [q, filter, lecturesList]);
 
   const openById = (lectureId: string) => {
     const lecture = lecturesList.find((l) => l.id === lectureId);

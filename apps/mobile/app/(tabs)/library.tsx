@@ -9,7 +9,8 @@ import { FilterChips, type Chip } from "@/components/FilterChips";
 import { LectureListRow } from "@/components/LectureListRow";
 import { SearchField } from "@/components/SearchField";
 import { SeriesListRow } from "@/components/SeriesListRow";
-import { durationLabel, lecturesList, seriesById } from "@/lib/catalog";
+import { durationLabel } from "@/lib/catalog";
+import { useCatalog } from "@/lib/catalogProvider";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { openLecture } from "@/lib/openLecture";
@@ -37,6 +38,7 @@ export default function LibraryScreen() {
   const router = useRouter();
   const { t, arabic } = useI18n();
   const { play } = usePlayer();
+  const { lectures: lecturesList, seriesById } = useCatalog();
 
   const [segment, setSegment] = useState<Segment>("recent");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -61,7 +63,7 @@ export default function LibraryScreen() {
       if (mediaFilter !== "all" && l.type !== mediaFilter) return false;
       return !q || `${l.title} ${l.sub}`.toLowerCase().includes(q);
     });
-  }, [mediaFilter, q]);
+  }, [mediaFilter, q, lecturesList]);
 
   const seriesRows = useMemo(() => {
     if (segment === "recent") return [];
@@ -69,7 +71,7 @@ export default function LibraryScreen() {
       .map(seriesById)
       .filter((s): s is NonNullable<typeof s> => Boolean(s))
       .filter((s) => !q || `${s.title} ${s.kind}`.toLowerCase().includes(q));
-  }, [segment, q]);
+  }, [segment, q, seriesById]);
 
   const openById = (lectureId: string) => {
     const lecture = lecturesList.find((l) => l.id === lectureId);

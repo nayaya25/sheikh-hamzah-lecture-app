@@ -49,7 +49,8 @@ export default function PlayerScreen() {
     return null;
   }
 
-  const gradient = currentSeries?.gradient ?? ["#0B4634", "#17795E"];
+  const gradient = current.gradient ?? currentSeries?.gradient ?? ["#0B4634", "#17795E"];
+  const seriesTitle = current.seriesTitle ?? currentSeries?.title;
   const durSec = current.durSec;
 
   const onSeek = (e: GestureResponderEvent) => {
@@ -76,7 +77,7 @@ export default function PlayerScreen() {
           </Pressable>
           <View style={{ alignItems: "center" }}>
             <Text style={styles.nowPlaying}>{t.player.nowPlaying.toUpperCase()}</Text>
-            <Text style={styles.nowSeries}>{currentSeries?.title}</Text>
+            <Text style={styles.nowSeries}>{seriesTitle}</Text>
           </View>
           <Pressable style={styles.roundBtn}>
             <Feather name="share-2" size={18} color="#fff" />

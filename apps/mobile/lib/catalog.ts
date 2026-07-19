@@ -29,6 +29,10 @@ export interface Playable {
   ar: string;
   /** Streamed media source; absent for sample data (falls back to a sim clock). */
   mediaUrl?: string;
+  /** Cover gradient + series title, set for backend lectures so the player can
+   *  render them without a sample-catalog lookup. */
+  gradient?: Gradient;
+  seriesTitle?: string;
 }
 
 export const seriesList: SampleSeries[] = [
@@ -55,7 +59,7 @@ export function seriesById(id: string): SampleSeries | undefined {
 
 /** The cover gradient a lecture inherits from its series (falls back to green). */
 export function gradientForLecture(p: Playable): Gradient {
-  return seriesById(p.seriesId)?.gradient ?? ["#0B4634", "#17795E"];
+  return p.gradient ?? seriesById(p.seriesId)?.gradient ?? ["#0B4634", "#17795E"];
 }
 
 export function lectureById(id: string): Playable | undefined {

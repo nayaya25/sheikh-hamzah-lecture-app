@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { colors } from "@althaqalayn/theme";
 import { MiniPlayer } from "@/components/MiniPlayer";
 import { SplashOverlay } from "@/components/SplashOverlay";
+import { CatalogProvider } from "@/lib/catalogProvider";
 import { useAppFonts } from "@/lib/fonts";
 import { I18nProvider } from "@/lib/i18n";
 import { PlayerProvider } from "@/lib/player";
@@ -27,6 +28,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <I18nProvider>
           <PlayerProvider>
+            <CatalogProvider>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -46,6 +48,7 @@ export default function RootLayout() {
             <MiniPlayer />
             {/* Launch splash over everything; self-dismisses after a hold. */}
             <SplashOverlay />
+            </CatalogProvider>
           </PlayerProvider>
         </I18nProvider>
       </SafeAreaProvider>

@@ -7,24 +7,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
-import { lectureById } from "@/lib/catalog";
+import { useCatalog } from "@/lib/catalogProvider";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
-import {
-  categories,
-  continueItem,
-  featuredSeries,
-  galleryAlbums,
-  latestLectures,
-} from "@/lib/sampleData";
+import { categories, continueItem, galleryAlbums } from "@/lib/sampleData";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, arabic } = useI18n();
   const { play } = usePlayer();
+  const { homeFeatured: featuredSeries, homeLatest: latestLectures, lectureById } = useCatalog();
 
   const openById = (lectureId: string) => {
     const lecture = lectureById(lectureId);

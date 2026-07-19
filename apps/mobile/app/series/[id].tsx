@@ -6,7 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
 import { MediaBadge } from "@/components/MediaBadge";
-import { durationLabel, episodesForSeries, seriesById } from "@/lib/catalog";
+import { durationLabel } from "@/lib/catalog";
+import { useCatalog } from "@/lib/catalogProvider";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { openLecture } from "@/lib/openLecture";
@@ -18,6 +19,7 @@ export default function SeriesDetailScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { play } = usePlayer();
+  const { seriesById, episodesForSeries } = useCatalog();
 
   const series = seriesById(id);
   if (!series) {
