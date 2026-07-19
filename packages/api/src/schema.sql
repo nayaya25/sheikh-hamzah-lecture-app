@@ -214,3 +214,19 @@ create policy public_read_published_albums on albums for select
 create policy public_read_album_photos on photos for select
   using (exists (select 1 from albums a
                  where a.id = photos.album_id and a.published = true));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Role grants (see grants.sql)
+-- ─────────────────────────────────────────────────────────────────────────────
+grant usage on schema public to anon, authenticated;
+
+-- Public app (anon): read-only on content. RLS narrows this to published rows.
+grant select on programs, series, lectures, transcripts, categories, albums, photos
+  to anon, authenticated;
+
+-- Admin console (authenticated): full DML on content. RLS enforces editor/owner.
+grant insert, update, delete on programs, series, lectures, transcripts, categories, albums, photos
+  to authenticated;
+
+-- Admin roster: authenticated only (RLS restricts to owner / self).
+grant select, insert, update, delete on admin_users to authenticated;
