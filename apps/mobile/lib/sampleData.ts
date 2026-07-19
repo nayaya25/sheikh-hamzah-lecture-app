@@ -120,3 +120,47 @@ export const galleryAlbums: HomeAlbum[] = [
   { id: "library", title: "Foundation Library Opening", date: "January 2024", count: 44, ar: "مكتبة", gradient: ["#173a4f", "#2c7396"] },
   { id: "ashura", title: "Annual Ashura Lecture", date: "July 2023", count: 18, ar: "عاشوراء", gradient: ["#4a2f5e", "#7a4f9c"] },
 ];
+
+export function albumById(id: string): HomeAlbum | undefined {
+  return galleryAlbums.find((a) => a.id === id);
+}
+
+const PHOTO_HEIGHTS = [120, 168, 140, 184, 130, 152, 124, 176, 138, 160, 132, 150];
+const PHOTO_PALETTE: Gradient[] = [
+  ["#0B4634", "#17795E"],
+  ["#7a5a12", "#c0932f"],
+  ["#173a4f", "#2c7396"],
+  ["#4a2f5e", "#7a4f9c"],
+  ["#5e3a2f", "#a06a4a"],
+];
+
+/** Placeholder photo tiles (varied heights → masonry). No real images yet. */
+export function albumPhotos(count = 12): { height: number; gradient: Gradient }[] {
+  return Array.from({ length: count }, (_, i) => ({
+    height: PHOTO_HEIGHTS[i % PHOTO_HEIGHTS.length],
+    gradient: PHOTO_PALETTE[i % PHOTO_PALETTE.length],
+  }));
+}
+
+/** Sample reader body for text lectures (localized), from the prototype. */
+export const readerSample: Record<
+  "en" | "ha",
+  { cap: string; paragraphs: [string, string, string] }
+> = {
+  en: {
+    cap: "G",
+    paragraphs: [
+      "ratitude is the response of a heart that recognises its Lord in every breath and every provision. It is not merely words upon the tongue, but a state that colours how we see the world.",
+      "The Sheikh reminds us that the one who is thankful for little is prepared to be entrusted with much, while the one who overlooks small mercies grows blind to the great ones.",
+      "So let the believer begin each morning by counting what he has been given, for in that counting the heart is softened and the soul turns back to its Creator.",
+    ],
+  },
+  ha: {
+    cap: "G",
+    paragraphs: [
+      "odiya ita ce amsar zuciyar da ta gane Ubangijinta a cikin kowane numfashi da kowace ni'ima. Ba magana ce kawai a harshe ba, sai dai yanayi ne da ke canza yadda muke ganin duniya.",
+      "Shehu yana tunatar da mu cewa wanda ya yi godiya a kan kaɗan, an shirya shi ya riƙe mai yawa; wanda kuma ya ƙyale ƙananan ni'imomi, zai makance ga manya.",
+      "Saboda haka bari mumini ya fara kowace safiya da lissafin abin da aka ba shi, domin a cikin wannan lissafi zuciya na taushi, rai kuma ya koma ga Mahaliccinsa.",
+    ],
+  },
+};

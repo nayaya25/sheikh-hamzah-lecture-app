@@ -13,6 +13,7 @@ import { SearchField } from "@/components/SearchField";
 import { lecturesList } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { recentSearches, topicChips } from "@/lib/sampleData";
 
@@ -41,11 +42,9 @@ export default function SearchScreen() {
     });
   }, [q, filter]);
 
-  const openLecture = (lectureId: string) => {
+  const openById = (lectureId: string) => {
     const lecture = lecturesList.find((l) => l.id === lectureId);
-    if (!lecture) return;
-    play(lecture);
-    router.push("/player");
+    if (lecture) openLecture(router, play, lecture);
   };
 
   return (
@@ -76,7 +75,7 @@ export default function SearchScreen() {
                   key={l.id}
                   lecture={l}
                   coverSize={52}
-                  onPress={() => openLecture(l.id)}
+                  onPress={() => openById(l.id)}
                 />
               ))
             )}

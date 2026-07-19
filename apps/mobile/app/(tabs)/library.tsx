@@ -12,6 +12,7 @@ import { SeriesListRow } from "@/components/SeriesListRow";
 import { durationLabel, lecturesList, seriesById } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 
 type Segment = "recent" | "occasions" | "topics" | "series";
@@ -70,11 +71,9 @@ export default function LibraryScreen() {
       .filter((s) => !q || `${s.title} ${s.kind}`.toLowerCase().includes(q));
   }, [segment, q]);
 
-  const openLecture = (lectureId: string) => {
+  const openById = (lectureId: string) => {
     const lecture = lecturesList.find((l) => l.id === lectureId);
-    if (!lecture) return;
-    play(lecture);
-    router.push("/player");
+    if (lecture) openLecture(router, play, lecture);
   };
 
   return (
@@ -106,7 +105,7 @@ export default function LibraryScreen() {
                 key={l.id}
                 lecture={l}
                 meta={durationLabel(l)}
-                onPress={() => openLecture(l.id)}
+                onPress={() => openById(l.id)}
               />
             ))}
           </>

@@ -9,6 +9,7 @@ import { MediaBadge } from "@/components/MediaBadge";
 import { durationLabel, episodesForSeries, seriesById } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 
 export default function SeriesDetailScreen() {
@@ -31,9 +32,7 @@ export default function SeriesDetailScreen() {
   const episodes = episodesForSeries(series);
   const openEpisode = (episodeId: string) => {
     const ep = episodes.find((e) => e.id === episodeId);
-    if (!ep) return;
-    play(ep);
-    router.push("/player");
+    if (ep) openLecture(router, play, ep);
   };
 
   return (

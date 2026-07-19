@@ -5,6 +5,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { colors } from "@althaqalayn/theme";
 import { MiniPlayer } from "@/components/MiniPlayer";
+import { SplashOverlay } from "@/components/SplashOverlay";
 import { useAppFonts } from "@/lib/fonts";
 import { I18nProvider } from "@/lib/i18n";
 import { PlayerProvider } from "@/lib/player";
@@ -43,6 +44,8 @@ export default function RootLayout() {
             </Stack>
             {/* Global mini-player; hides itself on the full player + when idle. */}
             <MiniPlayer />
+            {/* Launch splash over everything; self-dismisses after a hold. */}
+            <SplashOverlay />
           </PlayerProvider>
         </I18nProvider>
       </SafeAreaProvider>

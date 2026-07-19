@@ -11,6 +11,7 @@ import { SearchField } from "@/components/SearchField";
 import { gradientForLecture, lectureById } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { downloads } from "@/lib/sampleData";
 
@@ -68,10 +69,7 @@ export default function DownloadsScreen() {
             <Pressable
               key={d.id}
               style={styles.row}
-              onPress={() => {
-                play(d.lecture);
-                router.push("/player");
-              }}
+              onPress={() => openLecture(router, play, d.lecture)}
             >
               <GradientCover gradient={gradientForLecture(d.lecture)} style={styles.cover}>
                 <Ionicons name="play" size={16} color="#fff" />

@@ -10,6 +10,7 @@ import { MediaBadge } from "@/components/MediaBadge";
 import { lectureById } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import {
   categories,
@@ -25,11 +26,9 @@ export default function HomeScreen() {
   const { t, lang, arabic } = useI18n();
   const { play } = usePlayer();
 
-  const openLecture = (lectureId: string) => {
+  const openById = (lectureId: string) => {
     const lecture = lectureById(lectureId);
-    if (!lecture) return;
-    play(lecture);
-    router.push("/player");
+    if (lecture) openLecture(router, play, lecture);
   };
   const openSeries = (seriesId: string) => router.push(`/series/${seriesId}`);
 
@@ -83,7 +82,7 @@ export default function HomeScreen() {
         </LinearGradient>
 
         {/* ── Continue listening ───────────────────────────────────── */}
-        <Pressable style={styles.continueCard} onPress={() => openLecture("akhlaq-7")}>
+        <Pressable style={styles.continueCard} onPress={() => openById("akhlaq-7")}>
           <GradientCover gradient={continueItem.gradient} style={styles.continueCover}>
             <Ionicons name="play" size={20} color="#fff" />
           </GradientCover>
@@ -138,14 +137,18 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* ── Events & photos ──────────────────────────────────────── */}
-        <SectionHeader title={t.home.eventsPhotos} action={t.common.seeAll} />
+        <SectionHeader
+          title={t.home.eventsPhotos}
+          action={t.common.seeAll}
+          onAction={() => router.push("/gallery")}
+        />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.railContent}
         >
           {galleryAlbums.map((g) => (
-            <Pressable key={g.id} style={styles.albumCard}>
+            <Pressable key={g.id} style={styles.albumCard} onPress={() => router.push(`/gallery/${g.id}`)}>
               <GradientCover gradient={g.gradient} style={styles.albumCover} arabic={g.ar} arabicSize={56}>
                 <View style={styles.countChip}>
                   <Feather name="image" size={12} color="#fff" />
@@ -164,7 +167,7 @@ export default function HomeScreen() {
         <SectionHeader title={t.home.latestLectures} arabic="جديد" />
         <View>
           {latestLectures.map((l) => (
-            <Pressable key={l.id} style={styles.lectureRow} onPress={() => openLecture(l.id)}>
+            <Pressable key={l.id} style={styles.lectureRow} onPress={() => openById(l.id)}>
               <GradientCover gradient={l.gradient} style={styles.lectureCover} arabic={l.ar} arabicSize={34}>
                 <Ionicons name="play" size={18} color="#fff" />
               </GradientCover>
@@ -193,10 +196,12 @@ function SectionHeader({
   title,
   arabic,
   action,
+  onAction,
 }: {
   title: string;
   arabic?: string;
   action?: string;
+  onAction?: () => void;
 }) {
   return (
     <View style={styles.sectionHeader}>
@@ -206,7 +211,11 @@ function SectionHeader({
           {arabic}
         </Text>
       ) : null}
-      {action ? <Text style={styles.sectionAction}>{action}</Text> : null}
+      {action ? (
+        <Text style={styles.sectionAction} onPress={onAction}>
+          {action}
+        </Text>
+      ) : null}
     </View>
   );
 }
