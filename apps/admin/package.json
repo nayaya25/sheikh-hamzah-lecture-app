@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@althaqalayn/api": "workspace:*",
     "@althaqalayn/theme": "workspace:*",
+    "@althaqalayn/types": "workspace:*",
     "next": "16.2.10",
     "react": "19.2.3",
     "react-dom": "19.2.3"

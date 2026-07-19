@@ -1,34 +1,25 @@
+/* Admin console theme tokens (mirrors @althaqalayn/theme adminLight/adminDark).
+   The sidebar stays deep-green in both modes; surfaces switch via these vars. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f6f1e7;
+  --card: #ffffff;
+  --line: #ece4d3;
+  --ink: #17231e;
+  --muted: #6a766e;
+  --faint: #9aa69e;
+  --input: #fbf8f1;
+  --chip: #eaf3ef;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root.dark {
+  --bg: #0e1512;
+  --card: #16201b;
+  --line: #243029;
+  --ink: #f1ecdd;
+  --muted: #9aa69e;
+  --faint: #6a766e;
+  --input: #1b2620;
+  --chip: #17332a;
 }
 
 * {
@@ -37,13 +28,37 @@ body {
   margin: 0;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+input {
+  font-family: inherit;
+  color: var(--ink);
+}
+input::placeholder {
+  color: var(--faint);
+}
+
+/* Hide scrollbars on scroll areas, matching the prototype's .ac/.noscroll */
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.noscroll {
+  scrollbar-width: none;
 }

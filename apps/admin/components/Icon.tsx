@@ -1,0 +1,99 @@
+import type { ReactNode } from "react";
+
+// Inline stroke icons (currentColor), matching the admin prototype.
+const PATHS: Record<string, ReactNode> = {
+  dashboard: (
+    <>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="5" rx="1.5" />
+      <rect x="13" y="11" width="8" height="10" rx="1.5" />
+      <rect x="3" y="14" width="8" height="7" rx="1.5" />
+    </>
+  ),
+  lectures: <path d="M4 5h16M4 12h16M4 19h10" />,
+  series: <path d="M4 5h5v14H4zM11 5h4v14h-4zM17 6l3.2.8-3 12.4-3.2-.8z" />,
+  categories: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </>
+  ),
+  media: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 15l5-4 4 3 4-4 5 4" />
+      <circle cx="9" cy="9" r="1.4" />
+    </>
+  ),
+  featured: <path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z" />,
+  gallery: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 15l5-4 4 3 4-4 5 4" />
+      <circle cx="9" cy="9" r="1.4" />
+    </>
+  ),
+  transcripts: (
+    <>
+      <path d="M6 3h9l5 5v13H6z" />
+      <path d="M9 12h7M9 16h5" />
+    </>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4-4" />
+    </>
+  ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4.3" />
+      <path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M6 6l1.4 1.4M16.6 16.6L18 18M18 6l-1.4 1.4M7.4 16.6L6 18" />
+    </>
+  ),
+  moon: <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  logout: <path d="M15 4h3a1 1 0 011 1v14a1 1 0 01-1 1h-3M10 8l-4 4 4 4M6 12h9" />,
+  dots: (
+    <>
+      <circle cx="12" cy="5" r="1.4" />
+      <circle cx="12" cy="12" r="1.4" />
+      <circle cx="12" cy="19" r="1.4" />
+    </>
+  ),
+};
+
+export function Icon({
+  name,
+  size = 18,
+  strokeWidth = 2,
+  color = "currentColor",
+}: {
+  name: keyof typeof PATHS | string;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {PATHS[name] ?? null}
+    </svg>
+  );
+}

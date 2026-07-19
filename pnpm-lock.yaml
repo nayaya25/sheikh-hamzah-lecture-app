@@ -17,9 +17,15 @@ importers:
 
   apps/admin:
     dependencies:
+      '@althaqalayn/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@althaqalayn/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@althaqalayn/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       next:
         specifier: 16.2.10
         version: 16.2.10(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
