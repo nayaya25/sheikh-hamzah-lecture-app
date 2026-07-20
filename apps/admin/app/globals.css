@@ -62,3 +62,8 @@ input::placeholder {
 .noscroll {
   scrollbar-width: none;
 }
+
+@keyframes mediaZoneBar {
+  0% { margin-left: -40%; }
+  100% { margin-left: 100%; }
+}
