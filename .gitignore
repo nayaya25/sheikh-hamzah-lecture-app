@@ -9,3 +9,6 @@ dist/
 # local credentials/tokens for one-off scripts + deploys — never commit
 *.local
 .secrets/
+
+# Claude Code local settings
+.claude/
