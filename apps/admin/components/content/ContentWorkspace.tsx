@@ -5,6 +5,7 @@ import { admin } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
+import { LectureForm } from "./LectureForm";
 import { NodeDetail } from "./NodeDetail";
 import { ProgramForm } from "./ProgramForm";
 import { SeriesForm } from "./SeriesForm";
@@ -39,6 +40,12 @@ export function ContentWorkspace() {
   const findSeriesNode = (id: string) => {
     for (const p of tree.programs) { const s = p.seriesNodes.find((x) => x.id === id); if (s) return s; }
     return tree.orphanSeries.find((x) => x.id === id) ?? null;
+  };
+  const findLecture = (kind: "episode" | "standalone", id: string) => {
+    if (kind === "standalone") return tree.standalone.find((l) => l.id === id) ?? null;
+    for (const p of tree.programs) for (const s of p.seriesNodes) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
+    for (const s of tree.orphanSeries) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
+    return null;
   };
 
   return (
@@ -81,6 +88,14 @@ export function ContentWorkspace() {
             onAddMultiple={(seriesId) => { setDraftNew({ kind: "episodesBatch", seriesId }); setMode("new"); setSelected(null); }}
             onEpisodesChanged={() => void reload()}
           />
+        ) : mode === "new" && draftNew?.kind === "episode" ? (
+          <LectureForm lecture={null} scope="series" seriesId={draftNew.seriesId} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : mode === "new" && draftNew?.kind === "standalone" ? (
+          <LectureForm lecture={null} scope="single" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : mode === "edit" && selected?.kind === "episode" ? (
+          <LectureForm lecture={findLecture("episode", selected.id)} scope="series" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : mode === "edit" && selected?.kind === "standalone" ? (
+          <LectureForm lecture={findLecture("standalone", selected.id)} scope="single" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
         ) : (
           <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
         )}
