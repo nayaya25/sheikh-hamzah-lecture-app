@@ -5,10 +5,15 @@ import type { Lecture } from "@althaqalayn/types";
 import { LectureEditor } from "@/components/LectureEditor";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { Categories } from "@/components/views/Categories";
 import { Dashboard } from "@/components/views/Dashboard";
+import { Featured } from "@/components/views/Featured";
+import { Gallery } from "@/components/views/Gallery";
 import { Lectures } from "@/components/views/Lectures";
-import { Placeholder } from "@/components/views/Placeholder";
+import { MediaLibrary } from "@/components/views/MediaLibrary";
 import { SeriesManager } from "@/components/views/SeriesManager";
+import { Settings } from "@/components/views/Settings";
+import { Transcripts } from "@/components/views/Transcripts";
 import type { View } from "@/lib/views";
 
 export function Console() {
@@ -37,8 +42,18 @@ export function Console() {
             <Lectures query={query} version={version} onEdit={(l) => setEditing(l)} />
           ) : view === "series" ? (
             <SeriesManager query={query} />
+          ) : view === "categories" ? (
+            <Categories query={query} />
+          ) : view === "featured" ? (
+            <Featured />
+          ) : view === "gallery" ? (
+            <Gallery query={query} />
+          ) : view === "transcripts" ? (
+            <Transcripts query={query} />
+          ) : view === "media" ? (
+            <MediaLibrary query={query} />
           ) : (
-            <Placeholder view={view} />
+            <Settings />
           )}
         </div>
       </div>

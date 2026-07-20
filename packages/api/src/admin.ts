@@ -200,6 +200,11 @@ export async function upsertCategory(
   return mapCategory(saved);
 }
 
+export async function deleteCategory(client: AlthaqalaynClient, id: string): Promise<void> {
+  const { error } = await client.from("categories").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 // ── Transcripts ──────────────────────────────────────────────────────────────
 export async function upsertTranscript(
   client: AlthaqalaynClient,

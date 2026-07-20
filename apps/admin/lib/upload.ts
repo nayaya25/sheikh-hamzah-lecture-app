@@ -4,13 +4,13 @@ const BUCKET = "media";
 const PUBLIC_MARKER = `/storage/v1/object/public/${BUCKET}/`;
 export const MAX_MEDIA_BYTES = 50 * 1024 * 1024; // 50 MB
 
-/** Upload a media file to the public `media` bucket; returns its public URL + path. */
-export async function uploadMedia(file: File): Promise<{ url: string; path: string }> {
+/** Upload a file to the public `media` bucket; returns its public URL + path. */
+export async function uploadMedia(file: File, folder = "lectures"): Promise<{ url: string; path: string }> {
   if (file.size > MAX_MEDIA_BYTES) {
     throw new Error(`File is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is 50 MB.`);
   }
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "bin";
-  const path = `lectures/${crypto.randomUUID()}.${ext}`;
+  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
   const client = getClient();
   const { error } = await client.storage.from(BUCKET).upload(path, file, {
     cacheControl: "3600",
