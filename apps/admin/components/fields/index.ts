@@ -5,3 +5,4 @@ export { BilingualField } from "./BilingualField";
 export { SelectField } from "./SelectField";
 export { NumberStepper } from "./NumberStepper";
 export { DateField } from "./DateField";
+export { PublishControl } from "./PublishControl";
