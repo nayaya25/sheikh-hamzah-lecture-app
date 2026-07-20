@@ -8,6 +8,7 @@ import { Topbar } from "@/components/Topbar";
 import { Dashboard } from "@/components/views/Dashboard";
 import { Lectures } from "@/components/views/Lectures";
 import { Placeholder } from "@/components/views/Placeholder";
+import { SeriesManager } from "@/components/views/SeriesManager";
 import type { View } from "@/lib/views";
 
 export function Console() {
@@ -34,6 +35,8 @@ export function Console() {
             <Dashboard onNavigate={setView} />
           ) : view === "lectures" ? (
             <Lectures query={query} version={version} onEdit={(l) => setEditing(l)} />
+          ) : view === "series" ? (
+            <SeriesManager query={query} />
           ) : (
             <Placeholder view={view} />
           )}
