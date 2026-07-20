@@ -90,7 +90,7 @@ const styles: Record<string, CSSProperties> = {
     right: 0,
     bottom: 0,
     zIndex: 51,
-    width: 472,
+    width: 800,
     maxWidth: "100vw",
     background: "var(--card)",
     boxShadow: "-14px 0 40px rgba(0,0,0,.16)",
