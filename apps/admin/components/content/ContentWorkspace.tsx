@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { admin } from "@althaqalayn/api";
+import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
 import { NodeDetail } from "./NodeDetail";
+import { ProgramForm } from "./ProgramForm";
+import { SeriesForm } from "./SeriesForm";
 
 export function ContentWorkspace() {
   const { tree, loading, error, reload } = useContentTree();
@@ -21,6 +25,22 @@ export function ContentWorkspace() {
     setSelected(null);
   };
 
+  const programOptions = tree.programs.map((p) => ({ value: p.id, label: p.title.en }));
+
+  const createProgram = async (name: string): Promise<string> => {
+    const p = await admin.upsertProgram(getClient(), { title: { en: name } });
+    await reload();
+    return p.id;
+  };
+
+  const afterSave = async () => { await reload(); setMode("read"); setDraftNew(null); };
+
+  const findProgram = (id: string) => tree.programs.find((p) => p.id === id) ?? null;
+  const findSeriesNode = (id: string) => {
+    for (const p of tree.programs) { const s = p.seriesNodes.find((x) => x.id === id); if (s) return s; }
+    return tree.orphanSeries.find((x) => x.id === id) ?? null;
+  };
+
   return (
     <div style={shell}>
       <ContentTree
@@ -32,8 +52,17 @@ export function ContentWorkspace() {
         onQuery={setQuery}
       />
       <div className="noscroll" style={detail}>
-        {/* Tasks 11–14 replace this block with the editor when mode==="edit"/"new". */}
-        <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
+        {mode === "new" && draftNew?.kind === "program" ? (
+          <ProgramForm program={null} onCancel={() => setMode("read")} onSaved={afterSave} />
+        ) : mode === "new" && draftNew?.kind === "series" ? (
+          <SeriesForm series={null} programId={draftNew.programId} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : mode === "edit" && selected?.kind === "program" ? (
+          <ProgramForm program={findProgram(selected.id)} onCancel={() => setMode("read")} onSaved={afterSave} />
+        ) : mode === "edit" && selected?.kind === "series" ? (
+          <SeriesForm series={findSeriesNode(selected.id)} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : (
+          <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
+        )}
       </div>
     </div>
   );
