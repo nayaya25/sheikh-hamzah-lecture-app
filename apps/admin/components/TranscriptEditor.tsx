@@ -40,7 +40,7 @@ export function TranscriptEditor({
     admin
       .listAllLectures(getClient())
       .then((all) => setLectures(all.filter((l) => l.type !== "text"))) // text lectures carry their own body
-      .catch(() => setLectures([]));
+      .catch(() => setLectures((prev) => prev ?? (lecture ? [lecture] : [])));
   }, []);
 
   const lectureOptions = (lectures ?? [lecture]).map((l) => ({ value: l.id, label: pick(l.title) }));
