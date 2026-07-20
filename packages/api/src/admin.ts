@@ -121,6 +121,24 @@ export async function deleteLecture(client: AlthaqalaynClient, id: string): Prom
   if (error) throw new Error(error.message);
 }
 
+/** Persist a new episode order within a series (writes the `episode` column). */
+export async function setEpisodeNumbers(
+  client: AlthaqalaynClient,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client
+        .from("lectures")
+        .update({ episode: index + 1 })
+        .eq("id", id)
+        .then((r) => {
+          if (r.error) throw new Error(r.error.message);
+        }),
+    ),
+  );
+}
+
 // ── Series ───────────────────────────────────────────────────────────────────
 export async function upsertSeries(
   client: AlthaqalaynClient,
@@ -150,6 +168,24 @@ export async function upsertSeries(
 export async function deleteSeries(client: AlthaqalaynClient, id: string): Promise<void> {
   const { error } = await client.from("series").delete().eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+/** Persist a new series display order (writes the `position` column). */
+export async function setSeriesPositions(
+  client: AlthaqalaynClient,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client
+        .from("series")
+        .update({ position: index })
+        .eq("id", id)
+        .then((r) => {
+          if (r.error) throw new Error(r.error.message);
+        }),
+    ),
+  );
 }
 
 // ── Programs ─────────────────────────────────────────────────────────────────
