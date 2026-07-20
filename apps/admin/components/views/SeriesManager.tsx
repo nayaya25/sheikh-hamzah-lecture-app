@@ -10,6 +10,7 @@ import {
   type SeriesRow,
 } from "@althaqalayn/api";
 import type { Program, Series } from "@althaqalayn/types";
+import { EpisodesDrawer } from "@/components/EpisodesDrawer";
 import { ProgramEditor } from "@/components/ProgramEditor";
 import { SeriesEditor } from "@/components/SeriesEditor";
 import { getClient } from "@/lib/supabase";
@@ -25,6 +26,7 @@ export function SeriesManager({ query }: { query: string }) {
   const [error, setError] = useState<string | null>(null);
   const [programEditing, setProgramEditing] = useState<Program | "new" | null>(null);
   const [seriesEditing, setSeriesEditing] = useState<Series | "new" | null>(null);
+  const [episodesFor, setEpisodesFor] = useState<Series | null>(null);
 
   const load = useCallback(async () => {
     const client = getClient();
@@ -129,6 +131,7 @@ export function SeriesManager({ query }: { query: string }) {
                 {s.year ? ` · ${s.year}` : ""}
               </div>
               <div style={styles.cardActions}>
+                <button onClick={() => setEpisodesFor(s)} style={styles.linkBtn}>Episodes</button>
                 <button onClick={() => setSeriesEditing(s)} style={styles.linkBtn}>Edit</button>
                 <button onClick={() => void removeSeries(s)} style={styles.linkMuted}>Delete</button>
               </div>
@@ -146,6 +149,14 @@ export function SeriesManager({ query }: { query: string }) {
           programs={programs.map((p) => [p.id, pick(p.title)] as [string, string])}
           onClose={() => setSeriesEditing(null)}
           onSaved={onSaved}
+        />
+      ) : null}
+      {episodesFor ? (
+        <EpisodesDrawer
+          seriesId={episodesFor.id}
+          seriesTitle={pick(episodesFor.title)}
+          onClose={() => setEpisodesFor(null)}
+          onChanged={() => void load()}
         />
       ) : null}
     </div>

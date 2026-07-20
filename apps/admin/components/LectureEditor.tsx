@@ -6,10 +6,9 @@ import type { Language, Lecture, LectureScope, MediaType, Series } from "@althaq
 import { MediaPreview } from "@/components/MediaPreview";
 import { MediaUploadField } from "@/components/MediaUploadField";
 import { getClient } from "@/lib/supabase";
-import { brand, font } from "@/lib/ui";
+import { brand, font, YEARS } from "@/lib/ui";
 import { deleteMedia, storagePathFromUrl, uploadMedia } from "@/lib/upload";
 
-const YEARS = ["1446 AH · 2025", "1445 AH · 2024", "1444 AH · 2023", "1443 AH · 2022", "Ongoing"];
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 
 interface EpisodeDraft {
@@ -276,7 +275,7 @@ export function LectureEditor({
             <div style={{ width: 150 }}>
               <Label>YEAR</Label>
               <select value={year} onChange={(e) => setYear(e.target.value)} style={sel}>
-                {YEARS.map((y) => (
+                {(year && !YEARS.includes(year) ? [year, ...YEARS] : YEARS).map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>

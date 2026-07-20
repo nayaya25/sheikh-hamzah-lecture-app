@@ -18,6 +18,14 @@ export const font = {
   arabic: "var(--font-amiri)",
 } as const;
 
+// Year options for lecture/series editors: Gregorian 2026 → 1990, each labelled
+// with its approximate Hijri year ("1446 AH · 2025"), matching the seed format.
+export const YEARS: string[] = Array.from({ length: 2026 - 1990 + 1 }, (_, i) => {
+  const g = 2026 - i;
+  const ah = Math.round((g - 622) * 1.030684);
+  return `${ah} AH · ${g}`;
+});
+
 const STATUS_COLORS: Record<PublishStatus, { bg: string; fg: string; label: string }> = {
   published: { bg: "#EAF3EF", fg: "#12634E", label: "Published" },
   draft: { bg: "#EFEFEA", fg: "#8b8b7e", label: "Draft" },

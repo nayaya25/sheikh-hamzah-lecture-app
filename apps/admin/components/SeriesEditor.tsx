@@ -5,9 +5,9 @@ import { admin } from "@althaqalayn/api";
 import { SERIES_KINDS, type Language, type Series, type SeriesKind } from "@althaqalayn/types";
 import { Drawer, Field, Label, inp, sel, Toggle } from "@/components/form";
 import { getClient } from "@/lib/supabase";
-import { coverGradient } from "@/lib/ui";
+import { coverGradient, YEARS as YEAR_RANGE } from "@/lib/ui";
 
-const YEARS = ["1446 AH · 2025", "1445 AH · 2024", "1444 AH · 2023", "1443 AH · 2022", "2022", "2021", "Ongoing"];
+const YEARS = [...YEAR_RANGE, "Ongoing"];
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 
 export function SeriesEditor({
@@ -93,7 +93,7 @@ export function SeriesEditor({
         <div style={{ width: 170 }}>
           <Label>YEAR</Label>
           <select value={year} onChange={(e) => setYear(e.target.value)} style={sel}>
-            {YEARS.map((y) => (
+            {(year && !YEARS.includes(year) ? [year, ...YEARS] : YEARS).map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>

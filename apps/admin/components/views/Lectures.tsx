@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { admin, mapSeries, unwrap, type SeriesRow } from "@althaqalayn/api";
 import type { Lecture, PublishStatus, Series } from "@althaqalayn/types";
 import { getClient } from "@/lib/supabase";
 import { brand, coverGradient, font, mediaBadge, statusPill } from "@/lib/ui";
-import { Icon } from "@/components/Icon";
+import { ActionMenu } from "@/components/ActionMenu";
+import { LectureView } from "@/components/LectureView";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 const FILTERS = ["All", "Published", "Draft", "Scheduled"] as const;
@@ -26,22 +27,31 @@ export function Lectures({
   const [series, setSeries] = useState<Series[]>([]);
   const [filter, setFilter] = useState<Filter>("All");
   const [error, setError] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<Lecture | null>(null);
+
+  const load = useCallback(async () => {
+    const client = getClient();
+    try {
+      const [lecs, sers] = await Promise.all([
+        admin.listAllLectures(client),
+        client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r).map((row) => mapSeries(row))),
+      ]);
+      setLectures(lecs);
+      setSeries(sers);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    }
+  }, []);
 
   useEffect(() => {
-    const client = getClient();
-    void (async () => {
-      try {
-        const [lecs, sers] = await Promise.all([
-          admin.listAllLectures(client),
-          client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r).map((row) => mapSeries(row))),
-        ]);
-        setLectures(lecs);
-        setSeries(sers);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load");
-      }
-    })();
-  }, [version]);
+    void load();
+  }, [load, version]);
+
+  const removeLecture = async (l: Lecture) => {
+    if (!confirm(`Delete “${pick(l.title)}”? This cannot be undone.`)) return;
+    await admin.deleteLecture(getClient(), l.id);
+    void load();
+  };
 
   const seriesById = useMemo(() => new Map(series.map((s) => [s.id, s])), [series]);
   const q = query.trim().toLowerCase();
@@ -110,14 +120,28 @@ export function Lectures({
                 <div>
                   <span style={{ ...styles.pill, background: pill.bg, color: pill.fg }}>{pill.label}</span>
                 </div>
-                <div style={{ textAlign: "center", color: "#c4ccc5" }}>
-                  <Icon name="dots" size={18} color="#c4ccc5" />
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <ActionMenu
+                    items={[
+                      { label: "Edit", onSelect: () => onEdit(l) },
+                      { label: "View", onSelect: () => setViewing(l) },
+                      { label: "Delete", onSelect: () => void removeLecture(l), danger: true },
+                    ]}
+                  />
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {viewing ? (
+        <LectureView
+          lecture={viewing}
+          seriesTitle={viewing.seriesId ? pick(seriesById.get(viewing.seriesId)?.title) : undefined}
+          onClose={() => setViewing(null)}
+        />
+      ) : null}
     </div>
   );
 }
