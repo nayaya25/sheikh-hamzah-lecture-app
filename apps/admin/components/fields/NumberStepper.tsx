@@ -25,7 +25,13 @@ export function NumberStepper({
         <input
           value={value ?? ""}
           inputMode="numeric"
-          onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "") return onChange(null);
+            const n = Number(raw);
+            if (Number.isNaN(n)) return;
+            onChange(Math.max(min, n));
+          }}
           style={box}
         />
         <button type="button" onClick={() => set((value ?? min - 1) + 1)} style={btn}>+</button>

@@ -18,7 +18,7 @@ export function Console() {
   const [query, setQuery] = useState("");
 
   const onPrimary = () => {
-    if (view === "dashboard" || view === "content") setView("content");
+    if (view === "dashboard") setView("content");
   };
 
   return (

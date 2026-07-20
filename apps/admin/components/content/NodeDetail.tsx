@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { coverGradient, font, mediaBadge, statusPill } from "@/lib/ui";
 import { MediaPreview } from "@/components/MediaPreview";
-import type { ContentTree, ProgramNode, SeriesNode } from "@/lib/useContentTree";
+import type { ContentTree, SeriesNode } from "@/lib/useContentTree";
 import type { NodeRef } from "./ContentTree";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";

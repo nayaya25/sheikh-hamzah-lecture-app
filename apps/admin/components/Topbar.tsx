@@ -9,7 +9,6 @@ import { Icon } from "@/components/Icon";
 // Contextual primary action per view (hidden where there's nothing to create).
 const PRIMARY: Partial<Record<View, string>> = {
   dashboard: "New lecture",
-  content: "New lecture",
   categories: "New category",
   gallery: "New album",
   media: "Upload media",
