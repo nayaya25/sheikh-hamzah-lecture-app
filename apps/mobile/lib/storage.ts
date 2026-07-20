@@ -10,6 +10,8 @@ export const StorageKeys = {
   language: "language",
   speed: "speed",
   resume: "resume", // Record<lectureId, positionFraction>
+  lastPlayed: "lastPlayed", // { id: string } — most recent track for "Continue listening"
+  recentSearches: "recentSearches", // string[] — recent search queries
 } as const;
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {

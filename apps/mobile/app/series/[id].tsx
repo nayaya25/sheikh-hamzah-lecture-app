@@ -89,10 +89,13 @@ export default function SeriesDetailScreen() {
           <Text style={styles.newestFirst}>{t.common.newestFirst}</Text>
         </View>
 
-        {episodes.map((ep) => (
+        {episodes.length === 0 ? (
+          <Text style={styles.noEpisodes}>No episodes published yet.</Text>
+        ) : null}
+        {episodes.map((ep, i) => (
           <Pressable key={ep.id} style={styles.episodeRow} onPress={() => openEpisode(ep.id)}>
             <View style={styles.numChip}>
-              <Text style={styles.numChipText}>{ep.id.split("-").pop()}</Text>
+              <Text style={styles.numChipText}>{ep.episode ?? i + 1}</Text>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.episodeTitle} numberOfLines={1}>
@@ -182,6 +185,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   listCount: { fontFamily: font.serif.semibold, fontSize: 16, color: colors.ink },
+  noEpisodes: { fontFamily: font.sans.medium, fontSize: 13, color: colors.faint, textAlign: "center", paddingVertical: 24 },
   newestFirst: { fontFamily: font.sans.bold, fontSize: 11.5, color: colors.greenMid },
 
   episodeRow: {

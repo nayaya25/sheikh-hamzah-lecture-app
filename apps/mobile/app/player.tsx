@@ -28,7 +28,6 @@ export default function PlayerScreen() {
   const { t } = useI18n();
   const {
     current,
-    currentSeries,
     isPlaying,
     position,
     speed,
@@ -49,8 +48,8 @@ export default function PlayerScreen() {
     return null;
   }
 
-  const gradient = current.gradient ?? currentSeries?.gradient ?? ["#0B4634", "#17795E"];
-  const seriesTitle = current.seriesTitle ?? currentSeries?.title;
+  const gradient = current.gradient ?? ["#0B4634", "#17795E"];
+  const seriesTitle = current.seriesTitle;
   const durSec = current.durSec;
 
   const onSeek = (e: GestureResponderEvent) => {

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
-import type { MediaType } from "@althaqalayn/types";
+import type { MediaType, SeriesKind } from "@althaqalayn/types";
 import { FilterChips, type Chip } from "@/components/FilterChips";
 import { LectureListRow } from "@/components/LectureListRow";
 import { SearchField } from "@/components/SearchField";
@@ -19,11 +19,10 @@ import { usePlayer } from "@/lib/player";
 type Segment = "recent" | "occasions" | "topics" | "series";
 type MediaFilter = "all" | MediaType;
 
-// Which series appear under each non-Recent segment (from the prototype).
-const SEGMENT_SERIES: Record<Exclude<Segment, "recent">, string[]> = {
-  occasions: ["tafsir1445", "tafsir1444", "maulud1445"],
-  topics: ["akhlaq", "society"],
-  series: ["nahj"],
+// Occasions/Topics filter series by kind; "Series" shows all series.
+const SEGMENT_KIND: Partial<Record<Segment, SeriesKind>> = {
+  occasions: "occasion",
+  topics: "topic",
 };
 
 const MEDIA_DOTS: Record<MediaFilter, string> = {
@@ -38,7 +37,7 @@ export default function LibraryScreen() {
   const router = useRouter();
   const { t, arabic } = useI18n();
   const { play } = usePlayer();
-  const { lectures: lecturesList, seriesById } = useCatalog();
+  const { lectures: lecturesList, series, loading } = useCatalog();
 
   const [segment, setSegment] = useState<Segment>("recent");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -67,11 +66,11 @@ export default function LibraryScreen() {
 
   const seriesRows = useMemo(() => {
     if (segment === "recent") return [];
-    return SEGMENT_SERIES[segment]
-      .map(seriesById)
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
+    const kind = SEGMENT_KIND[segment];
+    return series
+      .filter((s) => (kind ? s.kindRaw === kind : true))
       .filter((s) => !q || `${s.title} ${s.kind}`.toLowerCase().includes(q));
-  }, [segment, q, seriesById]);
+  }, [segment, q, series]);
 
   const openById = (lectureId: string) => {
     const lecture = lecturesList.find((l) => l.id === lectureId);
@@ -97,25 +96,30 @@ export default function LibraryScreen() {
           <SearchField value={query} onChangeText={setQuery} placeholder="Filter this list…" />
         </View>
 
-        {segment === "recent" ? (
+        {loading ? (
+          <ActivityIndicator color={colors.greenMid} style={{ marginTop: 40 }} />
+        ) : segment === "recent" ? (
           <>
             <View style={styles.mediaWrap}>
               <FilterChips chips={mediaChips} active={mediaFilter} onPick={setMediaFilter} />
             </View>
-            {lectures.map((l) => (
-              <LectureListRow
-                key={l.id}
-                lecture={l}
-                meta={durationLabel(l)}
-                onPress={() => openById(l.id)}
-              />
-            ))}
+            {lectures.length === 0 ? (
+              <Text style={styles.empty}>{q ? "No matches." : "No lectures yet."}</Text>
+            ) : (
+              lectures.map((l) => (
+                <LectureListRow key={l.id} lecture={l} meta={durationLabel(l)} onPress={() => openById(l.id)} />
+              ))
+            )}
           </>
         ) : (
           <View style={styles.seriesWrap}>
-            {seriesRows.map((s) => (
-              <SeriesListRow key={s.id} series={s} onPress={() => router.push(`/series/${s.id}`)} />
-            ))}
+            {seriesRows.length === 0 ? (
+              <Text style={styles.empty}>{q ? "No matches." : "Nothing here yet."}</Text>
+            ) : (
+              seriesRows.map((s) => (
+                <SeriesListRow key={s.id} series={s} onPress={() => router.push(`/series/${s.id}`)} />
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -137,5 +141,6 @@ const styles = StyleSheet.create({
   segments: { paddingTop: 14, paddingBottom: 4 },
   searchWrap: { paddingHorizontal: 16, paddingVertical: 4 },
   mediaWrap: { paddingTop: 4, paddingBottom: 6 },
+  empty: { fontFamily: font.sans.medium, fontSize: 13, color: colors.faint, textAlign: "center", paddingTop: 30 },
   seriesWrap: { paddingHorizontal: 16, paddingTop: 8 },
 });

@@ -1,7 +1,6 @@
-// Catalog data source. On mount, tries to load series + published lectures from
-// Supabase; on success it maps the domain types to the app's view-models,
-// otherwise it falls back to the sample catalog. Either way it exposes the same
-// shapes the screens already use, so screens don't care where the data came from.
+// Real catalog data from Supabase — series, lectures, categories, albums, and
+// the derived Home rails. No bundled sample content; screens render loading and
+// empty states from what this returns.
 
 import {
   createContext,
@@ -11,34 +10,31 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { mapLecture, mapSeries, unwrap, type LectureRow, type SeriesRow } from "@althaqalayn/api";
-import type { Language, Lecture, LocalizedText, Series } from "@althaqalayn/types";
 import {
-  episodesForSeries as syntheticEpisodes,
-  gradientForLecture as sampleGradientFor,
-  lecturesList,
-  seriesList,
-  type Playable,
-  type SampleSeries,
-} from "@/lib/catalog";
-import { getClient } from "@/lib/supabase";
-import {
-  featuredSeries as sampleFeatured,
-  latestLectures as sampleLatest,
-  type Gradient,
-  type HomeLecture,
-  type HomeSeries,
-} from "@/lib/sampleData";
+  mapCategory,
+  mapLecture,
+  mapSeries,
+  unwrap,
+  type CategoryRow,
+  type LectureRow,
+  type SeriesRow,
+} from "@althaqalayn/api";
+import type { Category, Language, Lecture, LocalizedText, Series } from "@althaqalayn/types";
+import type { Playable, SampleSeries } from "@/lib/catalog";
+import { getClient, isBackendConfigured } from "@/lib/supabase";
+import type { Gradient, HomeAlbum, HomeCategory, HomeLecture, HomeSeries } from "@/lib/sampleData";
 
 const DEFAULT_GRADIENT: Gradient = ["#0B4634", "#17795E"];
 
 interface CatalogValue {
+  loading: boolean;
+  configured: boolean;
   series: SampleSeries[];
   lectures: Playable[];
+  categories: HomeCategory[];
+  albums: HomeAlbum[];
   homeFeatured: HomeSeries[];
   homeLatest: HomeLecture[];
-  /** True once real backend data has replaced the sample fallback. */
-  live: boolean;
   seriesById: (id: string) => SampleSeries | undefined;
   lectureById: (id: string) => Playable | undefined;
   episodesForSeries: (series: SampleSeries) => Playable[];
@@ -47,27 +43,28 @@ interface CatalogValue {
 
 const CatalogContext = createContext<CatalogValue | null>(null);
 
-// ── domain → view-model mappers ──────────────────────────────────────────────
 const pick = (t?: LocalizedText): string => t?.en ?? t?.ha ?? "";
 const langLabel = (l: Language): string => (l === "ha" ? "Hausa" : "English");
 
 function mediaLabel(lectures: Playable[]): string {
   const types = new Set(lectures.map((l) => l.type));
-  const parts = [types.has("video") && "Video", types.has("audio") && "Audio", types.has("text") && "Text"].filter(
-    Boolean,
+  return (
+    [types.has("video") && "Video", types.has("audio") && "Audio", types.has("text") && "Text"]
+      .filter(Boolean)
+      .join(" & ") || "Audio"
   );
-  return parts.join(" & ") || "Audio";
 }
 
-function toSampleSeries(s: Series, ownLectures: Playable[]): SampleSeries {
+function toSampleSeries(s: Series, own: Playable[]): SampleSeries {
   return {
     id: s.id,
     kind: (s.occasion ?? s.kind).toUpperCase(),
+    kindRaw: s.kind,
     title: pick(s.title),
     ar: s.cover.arabic ?? "",
     year: s.year ?? "",
-    count: s.lectureIds.length || ownLectures.length,
-    media: mediaLabel(ownLectures),
+    count: own.length || s.lectureIds.length,
+    media: mediaLabel(own),
     lang: langLabel(s.language),
     gradient: s.cover.gradient,
     desc: pick(s.description),
@@ -83,6 +80,7 @@ function toPlayable(l: Lecture, series?: Series): Playable {
     type: l.type,
     durSec: l.duration ?? 0,
     ar: series?.cover.arabic ?? "",
+    episode: l.episode,
     mediaUrl: l.mediaUrl,
     gradient: series?.cover.gradient,
     seriesTitle: series ? pick(series.title) : undefined,
@@ -101,68 +99,96 @@ function relativeDate(iso: string): string {
   return `${months} month${months === 1 ? "" : "s"} ago`;
 }
 
+interface AlbumWithPhotos {
+  id: string;
+  title: string;
+  date: string;
+  photos: { url: string }[];
+}
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [series, setSeries] = useState<SampleSeries[]>(seriesList);
-  const [lectures, setLectures] = useState<Playable[]>(lecturesList);
-  const [homeFeatured, setHomeFeatured] = useState<HomeSeries[]>(sampleFeatured);
-  const [homeLatest, setHomeLatest] = useState<HomeLecture[]>(sampleLatest);
-  const [live, setLive] = useState(false);
+  const configured = isBackendConfigured();
+  const [loading, setLoading] = useState(configured);
+  const [series, setSeries] = useState<SampleSeries[]>([]);
+  const [lectures, setLectures] = useState<Playable[]>([]);
+  const [categories, setCategories] = useState<HomeCategory[]>([]);
+  const [albums, setAlbums] = useState<HomeAlbum[]>([]);
+  const [homeFeatured, setHomeFeatured] = useState<HomeSeries[]>([]);
+  const [homeLatest, setHomeLatest] = useState<HomeLecture[]>([]);
 
   useEffect(() => {
     const client = getClient();
-    if (!client) return; // keep sample fallback
-
+    if (!client) return;
     let cancelled = false;
+
     void (async () => {
       try {
-        const [seriesRows, lectureRows] = await Promise.all([
+        const [seriesRows, lectureRows, categoryRows, albumRows] = await Promise.all([
           client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r)),
           client.from("lectures").select("*").order("date", { ascending: false }).then((r) => unwrap<LectureRow[]>(r)),
+          client.from("categories").select("*").order("position").then((r) => unwrap<CategoryRow[]>(r)),
+          client.from("albums").select("id,title,date,photos(url)").order("date", { ascending: false }).then((r) => unwrap<AlbumWithPhotos[]>(r)),
         ]);
-        if (cancelled || (seriesRows.length === 0 && lectureRows.length === 0)) return;
+        if (cancelled) return;
 
         const domainSeries = seriesRows.map((row) => mapSeries(row));
         const domainLectures = lectureRows.map((row) => mapLecture(row));
-        const seriesByIdMap = new Map(domainSeries.map((s) => [s.id, s]));
+        const seriesMap = new Map(domainSeries.map((s) => [s.id, s]));
 
         const playables = domainLectures.map((l) =>
-          toPlayable(l, l.seriesId ? seriesByIdMap.get(l.seriesId) : undefined),
+          toPlayable(l, l.seriesId ? seriesMap.get(l.seriesId) : undefined),
         );
         const bySeries = new Map<string, Playable[]>();
-        playables.forEach((p) => {
-          if (!p.seriesId) return;
-          (bySeries.get(p.seriesId) ?? bySeries.set(p.seriesId, []).get(p.seriesId)!).push(p);
-        });
+        for (const p of playables) {
+          if (!p.seriesId) continue;
+          const arr = bySeries.get(p.seriesId) ?? [];
+          arr.push(p);
+          bySeries.set(p.seriesId, arr);
+        }
 
-        const mappedSeries = domainSeries.map((s) => toSampleSeries(s, bySeries.get(s.id) ?? []));
-
-        const featured = domainSeries
-          .filter((s) => s.featured)
-          .map((s): HomeSeries => {
-            const vm = toSampleSeries(s, bySeries.get(s.id) ?? []);
-            return { id: vm.id, kind: vm.kind, title: vm.title, ar: vm.ar, metaShort: `${vm.count} parts · ${vm.lang}`, gradient: vm.gradient };
-          });
-
-        const latest = domainLectures.slice(0, 5).map((l): HomeLecture => {
-          const s = l.seriesId ? seriesByIdMap.get(l.seriesId) : undefined;
-          return {
-            id: l.id,
-            title: pick(l.title),
-            sub: s ? pick(s.title) : (l.year ?? ""),
-            type: l.type,
-            date: relativeDate(l.date),
-            ar: s?.cover.arabic ?? "",
-            gradient: s?.cover.gradient ?? DEFAULT_GRADIENT,
-          };
-        });
-
-        setSeries(mappedSeries);
+        setSeries(domainSeries.map((s) => toSampleSeries(s, bySeries.get(s.id) ?? [])));
         setLectures(playables);
-        if (featured.length) setHomeFeatured(featured);
-        if (latest.length) setHomeLatest(latest);
-        setLive(true);
+        setCategories(
+          categoryRows
+            .map((row) => mapCategory(row))
+            .filter((c: Category) => c.active && !c.archived)
+            .map((c): HomeCategory => ({ ar: c.ar, label: c.label, meta: c.meta ?? "" })),
+        );
+        setAlbums(
+          albumRows.map((a): HomeAlbum => ({
+            id: a.id,
+            title: a.title,
+            date: a.date,
+            count: a.photos.length,
+            cover: a.photos[0]?.url,
+          })),
+        );
+        setHomeFeatured(
+          domainSeries
+            .filter((s) => s.featured)
+            .map((s): HomeSeries => {
+              const vm = toSampleSeries(s, bySeries.get(s.id) ?? []);
+              return { id: vm.id, kind: vm.kind, title: vm.title, ar: vm.ar, metaShort: `${vm.count} parts · ${vm.lang}`, gradient: vm.gradient };
+            }),
+        );
+        setHomeLatest(
+          domainLectures.slice(0, 6).map((l): HomeLecture => {
+            const s = l.seriesId ? seriesMap.get(l.seriesId) : undefined;
+            return {
+              id: l.id,
+              title: pick(l.title),
+              sub: s ? pick(s.title) : (l.year ?? ""),
+              type: l.type,
+              date: relativeDate(l.date),
+              ar: s?.cover.arabic ?? "",
+              gradient: s?.cover.gradient ?? DEFAULT_GRADIENT,
+            };
+          }),
+        );
       } catch {
-        // Network/permission error → stay on sample data.
+        // leave empty → screens show empty states
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
 
@@ -174,27 +200,28 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CatalogValue>(() => {
     const byId = new Map(series.map((s) => [s.id, s]));
     const lecById = new Map(lectures.map((l) => [l.id, l]));
-    const episodesBySeries = new Map<string, Playable[]>();
-    lectures.forEach((l) => {
-      if (!l.seriesId) return;
-      (episodesBySeries.get(l.seriesId) ?? episodesBySeries.set(l.seriesId, []).get(l.seriesId)!).push(l);
-    });
-
+    const episodes = new Map<string, Playable[]>();
+    for (const l of lectures) {
+      if (!l.seriesId) continue;
+      const arr = episodes.get(l.seriesId) ?? [];
+      arr.push(l);
+      episodes.set(l.seriesId, arr);
+    }
     return {
+      loading,
+      configured,
       series,
       lectures,
+      categories,
+      albums,
       homeFeatured,
       homeLatest,
-      live,
       seriesById: (id) => byId.get(id),
       lectureById: (id) => lecById.get(id),
-      episodesForSeries: (s) => {
-        const own = episodesBySeries.get(s.id);
-        return own && own.length ? own : syntheticEpisodes(s);
-      },
-      gradientForLecture: (p) => p.gradient ?? byId.get(p.seriesId)?.gradient ?? sampleGradientFor(p),
+      episodesForSeries: (s) => episodes.get(s.id) ?? [],
+      gradientForLecture: (p) => p.gradient ?? byId.get(p.seriesId)?.gradient ?? DEFAULT_GRADIENT,
     };
-  }, [series, lectures, homeFeatured, homeLatest, live]);
+  }, [loading, configured, series, lectures, categories, albums, homeFeatured, homeLatest]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }

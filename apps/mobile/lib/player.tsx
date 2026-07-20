@@ -13,7 +13,7 @@ import {
   useAudioPlayer,
   useAudioPlayerStatus,
 } from "expo-audio";
-import { seriesById, type Playable, type SampleSeries } from "@/lib/catalog";
+import type { Playable } from "@/lib/catalog";
 import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
 
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75] as const;
@@ -23,7 +23,6 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
 interface PlayerValue {
   current: Playable | null;
-  currentSeries: SampleSeries | undefined;
   isPlaying: boolean;
   /** 0–1 fraction played. */
   position: number;
@@ -121,6 +120,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const resume = resumeRef.current[lecture.id] ?? 0;
       setCurrent(lecture);
       setPosition(resume);
+      void saveJSON(StorageKeys.lastPlayed, { id: lecture.id });
       if (lecture.mediaUrl) {
         player.replace({ uri: lecture.mediaUrl });
         if (resume > 0 && lecture.durSec) player.seekTo(resume * lecture.durSec);
@@ -158,7 +158,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const value = useMemo<PlayerValue>(
     () => ({
       current,
-      currentSeries: current ? seriesById(current.seriesId) : undefined,
       isPlaying,
       position,
       speed,

@@ -17,7 +17,7 @@ export function MiniPlayer() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
-  const { current, currentSeries, isPlaying, togglePlay } = usePlayer();
+  const { current, isPlaying, togglePlay } = usePlayer();
 
   if (!current || pathname === "/player") return null;
 
@@ -26,7 +26,7 @@ export function MiniPlayer() {
       style={[styles.bar, { bottom: insets.bottom + 74 }]}
       onPress={() => router.push("/player")}
     >
-      <GradientCover gradient={current.gradient ?? currentSeries?.gradient ?? ["#0B4634", "#17795E"]} style={styles.cover}>
+      <GradientCover gradient={current.gradient ?? ["#0B4634", "#17795E"]} style={styles.cover}>
         <EqBars playing={isPlaying} />
       </GradientCover>
       <View style={{ flex: 1, minWidth: 0 }}>
