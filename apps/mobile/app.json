@@ -1,21 +1,23 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Althaqalayn Lectures",
+    "slug": "althaqalayn-lectures",
     "version": "1.0.0",
     "scheme": "althaqalayn",
     "orientation": "portrait",
     "icon": "./assets/logo/althaqalayn_icon_green.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.althaqalayn.lectures",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.althaqalayn.lectures",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#0B4634",
+        "foregroundImage": "./assets/logo/althaqalayn_icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
