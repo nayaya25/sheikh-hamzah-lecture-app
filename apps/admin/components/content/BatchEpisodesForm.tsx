@@ -27,12 +27,23 @@ export function BatchEpisodesForm({
   const [type, setType] = useState<MediaType>("audio");
   const [rows, setRows] = useState<Row[]>([{ key: 0, titleEn: "", titleHa: "", episode: startNum, mediaUrl: "" }]);
   const [busy, setBusy] = useState(false);
-  const [mediaBusy, setMediaBusy] = useState(false);
+  const [busyRows, setBusyRows] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  const setRowBusy = (key: number, rowBusy: boolean) =>
+    setBusyRows((prev) => {
+      const next = new Set(prev);
+      if (rowBusy) next.add(key); else next.delete(key);
+      return next;
+    });
+  const mediaBusy = busyRows.size > 0;
 
   const patch = (key: number, p: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...p } : r)));
   const add = () => setRows((rs) => [...rs, { key: (rs.at(-1)?.key ?? 0) + 1, titleEn: "", titleHa: "", episode: (rs.at(-1)?.episode ?? startNum) + 1, mediaUrl: "" }]);
-  const remove = (key: number) => setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.key !== key) : rs));
+  const remove = (key: number) => {
+    setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.key !== key) : rs));
+    setRowBusy(key, false);
+  };
 
   const save = async () => {
     const valid = rows.filter((r) => r.titleEn.trim());
@@ -83,7 +94,7 @@ export function BatchEpisodesForm({
                 <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Title (Hausa)" style={{ ...fieldInput, marginTop: 8 }} />
                 {type !== "text" ? (
                   <div style={{ marginTop: 8 }}>
-                    <MediaZone type={type} value={r.mediaUrl} onChange={(url) => patch(r.key, { mediaUrl: url })} onBusyChange={setMediaBusy} compact />
+                    <MediaZone type={type} value={r.mediaUrl} onChange={(url) => patch(r.key, { mediaUrl: url })} onBusyChange={(b) => setRowBusy(r.key, b)} compact />
                   </div>
                 ) : null}
               </div>
