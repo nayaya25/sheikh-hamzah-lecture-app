@@ -11,6 +11,7 @@ export type NewKind =
   | { kind: "program" }
   | { kind: "series"; programId?: string }
   | { kind: "episode"; seriesId: string }
+  | { kind: "episodesBatch"; seriesId: string }
   | { kind: "standalone" };
 
 export function ContentTree({

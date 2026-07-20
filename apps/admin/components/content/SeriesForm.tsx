@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { LANGUAGES, SERIES_KINDS, type Language, type SeriesKind } from "@althaqalayn/types";
 import { GradientPicker, ParentPicker, SelectField, TextArea, BilingualField, TextField } from "@/components/fields";
 import { SectionedForm, type FormSection } from "@/components/SectionedForm";
 import { getClient } from "@/lib/supabase";
-import { YEARS } from "@/lib/ui";
+import { brand, mediaBadge, statusPill, YEARS } from "@/lib/ui";
+import { ActionMenu } from "@/components/ActionMenu";
 import { EditorFooter } from "./EditorFooter";
 import type { SeriesNode } from "@/lib/useContentTree";
 
@@ -20,6 +21,10 @@ export function SeriesForm({
   onCancel,
   onSaved,
   onCreateProgram,
+  onEditEpisode,
+  onAddEpisode,
+  onAddMultiple,
+  onEpisodesChanged,
 }: {
   series: SeriesNode | null;
   programId?: string;
@@ -27,6 +32,10 @@ export function SeriesForm({
   onCancel: () => void;
   onSaved: () => void;
   onCreateProgram: (name: string) => Promise<string>;
+  onEditEpisode?: (id: string) => void;
+  onAddEpisode?: (seriesId: string) => void;
+  onAddMultiple?: (seriesId: string) => void;
+  onEpisodesChanged?: () => void;
 }) {
   const [titleEn, setTitleEn] = useState(series ? pick(series.title) : "");
   const [titleHa, setTitleHa] = useState(series?.title.ha ?? "");
@@ -42,6 +51,23 @@ export function SeriesForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [eps, setEps] = useState(series?.episodes ?? []);
+
+  const move = async (index: number, dir: -1 | 1) => {
+    const next = [...eps];
+    const j = index + dir;
+    if (j < 0 || j >= next.length) return;
+    [next[index], next[j]] = [next[j], next[index]];
+    setEps(next);
+    await admin.setEpisodeNumbers(getClient(), next.map((e) => e.id));
+    onEpisodesChanged?.();
+  };
+  const removeEp = async (id: string, title: string) => {
+    if (!confirm(`Delete episode “${title}”?`)) return;
+    await admin.deleteLecture(getClient(), id);
+    setEps((cur) => cur.filter((e) => e.id !== id));
+    onEpisodesChanged?.();
+  };
 
   const save = async () => {
     if (!titleEn.trim()) { setTitleError("English title is required."); return; }
@@ -105,6 +131,45 @@ export function SeriesForm({
         </>
       ),
     },
+    ...(series
+      ? [{
+          key: "episodes",
+          title: `Episodes (${eps.length})`,
+          render: () => (
+            <div>
+              {eps.length === 0 ? <div style={{ fontSize: 13, color: "var(--muted)", padding: "8px 0" }}>No episodes yet.</div> : null}
+              {eps.map((e, i) => {
+                const badge = mediaBadge(e.type);
+                const pill = statusPill(e.status);
+                return (
+                  <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <button type="button" onClick={() => void move(i, -1)} disabled={i === 0} style={reorderBtn}>▲</button>
+                      <button type="button" onClick={() => void move(i, 1)} disabled={i === eps.length - 1} style={reorderBtn}>▼</button>
+                    </div>
+                    <span style={{ width: 22, fontWeight: 800, fontSize: 12, color: brand.greenMid }}>{e.episode ?? i + 1}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title.en}</div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "2px 6px", background: badge.bg, color: badge.fg }}>{e.type.toUpperCase()}</span>
+                        <span style={{ fontSize: 9.5, fontWeight: 800, borderRadius: 20, padding: "2px 8px", background: pill.bg, color: pill.fg }}>{pill.label}</span>
+                      </div>
+                    </div>
+                    <ActionMenu items={[
+                      { label: "Edit", onSelect: () => onEditEpisode?.(e.id) },
+                      { label: "Delete", onSelect: () => void removeEp(e.id, e.title.en), danger: true },
+                    ]} />
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button type="button" onClick={() => onAddEpisode?.(series.id)} style={addBtn}>+ Add episode</button>
+                <button type="button" onClick={() => onAddMultiple?.(series.id)} style={addBtnGhost}>+ Add multiple</button>
+              </div>
+            </div>
+          ),
+        }]
+      : []),
   ];
 
   return (
@@ -117,3 +182,7 @@ export function SeriesForm({
     </div>
   );
 }
+
+const reorderBtn: CSSProperties = { background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 9, lineHeight: 1, padding: 0 };
+const addBtn: CSSProperties = { background: brand.green, color: "#fff", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" };
+const addBtnGhost: CSSProperties = { background: "transparent", color: brand.greenMid, border: "1.5px solid var(--line)", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" };

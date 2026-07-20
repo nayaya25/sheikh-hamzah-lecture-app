@@ -55,11 +55,32 @@ export function ContentWorkspace() {
         {mode === "new" && draftNew?.kind === "program" ? (
           <ProgramForm program={null} onCancel={() => setMode("read")} onSaved={afterSave} />
         ) : mode === "new" && draftNew?.kind === "series" ? (
-          <SeriesForm series={null} programId={draftNew.programId} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+          <SeriesForm
+            series={null}
+            programId={draftNew.programId}
+            programs={programOptions}
+            onCancel={() => setMode("read")}
+            onSaved={afterSave}
+            onCreateProgram={createProgram}
+            onEditEpisode={(id) => { setSelected({ kind: "episode", id }); setMode("edit"); }}
+            onAddEpisode={(seriesId) => { setDraftNew({ kind: "episode", seriesId }); setMode("new"); setSelected(null); }}
+            onAddMultiple={(seriesId) => { setDraftNew({ kind: "episodesBatch", seriesId }); setMode("new"); setSelected(null); }}
+            onEpisodesChanged={() => void reload()}
+          />
         ) : mode === "edit" && selected?.kind === "program" ? (
           <ProgramForm program={findProgram(selected.id)} onCancel={() => setMode("read")} onSaved={afterSave} />
         ) : mode === "edit" && selected?.kind === "series" ? (
-          <SeriesForm series={findSeriesNode(selected.id)} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+          <SeriesForm
+            series={findSeriesNode(selected.id)}
+            programs={programOptions}
+            onCancel={() => setMode("read")}
+            onSaved={afterSave}
+            onCreateProgram={createProgram}
+            onEditEpisode={(id) => { setSelected({ kind: "episode", id }); setMode("edit"); }}
+            onAddEpisode={(seriesId) => { setDraftNew({ kind: "episode", seriesId }); setMode("new"); setSelected(null); }}
+            onAddMultiple={(seriesId) => { setDraftNew({ kind: "episodesBatch", seriesId }); setMode("new"); setSelected(null); }}
+            onEpisodesChanged={() => void reload()}
+          />
         ) : (
           <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
         )}
