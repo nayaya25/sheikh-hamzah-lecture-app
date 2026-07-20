@@ -7,3 +7,4 @@ export { NumberStepper } from "./NumberStepper";
 export { DateField } from "./DateField";
 export { PublishControl } from "./PublishControl";
 export { ParentPicker } from "./ParentPicker";
+export { GradientPicker } from "./GradientPicker";
