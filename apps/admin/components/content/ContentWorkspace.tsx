@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
+import { BatchEpisodesForm } from "./BatchEpisodesForm";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
 import { LectureForm } from "./LectureForm";
 import { NodeDetail } from "./NodeDetail";
@@ -96,6 +97,8 @@ export function ContentWorkspace() {
           <LectureForm lecture={findLecture("episode", selected.id)} scope="series" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
         ) : mode === "edit" && selected?.kind === "standalone" ? (
           <LectureForm lecture={findLecture("standalone", selected.id)} scope="single" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
+        ) : mode === "new" && draftNew?.kind === "episodesBatch" && findSeriesNode(draftNew.seriesId) ? (
+          <BatchEpisodesForm series={findSeriesNode(draftNew.seriesId)!} onCancel={() => setMode("read")} onSaved={afterSave} />
         ) : (
           <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
         )}
