@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { admin } from "@althaqalayn/api";
-import { TRANSCRIPT_STATUSES, type Lecture, type Transcript, type TranscriptStatus } from "@althaqalayn/types";
-import { Drawer, Field, inp, Label, sel } from "@/components/form";
+import {
+  LANGUAGES,
+  TRANSCRIPT_STATUSES,
+  type Language,
+  type Lecture,
+  type Transcript,
+  type TranscriptStatus,
+} from "@althaqalayn/types";
+import { Drawer, Label } from "@/components/form";
+import { ParentPicker, SelectField, TextArea } from "@/components/fields";
 import { getClient } from "@/lib/supabase";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
@@ -19,22 +27,38 @@ export function TranscriptEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [lectures, setLectures] = useState<Lecture[] | null>(null);
+  const [lectureId, setLectureId] = useState(lecture.id);
+  const [language, setLanguage] = useState<Language>(transcript?.language ?? lecture.language);
   const [status, setStatus] = useState<TranscriptStatus>(transcript?.status ?? "auto-needs-review");
-  const [text, setText] = useState(transcript?.body?.en ?? transcript?.body?.ha ?? "");
+  const [bodyEn, setBodyEn] = useState(transcript?.body?.en ?? "");
+  const [bodyHa, setBodyHa] = useState(transcript?.body?.ha ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    admin
+      .listAllLectures(getClient())
+      .then((all) => setLectures(all.filter((l) => l.type !== "text"))) // text lectures carry their own body
+      .catch(() => setLectures([]));
+  }, []);
+
+  const lectureOptions = (lectures ?? [lecture]).map((l) => ({ value: l.id, label: pick(l.title) }));
+
   const save = async () => {
     setError(null);
+    if (!lectureId) return setError("Select a linked lecture.");
     setBusy(true);
     try {
+      const en = bodyEn.trim();
+      const ha = bodyHa.trim();
       await admin.upsertTranscript(
         getClient(),
         {
-          lectureId: lecture.id,
-          language: lecture.language,
+          lectureId,
+          language,
           status,
-          ...(text.trim() ? { body: { en: text.trim() } } : {}),
+          ...(en || ha ? { body: { en, ...(ha ? { ha } : {}) } } : {}),
         },
         transcript?.id,
       );
@@ -56,16 +80,39 @@ export function TranscriptEditor({
       busy={busy}
       error={error}
     >
-      <Field label="STATUS">
-        <select value={status} onChange={(e) => setStatus(e.target.value as TranscriptStatus)} style={sel}>
-          {TRANSCRIPT_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label={`TRANSCRIPT TEXT (${lecture.language === "ha" ? "HAUSA" : "ENGLISH"})`}>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={12} placeholder="Paste or edit the transcript…" style={{ ...inp, resize: "vertical" }} />
-      </Field>
+      <ParentPicker label="LINKED LECTURE" value={lectureId} onChange={setLectureId} options={lectureOptions} />
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <SelectField
+            label="LANGUAGE"
+            value={language}
+            onChange={(v) => setLanguage(v as Language)}
+            options={LANGUAGES.map((l) => ({ value: l, label: l === "ha" ? "Hausa" : "English" }))}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <SelectField
+            label="STATUS"
+            value={status}
+            onChange={(v) => setStatus(v as TranscriptStatus)}
+            options={TRANSCRIPT_STATUSES.map((s) => ({ value: s, label: s }))}
+          />
+        </div>
+      </div>
+      <TextArea
+        label="TRANSCRIPT TEXT (ENGLISH)"
+        value={bodyEn}
+        onChange={setBodyEn}
+        rows={12}
+        placeholder="Paste or edit the transcript…"
+      />
+      <TextArea
+        label="TRANSCRIPT TEXT (HAUSA)"
+        value={bodyHa}
+        onChange={setBodyHa}
+        rows={12}
+        placeholder="Paste or edit the Hausa transcript…"
+      />
       <Label>Tip: mark “Complete” once reviewed — the app shows the transcript in the player.</Label>
     </Drawer>
   );
