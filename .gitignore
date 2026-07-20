@@ -6,7 +6,6 @@ dist/
 *.log
 .env
 .env.local
-# local DB credentials for one-off setup scripts — never commit
-db-connection.local
-pat.local
+# local credentials/tokens for one-off scripts + deploys — never commit
+*.local
 .secrets/
