@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { admin } from "@althaqalayn/api";
 import { LANGUAGES, MEDIA_TYPES, type Language, type MediaType, type Lecture, type PublishStatus } from "@althaqalayn/types";
 import { BilingualField, DateField, NumberStepper, ParentPicker, PublishControl, SelectField, TextArea } from "@/components/fields";
@@ -52,6 +52,10 @@ export function LectureForm({
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setMediaBusy(false);
+  }, [type]);
+
   const save = async () => {
     if (!titleEn.trim()) { setTitleError("English title is required."); return; }
     setBusy(true); setError(null);
@@ -70,7 +74,7 @@ export function LectureForm({
           ...(descEn.trim() ? { description: { en: descEn.trim() } } : {}),
           ...(type === "text" && bodyEn.trim() ? { body: { en: bodyEn.trim() } } : {}),
           ...(type !== "text" && mediaUrl ? { mediaUrl } : {}),
-          ...(durationMin ? { duration: durationMin * 60 } : {}),
+          ...(type !== "text" && durationMin ? { duration: durationMin * 60 } : {}),
           ...(scope === "series"
             ? { ...(seriesId ?? lecture?.seriesId ? { seriesId: seriesId ?? lecture?.seriesId } : {}), ...(program ? { programId: program } : {}), ...(episode != null ? { episode } : {}) }
             : { ...(program ? { programId: program } : {}) }),
