@@ -1,7 +1,6 @@
 export type View =
   | "dashboard"
-  | "lectures"
-  | "series"
+  | "content"
   | "categories"
   | "media"
   | "featured"
@@ -18,8 +17,7 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "MANAGE" },
-  { key: "lectures", label: "Lectures", icon: "lectures", group: "MANAGE" },
-  { key: "series", label: "Programs & series", icon: "series", group: "MANAGE" },
+  { key: "content", label: "Content", icon: "lectures", group: "MANAGE" },
   { key: "categories", label: "Categories", icon: "categories", group: "MANAGE" },
   { key: "media", label: "Media library", icon: "media", group: "MANAGE" },
   { key: "featured", label: "Featured & Home", icon: "featured", group: "MANAGE" },
@@ -31,8 +29,7 @@ export const NAV: NavItem[] = [
 /** Topbar page title per view. */
 export const VIEW_TITLES: Record<View, string> = {
   dashboard: "Dashboard",
-  lectures: "Lectures",
-  series: "Programs & series",
+  content: "Content",
   categories: "Categories",
   media: "Media library",
   featured: "Featured & Home",

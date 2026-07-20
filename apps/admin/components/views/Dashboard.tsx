@@ -70,7 +70,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
         <div style={styles.card}>
           <div style={styles.rowBetween}>
             <div style={styles.h2}>Recent uploads</div>
-            <span onClick={() => onNavigate("lectures")} style={styles.link}>
+            <span onClick={() => onNavigate("content")} style={styles.link}>
               View all
             </span>
           </div>
@@ -114,7 +114,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
               ))
             )}
           </div>
-          <button onClick={() => onNavigate("lectures")} style={styles.scheduledBtn}>
+          <button onClick={() => onNavigate("content")} style={styles.scheduledBtn}>
             Manage schedule
           </button>
         </div>
