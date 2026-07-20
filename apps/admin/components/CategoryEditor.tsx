@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { admin } from "@althaqalayn/api";
 import type { Category } from "@althaqalayn/types";
-import { Drawer, Field, inp } from "@/components/form";
+import { Drawer } from "@/components/form";
+import { TextField } from "@/components/fields";
 import { getClient } from "@/lib/supabase";
 
 /** Create/edit an Explore category tile (English label + Arabic motif + meta). */
@@ -56,15 +57,9 @@ export function CategoryEditor({
       busy={busy}
       error={error}
     >
-      <Field label="LABEL (ENGLISH)">
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ramadan Tafsir" style={inp} />
-      </Field>
-      <Field label="ARABIC MOTIF">
-        <input value={ar} onChange={(e) => setAr(e.target.value)} placeholder="تفسير" style={{ ...inp, width: 160 }} />
-      </Field>
-      <Field label="META (OPTIONAL)">
-        <input value={meta} onChange={(e) => setMeta(e.target.value)} placeholder="12 lectures" style={inp} />
-      </Field>
+      <TextField label="LABEL (ENGLISH)" value={label} onChange={setLabel} placeholder="Ramadan Tafsir" />
+      <TextField label="ARABIC MOTIF" value={ar} onChange={setAr} placeholder="تفسير" dir="rtl" />
+      <TextField label="META (OPTIONAL)" value={meta} onChange={setMeta} placeholder="12 lectures" />
     </Drawer>
   );
 }
