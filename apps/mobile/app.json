@@ -9,12 +9,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.althaqalayn.lectures",
-      "buildNumber": "1"
+      "bundleIdentifier": "com.althaqalayn.lectures"
     },
     "android": {
       "package": "com.althaqalayn.lectures",
-      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B4634",
         "foregroundImage": "./assets/logo/althaqalayn_icon.png"
