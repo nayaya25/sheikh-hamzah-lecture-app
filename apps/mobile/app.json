@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "scheme": "althaqalayn",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo/althaqalayn_icon_green.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
 import { languageNames } from "@althaqalayn/i18n";
+import { logos } from "@/lib/assets";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { usePlayer } from "@/lib/player";
@@ -45,9 +46,7 @@ export default function SettingsScreen() {
           {/* Profile */}
           <View style={styles.profile}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarLetter} allowFontScaling={false}>
-                {arabic.emblemLetter}
-              </Text>
+              <Image source={logos.icon} style={{ width: 40, height: 40 }} resizeMode="contain" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.profileName}>

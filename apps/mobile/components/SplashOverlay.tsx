@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "@althaqalayn/theme";
+import { logos } from "@/lib/assets";
 import { font } from "@/lib/fonts";
 
 const HOLD_MS = 2000;
@@ -43,11 +44,7 @@ export function SplashOverlay() {
 
       <Animated.View style={[styles.center, { transform: [{ scale }] }]}>
         <View style={styles.plate}>
-          <Text style={styles.wordmark} allowFontScaling={false}>
-            الثقلين
-          </Text>
-          <Text style={styles.plateName}>ALTHAQALAYN</Text>
-          <Text style={styles.plateSub}>CULTURAL FOUNDATION</Text>
+          <Image source={logos.primary} style={styles.plateLogo} resizeMode="contain" />
         </View>
       </Animated.View>
 
@@ -89,8 +86,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(228,199,123,0.55)",
     borderRadius: 28,
-    paddingVertical: 26,
-    paddingHorizontal: 34,
+    padding: 24,
     alignItems: "center",
     shadowColor: "#000",
     shadowOpacity: 0.28,
@@ -98,9 +94,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 24 },
     elevation: 12,
   },
-  wordmark: { fontFamily: font.arabic.bold, fontSize: 40, color: colors.greenDeep },
-  plateName: { fontFamily: font.sans.extrabold, fontSize: 15, letterSpacing: 3, color: colors.greenDeep, marginTop: 8 },
-  plateSub: { fontFamily: font.sans.semibold, fontSize: 9, letterSpacing: 2, color: colors.gold, marginTop: 3 },
+  plateLogo: { width: 200, height: 224 },
   bottom: { position: "absolute", bottom: 56, alignItems: "center", gap: 14, paddingHorizontal: 40 },
   dots: { flexDirection: "row", gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.goldLight },

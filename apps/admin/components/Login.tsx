@@ -30,7 +30,8 @@ export function Login() {
         <div style={styles.dots} />
         <div style={styles.watermark}>ﷲ</div>
         <div style={{ position: "relative" }}>
-          <div style={styles.emblem}>ح</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo/althaqalayn_icon.svg" alt="Althaqalayn" width={76} height={76} style={{ display: "block", marginBottom: 26 }} />
           <div style={styles.brandTitle}>Althaqalayn Lecture Archive</div>
           <div style={styles.brandSub}>
             Content administration for the Althaqalayn Cultural Foundation — manage the lectures,

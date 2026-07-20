@@ -16,7 +16,8 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: (v: View
   return (
     <div style={styles.root}>
       <div style={styles.brandRow}>
-        <div style={styles.emblem}>ح</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo/althaqalayn_icon.svg" alt="" width={38} height={38} style={{ flexShrink: 0 }} />
         <div>
           <div style={styles.brandName}>Althaqalayn</div>
           <div style={styles.brandKicker}>ADMIN CONSOLE</div>

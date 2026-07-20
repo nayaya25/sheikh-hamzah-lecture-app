@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@althaqalayn/theme";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
+import { logos } from "@/lib/assets";
 import { useCatalog } from "@/lib/catalogProvider";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
@@ -52,9 +53,7 @@ export default function HomeScreen() {
               <Text style={styles.subtitle}>{t.home.subtitle}</Text>
             </View>
             <Pressable style={styles.emblem} onPress={() => router.push("/settings")}>
-              <Text style={styles.emblemLetter} allowFontScaling={false}>
-                {arabic.emblemLetter}
-              </Text>
+              <Image source={logos.icon} style={styles.emblemImg} resizeMode="contain" />
             </Pressable>
           </View>
 
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emblemLetter: { fontFamily: font.arabic.bold, color: colors.goldLight, fontSize: 22 },
+  emblemImg: { width: 34, height: 34 },
   searchBar: {
     marginTop: 20,
     backgroundColor: "rgba(255,255,255,0.13)",

@@ -2,9 +2,9 @@
 -- admin uploads. Public read (the app streams the file); only admin editors
 -- may upload/replace/delete. Run after schema.sql (in the SQL Editor). Idempotent.
 
--- Public bucket, 5 GB per-file ceiling (raise/lower to taste).
+-- Public bucket, 50 MB per-file ceiling.
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('media', 'media', true, 5368709120)
+values ('media', 'media', true, 52428800)
 on conflict (id) do update
   set public = true, file_size_limit = excluded.file_size_limit;
 
