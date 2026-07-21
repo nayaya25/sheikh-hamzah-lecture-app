@@ -47,8 +47,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <SafeAreaProvider>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
           <ThemeProvider>
             <I18nProvider>
               <PlayerProvider>
@@ -62,8 +62,8 @@ export default function RootLayout() {
               </PlayerProvider>
             </I18nProvider>
           </ThemeProvider>
-        </SafeAreaProvider>
-      </BottomSheetModalProvider>
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
