@@ -13,6 +13,7 @@ export const StorageKeys = {
   lastPlayed: "lastPlayed", // { id: string } — most recent track for "Continue listening"
   recentSearches: "recentSearches", // string[] — recent search queries
   themeMode: "themeMode", // "system" | "light" | "dark"
+  downloads: "downloads", // DownloadsState — persisted offline-download entries
 } as const;
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {

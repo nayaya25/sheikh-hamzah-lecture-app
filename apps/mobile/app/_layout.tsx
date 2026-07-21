@@ -7,6 +7,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { MiniPlayer } from "@/components/MiniPlayer";
 import { SplashOverlay } from "@/components/SplashOverlay";
 import { CatalogProvider } from "@/lib/catalogProvider";
+import { DownloadsProvider } from "@/lib/downloads";
 import { useAppFonts } from "@/lib/fonts";
 import { I18nProvider } from "@/lib/i18n";
 import { PlayerProvider } from "@/lib/player";
@@ -51,15 +52,17 @@ export default function RootLayout() {
         <BottomSheetModalProvider>
           <ThemeProvider>
             <I18nProvider>
-              <PlayerProvider>
-                <CatalogProvider>
-                  <RootStack />
-                  {/* Global mini-player; hides itself on the full player + when idle. */}
-                  <MiniPlayer />
-                  {/* Launch splash over everything; self-dismisses once the catalog loads. */}
-                  <SplashOverlay />
-                </CatalogProvider>
-              </PlayerProvider>
+              <DownloadsProvider>
+                <PlayerProvider>
+                  <CatalogProvider>
+                    <RootStack />
+                    {/* Global mini-player; hides itself on the full player + when idle. */}
+                    <MiniPlayer />
+                    {/* Launch splash over everything; self-dismisses once the catalog loads. */}
+                    <SplashOverlay />
+                  </CatalogProvider>
+                </PlayerProvider>
+              </DownloadsProvider>
             </I18nProvider>
           </ThemeProvider>
         </BottomSheetModalProvider>
