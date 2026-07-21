@@ -53,3 +53,12 @@ export function durationLabel(p: Playable): string {
   const min = Math.round(p.durSec / 60);
   return p.type === "text" ? `${min} min read` : `${min} min`;
 }
+
+/** Human storage size for the Downloads footer — MB under 1 GB, else GB. */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0 MB";
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1024) return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+  const gb = mb / 1024;
+  return `${gb < 10 ? gb.toFixed(1) : Math.round(gb)} GB`;
+}
