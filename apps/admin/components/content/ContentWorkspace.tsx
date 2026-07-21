@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
+import { brand, font } from "@/lib/ui";
 import { BatchEpisodesForm } from "./BatchEpisodesForm";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
 import { LectureForm } from "./LectureForm";
@@ -19,7 +20,19 @@ export function ContentWorkspace() {
   const [draftNew, setDraftNew] = useState<NewKind | null>(null);
 
   if (loading) return <div style={pad}>Loading…</div>;
-  if (error || !tree) return <div style={pad}>Couldn’t load content: {error}</div>;
+  if (error || !tree) {
+    return (
+      <div style={pad}>
+        <div style={{ marginBottom: 12 }}>Couldn’t load content{error ? `: ${error}` : ""}.</div>
+        <button
+          onClick={() => void reload()}
+          style={{ background: brand.green, color: "#fff", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font.ui }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const onNew = (k: NewKind) => {
     setDraftNew(k);
