@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { admin } from "@althaqalayn/api";
+import { useRef, useState, type CSSProperties } from "react";
+import { admin, unwrap } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
 import { brand, font } from "@/lib/ui";
@@ -18,6 +18,7 @@ export function ContentWorkspace() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"read" | "edit" | "new">("read");
   const [draftNew, setDraftNew] = useState<NewKind | null>(null);
+  const reorderingRef = useRef(false);
 
   if (loading) return <div style={pad}>Loading…</div>;
   if (error || !tree) {
@@ -62,7 +63,7 @@ export function ContentWorkspace() {
     return null;
   };
 
-  /** Swap a program-series with its in-program neighbour, persisting the FULL position-ordered id list. */
+  /** Swap a program-series with its in-program neighbour, touching only those two rows' `position` in the true DB order. */
   const reorderProgramSeries = async (programId: string, movedId: string, dir: -1 | 1) => {
     const prog = tree.programs.find((p) => p.id === programId);
     if (!prog) return;
@@ -70,17 +71,22 @@ export function ContentWorkspace() {
     const idx = inProg.findIndex((s) => s.id === movedId);
     const neighbour = inProg[idx + dir];
     if (!neighbour) return;
-    // Full global position order: all programs' series (in program order) then orphanSeries.
-    const fullIds = [
-      ...tree.programs.flatMap((p) => p.seriesNodes.map((s) => s.id)),
-      ...tree.orphanSeries.map((s) => s.id),
-    ];
-    const a = fullIds.indexOf(movedId);
-    const b = fullIds.indexOf(neighbour.id);
-    if (a < 0 || b < 0) return;
-    [fullIds[a], fullIds[b]] = [fullIds[b], fullIds[a]];
-    await admin.setSeriesPositions(getClient(), fullIds);
-    await reload();
+    if (reorderingRef.current) return;
+    reorderingRef.current = true;
+    try {
+      const client = getClient();
+      // True flat position order, fetched fresh from the DB (not the in-memory tree, which is
+      // grouped by program-created_at with orphans appended — not the real `position` order).
+      const flat = unwrap<{ id: string }[]>(await client.from("series").select("id").order("position")).map((r) => r.id);
+      const a = flat.indexOf(movedId);
+      const b = flat.indexOf(neighbour.id);
+      if (a < 0 || b < 0) return;
+      [flat[a], flat[b]] = [flat[b], flat[a]];
+      await admin.setSeriesPositions(client, flat);
+      await reload();
+    } finally {
+      reorderingRef.current = false;
+    }
   };
 
   return (
