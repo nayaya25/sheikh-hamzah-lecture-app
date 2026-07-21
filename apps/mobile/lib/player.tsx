@@ -14,6 +14,7 @@ import {
   useAudioPlayerStatus,
 } from "expo-audio";
 import type { Playable } from "@/lib/catalog";
+import { useDownloads } from "@/lib/downloads";
 import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
 
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75] as const;
@@ -58,6 +59,7 @@ interface PlayerValue {
 const PlayerContext = createContext<PlayerValue | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
+  const downloads = useDownloads();
   const [current, setCurrent] = useState<Playable | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -147,14 +149,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setPosition(resume);
       void saveJSON(StorageKeys.lastPlayed, { id: lecture.id });
       if (lecture.mediaUrl) {
-        player.replace({ uri: lecture.mediaUrl });
+        const src = downloads.localUri(lecture.id) ?? lecture.mediaUrl;
+        player.replace({ uri: src });
         if (resume > 0 && lecture.durSec) player.seekTo(resume * lecture.durSec);
         player.play();
       } else {
         setIsPlaying(true);
       }
     },
-    [player],
+    [player, downloads],
   );
 
   const play = useCallback(
