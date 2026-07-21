@@ -6,7 +6,7 @@
     "scheme": "althaqalayn",
     "orientation": "portrait",
     "icon": "./assets/logo/althaqalayn_icon_green.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.althaqalayn.lectures"
@@ -22,7 +22,9 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,13 +32,22 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B4634",
+          "image": "./assets/logo/althaqalayn_icon_green.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-audio",
         {
           "enableBackgroundPlayback": true
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "router": {},
