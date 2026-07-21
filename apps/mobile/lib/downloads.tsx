@@ -22,9 +22,12 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { Alert } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Directory, File, Paths } from "expo-file-system";
+import { getNetworkStateAsync, NetworkStateType } from "expo-network";
 import type { Playable } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n";
 import {
   downloadsReducer,
   type DownloadEntry,
@@ -62,7 +65,12 @@ function safeExists(uri: string): boolean {
 
 interface DownloadsValue {
   state: DownloadsState;
-  /** Start (or resume queueing) a download; no-op if already downloaded/downloading/queued. */
+  /**
+   * Start (or resume queueing) a download; no-op if already
+   * downloaded/downloading/queued. Async internally (checks the "Wi-Fi only"
+   * preference + live connection type) but fire-and-forget for the caller —
+   * on cellular with the preference on, it alerts the user and never queues.
+   */
   download: (l: Playable) => void;
   /** Delete the local file (best-effort) and drop the entry. */
   remove: (id: string) => void;
@@ -76,6 +84,7 @@ interface DownloadsValue {
 const DownloadsContext = createContext<DownloadsValue | null>(null);
 
 export function DownloadsProvider({ children }: { children: ReactNode }) {
+  const { t: msgs } = useI18n();
   const [state, dispatch] = useReducer(downloadsReducer, {} as DownloadsState);
 
   // Refs mirror `state`/side-book-keeping so callbacks with stable identities
@@ -172,10 +181,23 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       if (!l.mediaUrl) return;
       const existing = stateRef.current[l.id]?.status;
       if (existing === "downloaded" || existing === "queued" || existing === "downloading") return;
-      playables.current.set(l.id, l);
-      dispatch({ type: "queue", id: l.id });
+      // Enforce "download over Wi-Fi only": read the fresh preference (rather
+      // than a hydrated-on-mount value) so a toggle made in Settings this
+      // session is honored immediately, then check the live connection type.
+      void (async () => {
+        const wifiOnly = await loadJSON<boolean>(StorageKeys.wifiOnly, true);
+        if (wifiOnly) {
+          const net = await getNetworkStateAsync();
+          if (net.type === NetworkStateType.CELLULAR) {
+            Alert.alert(msgs.download.wifiOnlyTitle, msgs.download.wifiOnlyBody);
+            return;
+          }
+        }
+        playables.current.set(l.id, l);
+        dispatch({ type: "queue", id: l.id });
+      })();
     },
-    [],
+    [msgs],
   );
 
   const remove = useCallback((id: string) => {

@@ -87,6 +87,8 @@ export const ha: Messages = {
     removeTitle: "Cire saukewa?",
     removeBodySuffix: "will be deleted from this device.",
     remove: "Cire",
+    wifiOnlyTitle: "Wi-Fi kawai",
+    wifiOnlyBody: "Ba a fara saukewar nan ba domin an kunna \"Sauke ta Wi-Fi kawai\" kuma kana amfani da hanyar sadarwar wayar hannu. Haɗa da Wi-Fi don sauke, ko kashe wannan zaɓi.",
   },
   player: {
     nowPlaying: "Ana kunnawa yanzu",

@@ -84,6 +84,8 @@ export const en = {
     removeTitle: "Remove download?",
     removeBodySuffix: "will be deleted from this device.",
     remove: "Remove",
+    wifiOnlyTitle: "Wi-Fi only",
+    wifiOnlyBody: "This download was not started because \"Download over Wi-Fi only\" is on and you're on a cellular connection. Connect to Wi-Fi to download, or turn the setting off.",
   },
   player: {
     nowPlaying: "Now playing",
