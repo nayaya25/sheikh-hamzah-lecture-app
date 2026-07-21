@@ -172,7 +172,7 @@ export function BatchEpisodesForm({
 
           {type !== "text" ? (
             <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => fileInputRef.current?.click()} style={selectFilesBtn}>
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={mediaBusy} style={{ ...selectFilesBtn, ...(mediaBusy ? { opacity: 0.5, cursor: "not-allowed" } : {}) }}>
                 Select {type} files…
               </button>
               <input
@@ -181,6 +181,7 @@ export function BatchEpisodesForm({
                 multiple
                 accept={type === "video" ? "video/*" : "audio/*"}
                 hidden
+                disabled={mediaBusy}
                 onChange={(e) => {
                   onFilesSelected(e.target.files);
                   e.target.value = "";
@@ -221,7 +222,7 @@ export function BatchEpisodesForm({
                     ) : r.uploadStatus === "error" ? (
                       <div style={errorBox}>
                         <div style={{ fontSize: 12, color: "#a23e3e", fontWeight: 600, marginBottom: 6 }}>{r.uploadError || "Upload failed"}</div>
-                        <button type="button" onClick={() => retryUpload(r.key)} style={retryBtn}>Retry upload</button>
+                        <button type="button" onClick={() => retryUpload(r.key)} disabled={mediaBusy} style={{ ...retryBtn, ...(mediaBusy ? { opacity: 0.5, cursor: "not-allowed" } : {}) }}>Retry upload</button>
                       </div>
                     ) : (
                       <MediaZone type={type} value={r.mediaUrl} onChange={(url) => patch(r.key, { mediaUrl: url })} onBusyChange={(b) => setRowBusy(r.key, b)} compact />
