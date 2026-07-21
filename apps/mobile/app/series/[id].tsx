@@ -149,8 +149,8 @@ export default function SeriesDetailScreen() {
               </AppText>
             </Touchable>
             <Touchable
-              onPress={() => episodes.forEach((ep) => download(ep))}
-              disabled={episodes.length === 0}
+              onPress={() => episodes.filter((ep) => ep.type !== "text").forEach((ep) => download(ep))}
+              disabled={episodes.length === 0 || episodes.every((ep) => ep.type === "text")}
               haptic="light"
               accessibilityLabel={msgs.common.downloadAll}
               style={styles.downloadAll}
@@ -235,7 +235,7 @@ export default function SeriesDetailScreen() {
               </View>
               <View style={styles.trailing}>
                 {isCurrent ? <EqBars playing={isPlaying} /> : null}
-                <DownloadButton lecture={ep} size={18} />
+                {ep.type !== "text" ? <DownloadButton lecture={ep} size={18} /> : null}
               </View>
             </Touchable>
           );
