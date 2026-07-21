@@ -75,6 +75,7 @@ export const ha: Messages = {
     clearAllBody: "Every downloaded lecture will be removed from this device to free up space.",
     clearAllA11y: "Cire duka Saukewa",
     resolvingTitle: "Ana saukewa…",
+    unknownItem: "Laccar da aka sauke",
   },
   download: {
     queued: "Cikin jira",

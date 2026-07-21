@@ -72,6 +72,7 @@ export const en = {
     clearAllBody: "Every downloaded lecture will be removed from this device to free up space.",
     clearAllA11y: "Clear all downloads",
     resolvingTitle: "Downloading…",
+    unknownItem: "Downloaded lecture",
   },
   download: {
     queued: "Queued",

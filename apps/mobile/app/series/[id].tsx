@@ -59,7 +59,7 @@ export default function SeriesDetailScreen() {
   if (!series) {
     return (
       <View style={[styles.missing, { backgroundColor: t.c.bg }]}>
-        <StatusBar style="dark" />
+        <StatusBar style={t.scheme === "dark" ? "light" : "dark"} />
         <AppText color="textMuted" style={styles.missingText}>
           {msgs.series.notFound}
         </AppText>

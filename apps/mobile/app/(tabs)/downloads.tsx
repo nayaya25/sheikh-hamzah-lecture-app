@@ -46,9 +46,16 @@ export default function DownloadsScreen() {
         .filter((l): l is Playable => Boolean(l)),
     [state, lectureById],
   );
+  // A downloaded id whose lecture no longer resolves in the catalog (deleted
+  // or unpublished) still occupies storage. Don't drop it silently — give it
+  // a generic row so it stays individually removable (see OrphanedDownloadRow).
+  const orphanedIds = useMemo(
+    () => downloadedIds(state).filter((id) => !lectureById(id)),
+    [state, lectureById],
+  );
 
   const bytes = totalBytes(state);
-  const hasAny = active.length > 0 || downloaded.length > 0;
+  const hasAny = active.length > 0 || downloaded.length > 0 || orphanedIds.length > 0;
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg;
   const statusBarStyle = t.scheme === "dark" ? "light" : "dark";
 
@@ -94,12 +101,15 @@ export default function DownloadsScreen() {
             </>
           ) : null}
 
-          {downloaded.length > 0 ? (
+          {downloaded.length > 0 || orphanedIds.length > 0 ? (
             <>
-              <SectionLabel>{`${msgs.download.downloaded} (${downloaded.length})`}</SectionLabel>
+              <SectionLabel>{`${msgs.download.downloaded} (${downloaded.length + orphanedIds.length})`}</SectionLabel>
               <View>
                 {downloaded.map((lecture) => (
                   <DownloadedRow key={lecture.id} lecture={lecture} onPress={() => openDownload(lecture)} />
+                ))}
+                {orphanedIds.map((id) => (
+                  <OrphanedDownloadRow key={id} id={id} />
                 ))}
               </View>
             </>
@@ -115,9 +125,9 @@ export default function DownloadsScreen() {
             <Touchable
               haptic="light"
               onPress={onClearAll}
-              disabled={downloaded.length === 0}
+              disabled={downloaded.length === 0 && orphanedIds.length === 0}
               accessibilityLabel={msgs.downloads.clearAllA11y}
-              style={{ opacity: downloaded.length === 0 ? 0.4 : 1 }}
+              style={{ opacity: downloaded.length === 0 && orphanedIds.length === 0 ? 0.4 : 1 }}
             >
               <AppText variant="body" color="accent" style={styles.clearAll}>
                 {msgs.downloads.clearAll}
@@ -192,10 +202,57 @@ function DownloadedRow({ lecture, onPress }: { lecture: Playable; onPress: () =>
   );
 }
 
+/**
+ * A downloaded id that no longer resolves to a catalog lecture (deleted or
+ * unpublished on the backend). Its bytes still count toward storage-used, so
+ * it gets a neutral title + size (when known) + a standalone remove control
+ * — every downloaded id must stay individually removable (Fix 2).
+ */
+function OrphanedDownloadRow({ id }: { id: string }) {
+  const t = useTheme();
+  const { t: msgs } = useI18n();
+  const { entry, remove } = useDownloads();
+  const bytes = entry(id)?.bytes;
+
+  const onRemove = () => {
+    Alert.alert(msgs.download.removeTitle, `"${msgs.downloads.unknownItem}" ${msgs.download.removeBodySuffix}`, [
+      { text: msgs.common.cancel, style: "cancel" },
+      { text: msgs.download.remove, style: "destructive", onPress: () => remove(id) },
+    ]);
+  };
+
+  return (
+    <View style={styles.row}>
+      <View style={[styles.orphanIcon, { backgroundColor: t.c.surfaceAlt, borderRadius: t.radii.md }]}>
+        <Icon name="file" size={22} color="textFaint" />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <AppText variant="cardTitle" numberOfLines={1} style={{ fontSize: 14 }}>
+          {msgs.downloads.unknownItem}
+        </AppText>
+        {typeof bytes === "number" ? (
+          <AppText variant="meta" color="textMuted" numberOfLines={1} style={{ marginTop: 2 }}>
+            {formatBytes(bytes)}
+          </AppText>
+        ) : null}
+      </View>
+      <Touchable
+        haptic="light"
+        onPress={onRemove}
+        hitSlop={8}
+        accessibilityLabel={msgs.download.remove}
+      >
+        <Icon name="trash-2" size={20} color="textFaint" />
+      </Touchable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingBottom: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 13, paddingHorizontal: 16, paddingVertical: 11 },
+  orphanIcon: { width: 52, height: 52, alignItems: "center", justifyContent: "center" },
   downloadingRow: { flexDirection: "row", alignItems: "center", gap: 13, paddingHorizontal: 16, paddingVertical: 11 },
   track: { height: 4, borderRadius: 2, overflow: "hidden" },
   trackFill: { height: "100%", borderRadius: 2 },
