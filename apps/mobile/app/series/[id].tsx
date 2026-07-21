@@ -185,59 +185,60 @@ export default function SeriesDetailScreen() {
           const inProgress = !isCurrent && progress > 0 && progress < 0.98;
 
           return (
-            <Touchable
+            <View
               key={ep.id}
-              onPress={() => openEpisodeAt(i)}
               style={[
                 styles.episodeRow,
                 { borderTopColor: t.c.borderSubtle },
                 isCurrent ? { backgroundColor: "rgba(199,154,59,0.12)" } : null,
               ]}
             >
-              <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
-                <AppText style={styles.numChipText} color={t.c.accent}>
-                  {ep.episode ?? i + 1}
-                </AppText>
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <AppText
-                  style={styles.episodeTitle}
-                  color={isCurrent ? "accent" : "textPrimary"}
-                  numberOfLines={1}
-                >
-                  {ep.title}
-                </AppText>
-                <View style={styles.episodeMeta}>
-                  <MediaBadge type={ep.type} />
-                  {played ? (
-                    <View style={styles.playedMeta}>
-                      <Icon name="check-circle" size={11} color="textFaint" />
-                      <AppText style={styles.episodeDur} color="textFaint">
-                        {msgs.series.played}
-                      </AppText>
-                    </View>
-                  ) : (
-                    <AppText style={styles.episodeDur} color="textMuted">
-                      {durationLabel(ep)}
-                    </AppText>
-                  )}
+              <Touchable onPress={() => openEpisodeAt(i)} style={styles.episodeMain}>
+                <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
+                  <AppText style={styles.numChipText} color={t.c.accent}>
+                    {ep.episode ?? i + 1}
+                  </AppText>
                 </View>
-                {inProgress ? (
-                  <View style={[styles.progressTrack, { backgroundColor: t.c.trackInactive }]}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${Math.round(progress * 100)}%`, backgroundColor: colors.gold },
-                      ]}
-                    />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <AppText
+                    style={styles.episodeTitle}
+                    color={isCurrent ? "accent" : "textPrimary"}
+                    numberOfLines={1}
+                  >
+                    {ep.title}
+                  </AppText>
+                  <View style={styles.episodeMeta}>
+                    <MediaBadge type={ep.type} />
+                    {played ? (
+                      <View style={styles.playedMeta}>
+                        <Icon name="check-circle" size={11} color="textFaint" />
+                        <AppText style={styles.episodeDur} color="textFaint">
+                          {msgs.series.played}
+                        </AppText>
+                      </View>
+                    ) : (
+                      <AppText style={styles.episodeDur} color="textMuted">
+                        {durationLabel(ep)}
+                      </AppText>
+                    )}
                   </View>
-                ) : null}
-              </View>
+                  {inProgress ? (
+                    <View style={[styles.progressTrack, { backgroundColor: t.c.trackInactive }]}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${Math.round(progress * 100)}%`, backgroundColor: colors.gold },
+                        ]}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              </Touchable>
               <View style={styles.trailing}>
                 {isCurrent ? <EqBars playing={isPlaying} /> : null}
                 {ep.type !== "text" ? <DownloadButton lecture={ep} size={18} /> : null}
               </View>
-            </Touchable>
+            </View>
           );
         })}
       </ScrollView>
@@ -358,6 +359,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 11,
     borderTopWidth: 1,
+  },
+  episodeMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    minWidth: 0,
+    gap: 13,
   },
   numChip: {
     width: 34,

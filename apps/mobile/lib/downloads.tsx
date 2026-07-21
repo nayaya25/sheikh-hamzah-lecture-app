@@ -150,11 +150,13 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "done", id: l.id, localUri: file.uri, bytes: file.size ?? undefined });
         bump();
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
         dispatch({
           type: "fail",
           id: l.id,
-          error: err instanceof Error ? err.message : String(err),
+          error: message,
         });
+        Alert.alert("Download failed", message);
       } finally {
         inFlight.current.delete(l.id);
         playables.current.delete(l.id);
@@ -178,7 +180,10 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
 
   const download = useCallback(
     (l: Playable) => {
-      if (!l.mediaUrl) return;
+      if (!l.mediaUrl) {
+        Alert.alert("Can't download", "This lecture has no media file yet.");
+        return;
+      }
       const existing = stateRef.current[l.id]?.status;
       if (existing === "downloaded" || existing === "queued" || existing === "downloading") return;
       // Enforce "download over Wi-Fi only": read the fresh preference (rather
@@ -186,7 +191,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       // session is honored immediately, then check the live connection type.
       void (async () => {
         try {
-          const wifiOnly = await loadJSON<boolean>(StorageKeys.wifiOnly, true);
+          const wifiOnly = await loadJSON<boolean>(StorageKeys.wifiOnly, false);
           if (wifiOnly) {
             const net = await getNetworkStateAsync();
             if (net.type === NetworkStateType.CELLULAR) {

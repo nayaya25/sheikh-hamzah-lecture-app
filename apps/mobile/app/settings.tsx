@@ -37,11 +37,11 @@ export default function SettingsScreen() {
   const { mode, setMode } = useThemeMode();
   const { speed, cycleSpeed } = usePlayer();
   const { state } = useDownloads();
-  const [wifiOnly, setWifiOnlyState] = useState(true);
+  const [wifiOnly, setWifiOnlyState] = useState(false);
 
   // Hydrate the persisted Wi-Fi-only preference once on mount.
   useEffect(() => {
-    void loadJSON<boolean>(StorageKeys.wifiOnly, true).then(setWifiOnlyState);
+    void loadJSON<boolean>(StorageKeys.wifiOnly, false).then(setWifiOnlyState);
   }, []);
 
   const setWifiOnly = (value: boolean) => {

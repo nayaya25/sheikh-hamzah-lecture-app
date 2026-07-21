@@ -267,6 +267,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
+    // Wait for the source to actually be loaded — activating (or refreshing)
+    // the moment `current` changes but before `player.replace({uri})` has
+    // finished loading is a no-op on the native side, which is why the
+    // lock-screen/notification controls never appeared.
+    if (!status.isLoaded) return;
     const metadata = {
       title: current.title,
       artist: current.seriesTitle ?? current.sub,
@@ -283,7 +288,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {
       // API shape guard — swallow if unsupported on this platform/build.
     }
-  }, [current, player]);
+  }, [current, status.isLoaded, player]);
 
   // Deactivate on unmount only (not on every `current` change — see above).
   useEffect(() => {
