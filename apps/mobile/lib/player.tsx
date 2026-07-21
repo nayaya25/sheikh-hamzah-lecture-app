@@ -78,6 +78,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Saved resume positions (lectureId → fraction), loaded once.
   const resumeRef = useRef<Record<string, number>>({});
 
+  // Mirror downloads to avoid recreating playback callbacks on each download progress tick.
+  const downloadsRef = useRef(downloads);
+  downloadsRef.current = downloads;
+
   // Configure background/lock-screen audio + restore saved prefs on mount.
   useEffect(() => {
     setAudioModeAsync({
@@ -149,7 +153,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setPosition(resume);
       void saveJSON(StorageKeys.lastPlayed, { id: lecture.id });
       if (lecture.mediaUrl) {
-        const src = downloads.localUri(lecture.id) ?? lecture.mediaUrl;
+        const src = downloadsRef.current.localUri(lecture.id) ?? lecture.mediaUrl;
         player.replace({ uri: src });
         if (resume > 0 && lecture.durSec) player.seekTo(resume * lecture.durSec);
         player.play();
@@ -157,7 +161,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setIsPlaying(true);
       }
     },
-    [player, downloads],
+    [player],
   );
 
   const play = useCallback(
