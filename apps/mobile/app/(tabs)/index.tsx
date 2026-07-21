@@ -48,6 +48,15 @@ export default function HomeScreen() {
   const { loading, error, refetch, categories, albums, homeFeatured, homeLatest, lectureById } = useCatalog();
 
   const [contId, setContId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Resolve the "continue listening" lecture from real playback history on focus.
   useFocusEffect(
@@ -77,6 +86,7 @@ export default function HomeScreen() {
   const searchFor = (q: string) => router.push(`/search?q=${encodeURIComponent(q)}`);
 
   const empty = !contLecture && !categories.length && !homeFeatured.length && !albums.length && !homeLatest.length;
+  const hasData = homeLatest.length > 0 || homeFeatured.length > 0 || categories.length > 0;
 
   // ── Collapsing header ──────────────────────────────────────────────────
   const scrollY = useSharedValue(0);
@@ -116,7 +126,7 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={[styles.scroll, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + t.space.lg }]}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={() => void refetch()} tintColor={t.c.textPrimary} colors={[colors.greenMid]} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={t.c.textPrimary} colors={[colors.greenMid]} />
         }
       >
         {/* ── Green hero header ────────────────────────────────────── */}
@@ -175,7 +185,7 @@ export default function HomeScreen() {
           </LinearGradient>
         </Animated.View>
 
-        {loading ? (
+        {loading && !hasData ? (
           <HomeSkeleton />
         ) : error ? (
           <EmptyState
@@ -207,7 +217,7 @@ export default function HomeScreen() {
                     </AppText>
                     <View style={styles.progressRow}>
                       <View style={[styles.progressTrack, { backgroundColor: t.c.trackInactive }]}>
-                        <View style={[styles.progressFill, { width: `${Math.round(contProgress * 100)}%` }]} />
+                        <View style={[styles.progressFill, { width: `${Math.round(contProgress * 100)}%`, backgroundColor: t.c.accent }]} />
                       </View>
                       <AppText variant="caption" color="textFaint">{`${contMinLeft} ${msgs.home.minutesLeft}`}</AppText>
                     </View>
@@ -375,7 +385,7 @@ function SectionHeader({ title, arabic, action, onAction }: { title: string; ara
         </AppText>
       ) : null}
       {action ? (
-        <AppText variant="meta" color={colors.greenMid} style={{ fontWeight: "700" }} onPress={onAction}>
+        <AppText variant="meta" color={t.c.accent} style={{ fontWeight: "700" }} onPress={onAction}>
           {action}
         </AppText>
       ) : null}
@@ -438,7 +448,7 @@ const styles = StyleSheet.create({
   coverPlayOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
   progressRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 },
   progressTrack: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
-  progressFill: { height: "100%", backgroundColor: colors.gold, borderRadius: 2 },
+  progressFill: { height: "100%", borderRadius: 2 },
 
   sectionHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
 
