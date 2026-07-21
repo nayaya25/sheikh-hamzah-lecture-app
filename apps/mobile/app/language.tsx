@@ -7,6 +7,7 @@ import { languageNames } from "@althaqalayn/i18n";
 import type { Language } from "@althaqalayn/types";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 const NATIVE: Record<Language, string> = { en: "English", ha: "Harshen Hausa" };
 
@@ -18,40 +19,56 @@ export default function LanguageSheet() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang, arabic } = useI18n();
+  const th = useTheme();
 
   return (
     <Pressable style={styles.scrim} onPress={() => router.back()}>
-      <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 24 }]} onPress={() => {}}>
-        <View style={styles.handle} />
+      <Pressable
+        style={[styles.sheet, { backgroundColor: th.c.surface, paddingBottom: insets.bottom + 24 }]}
+        onPress={() => {}}
+      >
+        <View style={[styles.handle, { backgroundColor: th.c.border }]} />
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{t.languageSheet.title}</Text>
-          <Text style={styles.arabic} allowFontScaling={false}>
+          <Text style={[styles.title, { color: th.c.textPrimary }]}>{t.languageSheet.title}</Text>
+          <Text style={[styles.arabic, { color: th.c.accent }]} allowFontScaling={false}>
             {arabic.language}
           </Text>
         </View>
-        <Text style={styles.note}>{t.languageSheet.note}</Text>
+        <Text style={[styles.note, { color: th.c.textMuted }]}>{t.languageSheet.note}</Text>
 
         {(["en", "ha"] as const).map((code) => {
           const selected = lang === code;
           return (
             <Pressable
               key={code}
-              style={[styles.langRow, selected ? styles.langRowOn : styles.langRowOff]}
+              style={[
+                styles.langRow,
+                selected
+                  ? { borderWidth: 1.5, borderColor: colors.greenDeep, backgroundColor: th.c.surfaceAlt }
+                  : { borderWidth: 1, borderColor: th.c.borderSubtle, backgroundColor: th.c.surfaceAlt },
+              ]}
               onPress={() => setLang(code)}
             >
               <View>
-                <Text style={styles.langName}>{languageNames[code]}</Text>
-                <Text style={styles.langNative}>{NATIVE[code]}</Text>
+                <Text style={[styles.langName, { color: th.c.textPrimary }]}>{languageNames[code]}</Text>
+                <Text style={[styles.langNative, { color: th.c.textMuted }]}>{NATIVE[code]}</Text>
               </View>
-              <View style={[styles.check, selected ? styles.checkOn : styles.checkOff]}>
-                {selected ? <Feather name="check" size={14} color="#fff" /> : null}
+              <View
+                style={[
+                  styles.check,
+                  selected
+                    ? { backgroundColor: colors.greenDeep }
+                    : { borderWidth: 1.5, borderColor: th.c.borderSubtle },
+                ]}
+              >
+                {selected ? <Feather name="check" size={14} color={th.c.onBrand} /> : null}
               </View>
             </Pressable>
           );
         })}
 
-        <Pressable style={styles.done} onPress={() => router.back()}>
-          <Text style={styles.doneText}>{t.languageSheet.done}</Text>
+        <Pressable style={[styles.done, { backgroundColor: colors.greenDeep }]} onPress={() => router.back()}>
+          <Text style={[styles.doneText, { color: th.c.onBrand }]}>{t.languageSheet.done}</Text>
         </Pressable>
       </Pressable>
     </Pressable>
@@ -60,12 +77,12 @@ export default function LanguageSheet() {
 
 const styles = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: "rgba(20,30,26,0.45)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: colors.cream, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#d8cfb9", alignSelf: "center", marginBottom: 16 },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18 },
+  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
   titleRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 },
-  title: { fontFamily: font.serif.semibold, fontSize: 19, color: colors.ink },
-  arabic: { fontFamily: font.arabic.regular, fontSize: 17, color: colors.gold },
-  note: { fontFamily: font.sans.regular, fontSize: 12, color: colors.mutedAlt, marginBottom: 16 },
+  title: { fontFamily: font.serif.semibold, fontSize: 19 },
+  arabic: { fontFamily: font.arabic.regular, fontSize: 17 },
+  note: { fontFamily: font.sans.regular, fontSize: 12, marginBottom: 16 },
   langRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -74,13 +91,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 10,
   },
-  langRowOn: { borderWidth: 1.5, borderColor: colors.greenDeep, backgroundColor: "#EAF3EF" },
-  langRowOff: { borderWidth: 1, borderColor: "#E4DCC9", backgroundColor: "#fff" },
-  langName: { fontFamily: font.sans.bold, fontSize: 15, color: colors.ink },
-  langNative: { fontFamily: font.sans.regular, fontSize: 11.5, color: colors.mutedAlt, marginTop: 1 },
+  langName: { fontFamily: font.sans.bold, fontSize: 15 },
+  langNative: { fontFamily: font.sans.regular, fontSize: 11.5, marginTop: 1 },
   check: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  checkOn: { backgroundColor: colors.greenDeep },
-  checkOff: { borderWidth: 1.5, borderColor: "#cfc7b2" },
-  done: { marginTop: 6, alignItems: "center", backgroundColor: colors.greenDeep, borderRadius: 14, paddingVertical: 14 },
-  doneText: { fontFamily: font.sans.bold, fontSize: 14, color: "#fff" },
+  done: { marginTop: 6, alignItems: "center", borderRadius: 14, paddingVertical: 14 },
+  doneText: { fontFamily: font.sans.bold, fontSize: 14 },
 });
