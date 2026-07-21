@@ -151,7 +151,7 @@ export default function ReaderScreen() {
 
   const tryRestoreScroll = useCallback(() => {
     if (restoredScrollRef.current) return;
-    if (layoutHeightRef.current <= 0) return;
+    if (layoutHeightRef.current <= 0 || contentHeightRef.current <= 0) return;
     const frac = savedFractionRef.current;
     restoredScrollRef.current = true;
     if (frac == null) return;
