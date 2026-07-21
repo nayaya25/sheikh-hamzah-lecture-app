@@ -4,29 +4,41 @@ import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "@althaqalayn/theme";
 import { logos } from "@/lib/assets";
 import { font } from "@/lib/fonts";
+import { useCatalog } from "@/lib/catalogProvider";
 
-const HOLD_MS = 2000;
+const MAX_HOLD_MS = 1500;
 const FADE_MS = 600;
 
 /**
- * In-app launch splash: cream logo plate, pulsing gold dots, tagline. Holds ~2s
- * then fades out; tappable to skip. Shown once per cold start over everything.
+ * In-app launch splash: cream logo plate, pulsing gold dots, tagline. Dismisses
+ * as soon as the catalog finishes its initial load, capped at ~1.5s so a hung
+ * fetch still lets the user in; tappable to skip early. Shown once per cold
+ * start over everything.
  * (Placeholder wordmark until the Foundation logo SVG is wired via a transformer.)
  */
 export function SplashOverlay() {
+  const { loading } = useCatalog();
   const [gone, setGone] = useState(false);
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
+  const dismissedRef = useRef(false);
 
   useEffect(() => {
-    const dismiss = () =>
+    const dismiss = () => {
+      if (dismissedRef.current) return;
+      dismissedRef.current = true;
       Animated.parallel([
         Animated.timing(opacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
         Animated.timing(scale, { toValue: 1.04, duration: FADE_MS, useNativeDriver: true }),
       ]).start(() => setGone(true));
-    const timer = setTimeout(dismiss, HOLD_MS);
+    };
+    if (!loading) {
+      dismiss();
+      return;
+    }
+    const timer = setTimeout(dismiss, MAX_HOLD_MS);
     return () => clearTimeout(timer);
-  }, [opacity, scale]);
+  }, [loading, opacity, scale]);
 
   if (gone) return null;
 

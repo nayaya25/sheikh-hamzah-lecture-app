@@ -6,6 +6,7 @@ import { colors } from "@althaqalayn/theme";
 import { EqBars } from "@/components/EqBars";
 import { GradientCover } from "@/components/GradientCover";
 import { font } from "@/lib/fonts";
+import { MINI_PLAYER_GAP, TAB_BAR_HEIGHT } from "@/lib/layout";
 import { usePlayer } from "@/lib/player";
 
 /**
@@ -23,7 +24,7 @@ export function MiniPlayer() {
 
   return (
     <Pressable
-      style={[styles.bar, { bottom: insets.bottom + 74 }]}
+      style={[styles.bar, { bottom: insets.bottom + TAB_BAR_HEIGHT + MINI_PLAYER_GAP }]}
       onPress={() => router.push("/player")}
     >
       <GradientCover gradient={current.gradient ?? ["#0B4634", "#17795E"]} style={styles.cover}>

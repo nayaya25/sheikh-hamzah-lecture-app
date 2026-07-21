@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { MiniPlayer } from "@/components/MiniPlayer";
@@ -46,21 +47,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <I18nProvider>
-            <PlayerProvider>
-              <CatalogProvider>
-                <RootStack />
-                {/* Global mini-player; hides itself on the full player + when idle. */}
-                <MiniPlayer />
-                {/* Launch splash over everything; self-dismisses after a hold. */}
-                <SplashOverlay />
-              </CatalogProvider>
-            </PlayerProvider>
-          </I18nProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <BottomSheetModalProvider>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <I18nProvider>
+              <PlayerProvider>
+                <CatalogProvider>
+                  <RootStack />
+                  {/* Global mini-player; hides itself on the full player + when idle. */}
+                  <MiniPlayer />
+                  {/* Launch splash over everything; self-dismisses once the catalog loads. */}
+                  <SplashOverlay />
+                </CatalogProvider>
+              </PlayerProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }
