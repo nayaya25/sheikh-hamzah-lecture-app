@@ -15,7 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
-import { durationLabel, type SampleSeries } from "@/lib/catalog";
+import { useBookmarks } from "@/lib/bookmarks";
+import { durationLabel, type Playable, type SampleSeries } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
 import { TAB_BAR_HEIGHT } from "@/lib/layout";
@@ -23,7 +24,7 @@ import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { useTheme } from "@/lib/theme";
 
-type Segment = "recent" | "occasions" | "topics" | "series";
+type Segment = "recent" | "occasions" | "topics" | "series" | "saved";
 type MediaFilter = "all" | MediaType;
 
 // Occasions/Topics filter series by kind; "Series" shows all series.
@@ -50,7 +51,8 @@ export default function LibraryScreen() {
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
   const { play } = usePlayer();
-  const { lectures: lecturesList, series, loading, error, refetch } = useCatalog();
+  const { lectures: lecturesList, series, loading, error, refetch, lectureById } = useCatalog();
+  const { ids: bookmarkIds } = useBookmarks();
 
   const [segment, setSegment] = useState<Segment>("recent");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -75,8 +77,9 @@ export default function LibraryScreen() {
       occasions: series.filter((s) => s.kindRaw === "occasion").length,
       topics: series.filter((s) => s.kindRaw === "topic").length,
       series: series.length,
+      saved: bookmarkIds.length,
     }),
-    [lecturesList, series],
+    [lecturesList, series, bookmarkIds],
   );
 
   const segmentChips: { key: Segment; label: string }[] = [
@@ -84,6 +87,7 @@ export default function LibraryScreen() {
     { key: "occasions", label: `${msgs.library.occasions} (${segmentCounts.occasions})` },
     { key: "topics", label: `${msgs.library.topics} (${segmentCounts.topics})` },
     { key: "series", label: `${msgs.library.series} (${segmentCounts.series})` },
+    { key: "saved", label: `Saved (${segmentCounts.saved})` },
   ];
 
   const mediaChips: ChipDef<MediaFilter>[] = (["all", "audio", "video", "text"] as const).map((k) => ({
@@ -99,8 +103,15 @@ export default function LibraryScreen() {
     });
   }, [mediaFilter, q, lecturesList]);
 
+  const savedLectures = useMemo(() => {
+    return bookmarkIds
+      .map((id) => lectureById(id))
+      .filter((l): l is Playable => Boolean(l))
+      .filter((l) => !q || `${l.title} ${l.sub}`.toLowerCase().includes(q));
+  }, [bookmarkIds, lectureById, q]);
+
   const seriesRows = useMemo(() => {
-    if (segment === "recent") return [];
+    if (segment === "recent" || segment === "saved") return [];
     const kind = SEGMENT_KIND[segment];
     return series
       .filter((s) => (kind ? s.kindRaw === kind : true))
@@ -130,6 +141,9 @@ export default function LibraryScreen() {
     const lecture = lecturesList.find((l) => l.id === lectureId);
     if (lecture) openLecture(router, play, lecture);
   };
+
+  const isLectureSegment = segment === "recent" || segment === "saved";
+  const activeLectures = segment === "saved" ? savedLectures : lectures;
 
   const hasData = lecturesList.length > 0 || series.length > 0;
   const showSkeleton = loading && !hasData;
@@ -234,13 +248,16 @@ export default function LibraryScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         {header}
         {showSkeleton ? (
-          segment === "recent" ? <LectureRowSkeleton /> : <SeriesRowSkeleton />
-        ) : segment === "recent" ? (
-          lectures.length === 0 ? (
-            <EmptyState icon="headphones" title={emptyTitle(false)} />
+          isLectureSegment ? <LectureRowSkeleton /> : <SeriesRowSkeleton />
+        ) : isLectureSegment ? (
+          activeLectures.length === 0 ? (
+            <EmptyState
+              icon={segment === "saved" ? "bookmark" : "headphones"}
+              title={segment === "saved" ? (q ? "No matches." : "No saved lectures yet.") : emptyTitle(false)}
+            />
           ) : (
             <View>
-              {lectures.map((l) => (
+              {activeLectures.map((l) => (
                 <LectureListRow key={l.id} lecture={l} meta={durationLabel(l)} onPress={() => openById(l.id)} />
               ))}
             </View>

@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@althaqalayn/theme";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
+import { useBookmarks } from "@/lib/bookmarks";
 import { gradientForLecture, type Playable } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 
@@ -22,6 +23,8 @@ export function LectureListRow({
   onPress?: () => void;
   coverSize?: number;
 }) {
+  const { isBookmarked, toggle } = useBookmarks();
+  const bookmarked = isBookmarked(lecture.id);
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <GradientCover
@@ -42,12 +45,25 @@ export function LectureListRow({
           {lecture.sub}
         </Text>
       </View>
+      <Pressable
+        onPress={() => toggle(lecture.id)}
+        hitSlop={10}
+        style={styles.bookmarkBtn}
+        accessibilityLabel={bookmarked ? "Remove from saved" : "Save lecture"}
+      >
+        <Ionicons
+          name={bookmarked ? "bookmark" : "bookmark-outline"}
+          size={18}
+          color={bookmarked ? colors.gold : colors.faintAlt}
+        />
+      </Pressable>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 13, paddingHorizontal: 16, paddingVertical: 11 },
+  bookmarkBtn: { padding: 4 },
   cover: { borderRadius: 13, alignItems: "center", justifyContent: "center" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   meta: { fontFamily: font.sans.regular, fontSize: 10.5, color: colors.faintAlt },

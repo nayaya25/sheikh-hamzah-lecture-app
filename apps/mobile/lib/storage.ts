@@ -14,6 +14,7 @@ export const StorageKeys = {
   recentSearches: "recentSearches", // string[] — recent search queries
   themeMode: "themeMode", // "system" | "light" | "dark"
   downloads: "downloads", // DownloadsState — persisted offline-download entries
+  bookmarks: "bookmarks", // string[] — saved/bookmarked lecture ids
 } as const;
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
