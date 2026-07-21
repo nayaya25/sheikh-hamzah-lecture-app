@@ -29,15 +29,30 @@ interface PlayerValue {
   speed: number;
   /** Sleep timer minutes; 0 = off. */
   sleep: number;
-  transcriptOpen: boolean;
+  /** Live sleep-timer countdown, in seconds; 0 when off. */
+  sleepRemainingSec: number;
+  /** Whether the active player is currently buffering/loading. */
+  buffering: boolean;
+  /** The current play queue (series episodes), and the index of `current` within it. */
+  queue: Playable[];
+  queueIndex: number;
+  hasNext: boolean;
+  hasPrev: boolean;
   play: (lecture: Playable) => void;
+  /** Set the queue to `episodes` and play `episodes[startIndex]`. */
+  playSeries: (episodes: Playable[], startIndex: number) => void;
+  next: () => void;
+  prev: () => void;
   togglePlay: () => void;
   seekTo: (fraction: number) => void;
   /** Nudge position by a fraction (±0.05 = the 15/30s buttons in the prototype). */
   nudge: (delta: number) => void;
+  /** Saved resume fraction (0–1) for a lecture id, or 0 if none saved. */
+  progressFor: (id: string) => number;
   cycleSpeed: () => void;
+  setSpeedValue: (s: number) => void;
   cycleSleep: () => void;
-  toggleTranscript: () => void;
+  setSleepMinutes: (min: number) => void;
 }
 
 const PlayerContext = createContext<PlayerValue | null>(null);
@@ -48,7 +63,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [position, setPosition] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [sleep, setSleep] = useState(0);
-  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [sleepRemainingSec, setSleepRemainingSec] = useState(0);
+  const [buffering, setBuffering] = useState(false);
+  const [queue, setQueue] = useState<Playable[]>([]);
+  const [queueIndex, setQueueIndex] = useState(-1);
 
   // Real audio player (used when the current lecture has a mediaUrl).
   const player = useAudioPlayer(null);
@@ -81,14 +99,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     void saveJSON(StorageKeys.speed, speed);
   }, [speed, player]);
 
-  // Real audio: mirror native status into the exposed position/isPlaying.
+  // Real audio: mirror native status into the exposed position/isPlaying/buffering.
   useEffect(() => {
-    if (!hasAudio) return;
+    if (!hasAudio) {
+      setBuffering(false);
+      return;
+    }
     if (status.isLoaded && status.duration > 0) {
       setPosition(clamp(status.currentTime / status.duration));
     }
     setIsPlaying(status.playing);
-  }, [hasAudio, status.currentTime, status.duration, status.playing, status.isLoaded]);
+    setBuffering(!status.isLoaded || status.isBuffering === true);
+  }, [hasAudio, status.currentTime, status.duration, status.playing, status.isLoaded, status.isBuffering]);
 
   // Simulated clock: only when the current lecture has no real media.
   useEffect(() => {
@@ -115,7 +137,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!isPlaying) void saveJSON(StorageKeys.resume, resumeRef.current);
   }, [isPlaying]);
 
-  const play = useCallback(
+  // Core playback: loads + starts a lecture without touching the queue.
+  // Kept separate from `play` so `playSeries`/`playAt` can drive the queue
+  // themselves without the queue reset below stomping their multi-item queue.
+  const startPlayback = useCallback(
     (lecture: Playable) => {
       const resume = resumeRef.current[lecture.id] ?? 0;
       setCurrent(lecture);
@@ -131,6 +156,42 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     [player],
   );
+
+  const play = useCallback(
+    (lecture: Playable) => {
+      // Single-lecture play always resets the queue to just this item, so
+      // mini-player/Home single plays don't leave a stale multi-episode queue.
+      setQueue([lecture]);
+      setQueueIndex(0);
+      startPlayback(lecture);
+    },
+    [startPlayback],
+  );
+
+  const playAt = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= queue.length) return;
+      setQueueIndex(index);
+      startPlayback(queue[index]);
+    },
+    [queue, startPlayback],
+  );
+
+  const playSeries = useCallback(
+    (episodes: Playable[], startIndex: number) => {
+      setQueue(episodes);
+      setQueueIndex(startIndex);
+      startPlayback(episodes[startIndex]);
+    },
+    [startPlayback],
+  );
+
+  const next = useCallback(() => playAt(queueIndex + 1), [playAt, queueIndex]);
+  const prev = useCallback(() => playAt(queueIndex - 1), [playAt, queueIndex]);
+  const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
+  const hasPrev = queueIndex > 0;
+
+  const progressFor = useCallback((id: string) => resumeRef.current[id] ?? 0, []);
 
   const togglePlay = useCallback(() => {
     if (hasAudio) {
@@ -155,6 +216,54 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [seekTo, position],
   );
 
+  const setSpeedValue = useCallback((s: number) => setSpeed(s), []);
+
+  const setSleepMinutes = useCallback((min: number) => {
+    setSleep(min);
+    setSleepRemainingSec(min * 60);
+  }, []);
+
+  // Sleep-timer countdown: ticks only while playing and armed; pauses
+  // playback (real or simulated) when it reaches 0.
+  useEffect(() => {
+    if (sleep <= 0 || !isPlaying) return;
+    const id = setInterval(() => {
+      setSleepRemainingSec((s) => {
+        if (s <= 1) {
+          if (hasAudio) player.pause();
+          else setIsPlaying(false);
+          setSleep(0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [sleep, isPlaying, hasAudio, player]);
+
+  // Lock-screen (Now Playing) metadata: activate/update while a lecture with
+  // real media is current, deactivate when it's cleared/switched away.
+  useEffect(() => {
+    if (!current || !current.mediaUrl) return;
+    try {
+      player.setActiveForLockScreen(true, {
+        title: current.title,
+        artist: current.seriesTitle ?? current.sub,
+        albumTitle: current.seriesTitle ?? "Althaqalayn Lectures",
+        // artworkUrl: omitted for now — generated covers have no URL.
+      });
+    } catch {
+      // API shape guard — swallow if unsupported on this platform/build.
+    }
+    return () => {
+      try {
+        player.setActiveForLockScreen(false);
+      } catch {
+        // ignore
+      }
+    };
+  }, [current, player]);
+
   const value = useMemo<PlayerValue>(
     () => ({
       current,
@@ -162,16 +271,48 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       position,
       speed,
       sleep,
-      transcriptOpen,
+      sleepRemainingSec,
+      buffering,
+      queue,
+      queueIndex,
+      hasNext,
+      hasPrev,
       play,
+      playSeries,
+      next,
+      prev,
       togglePlay,
       seekTo,
       nudge,
+      progressFor,
       cycleSpeed: () => setSpeed((s) => SPEEDS[(SPEEDS.indexOf(s as (typeof SPEEDS)[number]) + 1) % SPEEDS.length]),
-      cycleSleep: () => setSleep((s) => SLEEPS[(SLEEPS.indexOf(s as (typeof SLEEPS)[number]) + 1) % SLEEPS.length]),
-      toggleTranscript: () => setTranscriptOpen((t) => !t),
+      setSpeedValue,
+      cycleSleep: () => setSleepMinutes(SLEEPS[(SLEEPS.indexOf(sleep as (typeof SLEEPS)[number]) + 1) % SLEEPS.length]),
+      setSleepMinutes,
     }),
-    [current, isPlaying, position, speed, sleep, transcriptOpen, play, togglePlay, seekTo, nudge],
+    [
+      current,
+      isPlaying,
+      position,
+      speed,
+      sleep,
+      sleepRemainingSec,
+      buffering,
+      queue,
+      queueIndex,
+      hasNext,
+      hasPrev,
+      play,
+      playSeries,
+      next,
+      prev,
+      togglePlay,
+      seekTo,
+      nudge,
+      progressFor,
+      setSpeedValue,
+      setSleepMinutes,
+    ],
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

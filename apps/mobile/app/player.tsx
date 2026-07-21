@@ -32,13 +32,11 @@ export default function PlayerScreen() {
     position,
     speed,
     sleep,
-    transcriptOpen,
     togglePlay,
     seekTo,
     nudge,
     cycleSpeed,
     cycleSleep,
-    toggleTranscript,
   } = usePlayer();
   const [trackWidth, setTrackWidth] = useState(0);
 
@@ -146,28 +144,7 @@ export default function PlayerScreen() {
             <Feather name="download" size={19} color="#fff" />
             <Text style={styles.secLabel}>{t.player.download}</Text>
           </Pressable>
-          <Pressable style={styles.secItem} onPress={toggleTranscript}>
-            <Feather name="align-left" size={19} color="#fff" />
-            <Text style={[styles.secLabel, transcriptOpen ? styles.secActive : null]}>
-              {t.player.transcript}
-            </Text>
-          </Pressable>
         </View>
-
-        {transcriptOpen ? (
-          <View style={styles.transcript}>
-            <View style={styles.transcriptHead}>
-              <Text style={styles.transcriptTag}>TRANSCRIPT · HAUSA</Text>
-              <Text style={styles.transcriptMeta}>Auto · beta</Text>
-            </View>
-            <Text style={styles.transcriptBody}>
-              <Text style={styles.transcriptHl}>
-                Bismillahir Rahmanir Rahim. Yau za mu yi magana a kan ma'anar rahamar Allah…
-              </Text>{" "}
-              Rahama ita ce tushen kowace ni'ima, kuma ita ce ke nuna girman Ubangiji ga bayinsa.
-            </Text>
-          </View>
-        ) : null}
       </ScrollView>
     </View>
   );
