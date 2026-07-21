@@ -12,6 +12,7 @@ export function Categories({ query }: { query: string }) {
   const [cats, setCats] = useState<Category[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Category | "new" | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -44,6 +45,29 @@ export function Categories({ query }: { query: string }) {
     void load();
   };
 
+  /** Swap two active categories' `position`; visible order = position order.
+   *  Swaps the pair's real indices in the full `cats` list and persists the
+   *  whole list — categories are a flat list (no cross-grouping), so `cats`
+   *  is always the true order. */
+  const move = async (c: Category, dir: -1 | 1) => {
+    if (!cats || busy) return;
+    const i = active.findIndex((x) => x.id === c.id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= active.length) return;
+    const otherId = active[j].id;
+    const fullIds = cats.map((x) => x.id);
+    const ia = fullIds.indexOf(c.id);
+    const ib = fullIds.indexOf(otherId);
+    [fullIds[ia], fullIds[ib]] = [fullIds[ib], fullIds[ia]];
+    setBusy(true);
+    try {
+      await admin.setCategoryPositions(getClient(), fullIds);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (error) return <div style={{ color: "var(--muted)" }}>Couldn’t load: {error}</div>;
   if (!cats) return <div style={{ color: "var(--muted)" }}>Loading…</div>;
 
@@ -58,8 +82,26 @@ export function Categories({ query }: { query: string }) {
         {active.length === 0 ? (
           <div style={styles.empty}>No active categories.</div>
         ) : (
-          active.map((c) => (
+          active.map((c, i) => (
             <div key={c.id} style={styles.row}>
+              <div style={styles.reorderCol}>
+                <button
+                  type="button"
+                  onClick={() => void move(c, -1)}
+                  disabled={busy || i === 0}
+                  style={styles.reorderBtn}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void move(c, 1)}
+                  disabled={busy || i === active.length - 1}
+                  style={styles.reorderBtn}
+                >
+                  ▼
+                </button>
+              </div>
               <span style={styles.motif}>{c.ar}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={styles.label}>{c.label}</div>
@@ -107,6 +149,8 @@ const styles: Record<string, CSSProperties> = {
   card: { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" },
   empty: { padding: 32, textAlign: "center", color: "var(--muted)", fontSize: 13 },
   row: { display: "flex", alignItems: "center", gap: 14, padding: "13px 18px", borderBottom: "1px solid var(--line)" },
+  reorderCol: { display: "flex", flexDirection: "column", gap: 1 },
+  reorderBtn: { background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 10, lineHeight: 1, padding: 2 },
   motif: { fontFamily: font.arabic, fontSize: 22, color: brand.goldDk, width: 34, textAlign: "center" },
   label: { fontSize: 14, fontWeight: 600 },
   meta: { fontSize: 11.5, color: "var(--muted)", marginTop: 2 },
