@@ -37,6 +37,16 @@ export function Transcripts({ query }: { query: string }) {
     void load();
   }, [load]);
 
+  const removeTranscript = async (l: Lecture, tr: Transcript) => {
+    if (!confirm(`Delete the transcript for “${pick(l.title)}”? This cannot be undone.`)) return;
+    try {
+      await admin.deleteTranscript(getClient(), tr.id);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
   const q = query.trim().toLowerCase();
   const rows = useMemo(
     () => (lectures ?? []).filter((l) => !q || pick(l.title).toLowerCase().includes(q)),
@@ -77,8 +87,9 @@ export function Transcripts({ query }: { query: string }) {
               <div style={styles.title}>{pick(l.title)}</div>
               <div style={styles.muted}>{l.language === "ha" ? "Hausa" : "English"}</div>
               <div><span style={{ ...styles.pill, background: ui.bg, color: ui.fg }}>{ui.label}</span></div>
-              <div style={{ textAlign: "right" }}>
+              <div style={{ textAlign: "right", display: "flex", gap: 14, justifyContent: "flex-end" }}>
                 <button onClick={() => setEditing(l)} style={styles.link}>{tr ? "Review" : "Add"}</button>
+                {tr ? <button onClick={() => void removeTranscript(l, tr)} style={styles.linkDanger}>Delete</button> : null}
               </div>
             </div>
           );
@@ -125,5 +136,6 @@ const styles: Record<string, CSSProperties> = {
   muted: { color: "var(--muted)" },
   pill: { fontSize: 10.5, fontWeight: 800, borderRadius: 20, padding: "4px 11px" },
   link: { background: "transparent", border: "none", fontSize: 12, fontWeight: 700, color: brand.greenMid, cursor: "pointer" },
+  linkDanger: { background: "transparent", border: "none", fontSize: 12, fontWeight: 700, color: "#a23e3e", cursor: "pointer" },
   empty: { padding: 32, textAlign: "center", color: "var(--muted)", fontSize: 13 },
 };

@@ -51,6 +51,31 @@ export function ContentWorkspace() {
 
   const afterSave = async () => { await reload(); setMode("read"); setDraftNew(null); };
 
+  const onDeleteSelected = async () => {
+    if (!selected) return;
+    const client = getClient();
+    try {
+      if (selected.kind === "program") {
+        const p = findProgram(selected.id);
+        if (!confirm(`Delete program “${p ? p.title.en : ""}”? Its series are kept but unlinked.`)) return;
+        await admin.deleteProgram(client, selected.id);
+      } else if (selected.kind === "series") {
+        const s = findSeriesNode(selected.id);
+        if (!confirm(`Delete series “${s ? s.title.en : ""}”? Its episodes are kept but unlinked.`)) return;
+        await admin.deleteSeries(client, selected.id);
+      } else {
+        const l = findLecture(selected.kind, selected.id);
+        if (!confirm(`Delete “${l ? l.title.en : ""}”? This cannot be undone.`)) return;
+        await admin.deleteLecture(client, selected.id);
+      }
+      setSelected(null);
+      setMode("read");
+      await reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
   const findProgram = (id: string) => tree.programs.find((p) => p.id === id) ?? null;
   const findSeriesNode = (id: string) => {
     for (const p of tree.programs) { const s = p.seriesNodes.find((x) => x.id === id); if (s) return s; }
@@ -147,7 +172,7 @@ export function ContentWorkspace() {
         ) : mode === "new" && draftNew?.kind === "episodesBatch" && findSeriesNode(draftNew.seriesId) ? (
           <BatchEpisodesForm series={findSeriesNode(draftNew.seriesId)!} onCancel={() => setMode("read")} onSaved={afterSave} />
         ) : (
-          <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} />
+          <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} onDelete={() => void onDeleteSelected()} />
         )}
       </div>
     </div>

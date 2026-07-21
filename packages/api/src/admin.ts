@@ -275,6 +275,11 @@ export async function upsertTranscript(
   return mapTranscript(saved);
 }
 
+export async function deleteTranscript(client: AlthaqalaynClient, id: string): Promise<void> {
+  const { error } = await client.from("transcripts").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 // ── Gallery ──────────────────────────────────────────────────────────────────
 export async function upsertAlbum(
   client: AlthaqalaynClient,

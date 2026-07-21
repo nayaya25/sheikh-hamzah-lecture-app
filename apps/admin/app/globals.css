@@ -1,7 +1,7 @@
 /* Admin console theme tokens (mirrors @althaqalayn/theme adminLight/adminDark).
    The sidebar stays deep-green in both modes; surfaces switch via these vars. */
 :root {
-  --bg: #f6f1e7;
+  --bg: #faf6ee;
   --card: #ffffff;
   --line: #ece4d3;
   --ink: #17231e;

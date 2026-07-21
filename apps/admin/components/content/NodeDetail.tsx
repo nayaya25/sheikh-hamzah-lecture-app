@@ -12,10 +12,12 @@ export function NodeDetail({
   tree,
   selected,
   onEdit,
+  onDelete,
 }: {
   tree: ContentTree;
   selected: NodeRef | null;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   if (!selected) return <Overview tree={tree} />;
 
@@ -23,7 +25,7 @@ export function NodeDetail({
     const p = tree.programs.find((x) => x.id === selected.id);
     if (!p) return <Missing />;
     return (
-      <Frame title={pick(p.title)} sub="Program" onEdit={onEdit}>
+      <Frame title={pick(p.title)} sub="Program" onEdit={onEdit} onDelete={onDelete}>
         <Meta label="Series" value={String(p.seriesNodes.length)} />
         {p.description?.en ? <Meta label="Description" value={p.description.en} /> : null}
       </Frame>
@@ -34,7 +36,7 @@ export function NodeDetail({
     const s = findSeries(tree, selected.id);
     if (!s) return <Missing />;
     return (
-      <Frame title={pick(s.title)} sub="Series" onEdit={onEdit}>
+      <Frame title={pick(s.title)} sub="Series" onEdit={onEdit} onDelete={onDelete}>
         <div style={{ ...cover, background: coverGradient(s.cover.gradient[0], s.cover.gradient[1]) }}>
           {s.cover.arabic ? <span style={motif}>{s.cover.arabic}</span> : null}
         </div>
@@ -52,7 +54,7 @@ export function NodeDetail({
   const badge = mediaBadge(l.type);
   const pill = statusPill(l.status);
   return (
-    <Frame title={pick(l.title)} sub={selected.kind === "episode" ? "Episode" : "Standalone lecture"} onEdit={onEdit}>
+    <Frame title={pick(l.title)} sub={selected.kind === "episode" ? "Episode" : "Standalone lecture"} onEdit={onEdit} onDelete={onDelete}>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <span style={{ ...chip, background: badge.bg, color: badge.fg }}>{l.type.toUpperCase()}</span>
         <span style={{ ...chip, background: pill.bg, color: pill.fg }}>{pill.label}</span>
@@ -102,7 +104,7 @@ function Overview({ tree }: { tree: ContentTree }) {
   );
 }
 
-function Frame({ title, sub, onEdit, children }: { title: string; sub: string; onEdit: () => void; children: React.ReactNode }) {
+function Frame({ title, sub, onEdit, onDelete, children }: { title: string; sub: string; onEdit: () => void; onDelete: () => void; children: React.ReactNode }) {
   return (
     <div style={{ padding: 28, maxWidth: 760 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
@@ -110,7 +112,10 @@ function Frame({ title, sub, onEdit, children }: { title: string; sub: string; o
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".5px", color: "var(--faint)" }}>{sub.toUpperCase()}</div>
           <div style={{ fontFamily: font.heading, fontSize: 22, fontWeight: 600, marginTop: 4 }}>{title}</div>
         </div>
-        <button onClick={onEdit} style={editBtn}>Edit</button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button onClick={onEdit} style={editBtn}>Edit</button>
+          <button onClick={onDelete} style={deleteBtn}>Delete</button>
+        </div>
       </div>
       {children}
     </div>
@@ -129,6 +134,7 @@ function Missing() {
 }
 
 const editBtn: CSSProperties = { flexShrink: 0, background: "var(--chip)", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font.ui };
+const deleteBtn: CSSProperties = { flexShrink: 0, background: "transparent", color: "#a23e3e", border: "1px solid var(--line)", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font.ui };
 const chip: CSSProperties = { fontSize: 9.5, fontWeight: 800, letterSpacing: ".5px", borderRadius: 6, padding: "4px 8px" };
 const cover: CSSProperties = { height: 120, borderRadius: 14, position: "relative", overflow: "hidden", marginBottom: 8 };
 const motif: CSSProperties = { position: "absolute", right: 10, top: -10, fontFamily: font.arabic, fontSize: 72, color: "rgba(255,255,255,.16)" };
