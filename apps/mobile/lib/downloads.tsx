@@ -185,17 +185,21 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       // than a hydrated-on-mount value) so a toggle made in Settings this
       // session is honored immediately, then check the live connection type.
       void (async () => {
-        const wifiOnly = await loadJSON<boolean>(StorageKeys.wifiOnly, true);
-        if (wifiOnly) {
-          const net = await getNetworkStateAsync();
-          if (net.type === NetworkStateType.CELLULAR) {
-            Alert.alert(msgs.download.wifiOnlyTitle, msgs.download.wifiOnlyBody);
-            return;
+        try {
+          const wifiOnly = await loadJSON<boolean>(StorageKeys.wifiOnly, true);
+          if (wifiOnly) {
+            const net = await getNetworkStateAsync();
+            if (net.type === NetworkStateType.CELLULAR) {
+              Alert.alert(msgs.download.wifiOnlyTitle, msgs.download.wifiOnlyBody);
+              return;
+            }
           }
+        } catch {
+          // check failed — fail open, proceed to download
         }
         playables.current.set(l.id, l);
         dispatch({ type: "queue", id: l.id });
-      })();
+      })().catch(() => {});
     },
     [msgs],
   );
