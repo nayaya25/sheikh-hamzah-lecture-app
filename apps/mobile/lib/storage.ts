@@ -15,6 +15,9 @@ export const StorageKeys = {
   themeMode: "themeMode", // "system" | "light" | "dark"
   downloads: "downloads", // DownloadsState — persisted offline-download entries
   bookmarks: "bookmarks", // string[] — saved/bookmarked lecture ids
+  readerTheme: "readerTheme", // "light" | "dark" | null — local override for the reader's reading theme
+  readerScroll: "readerScroll", // Record<lectureId, scrollFraction> — reader scroll position, 0..1
+  readerFont: "readerFont", // number — reader body text scale factor
 } as const;
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
