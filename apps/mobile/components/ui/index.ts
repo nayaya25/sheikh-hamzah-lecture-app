@@ -7,3 +7,4 @@ export { EmptyState } from "./EmptyState";
 export { Button } from "./Button";
 export { Chip } from "./Chip";
 export { Header } from "./Header";
+export { CoverArt } from "./CoverArt";
