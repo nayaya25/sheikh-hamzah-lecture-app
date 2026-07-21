@@ -5,6 +5,7 @@ import { admin, unwrap } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
 import { brand, font } from "@/lib/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 import { BatchEpisodesForm } from "./BatchEpisodesForm";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
 import { LectureForm } from "./LectureForm";
@@ -13,6 +14,7 @@ import { ProgramForm } from "./ProgramForm";
 import { SeriesForm } from "./SeriesForm";
 
 export function ContentWorkspace() {
+  const { confirm, alert } = useConfirm();
   const { tree, loading, error, reload } = useContentTree();
   const [selected, setSelected] = useState<NodeRef | null>(null);
   const [query, setQuery] = useState("");
@@ -57,22 +59,22 @@ export function ContentWorkspace() {
     try {
       if (selected.kind === "program") {
         const p = findProgram(selected.id);
-        if (!confirm(`Delete program “${p ? p.title.en : ""}”? Its series are kept but unlinked.`)) return;
+        if (!(await confirm({ title: `Delete program “${p ? p.title.en : ""}”?`, body: "Its series are kept but unlinked.", danger: true, confirmLabel: "Delete" }))) return;
         await admin.deleteProgram(client, selected.id);
       } else if (selected.kind === "series") {
         const s = findSeriesNode(selected.id);
-        if (!confirm(`Delete series “${s ? s.title.en : ""}”? Its episodes are kept but unlinked.`)) return;
+        if (!(await confirm({ title: `Delete series “${s ? s.title.en : ""}”?`, body: "Its episodes are kept but unlinked.", danger: true, confirmLabel: "Delete" }))) return;
         await admin.deleteSeries(client, selected.id);
       } else {
         const l = findLecture(selected.kind, selected.id);
-        if (!confirm(`Delete “${l ? l.title.en : ""}”? This cannot be undone.`)) return;
+        if (!(await confirm({ title: `Delete “${l ? l.title.en : ""}”?`, body: "This cannot be undone.", danger: true, confirmLabel: "Delete" }))) return;
         await admin.deleteLecture(client, selected.id);
       }
       setSelected(null);
       setMode("read");
       await reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      await alert({ title: "Delete failed", body: e instanceof Error ? e.message : "Delete failed" });
     }
   };
 

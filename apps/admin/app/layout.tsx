@@ -3,6 +3,7 @@ import { Amiri, Instrument_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { ConfirmProvider } from "@/components/ConfirmProvider";
 
 const sora = Sora({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sora" });
 const instrument = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument" });
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${sora.variable} ${instrument.variable} ${amiri.variable}`}>
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

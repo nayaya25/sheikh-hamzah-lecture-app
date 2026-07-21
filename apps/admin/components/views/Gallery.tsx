@@ -7,6 +7,7 @@ import { AlbumEditor } from "@/components/AlbumEditor";
 import { Toggle } from "@/components/form";
 import { getClient } from "@/lib/supabase";
 import { brand, font } from "@/lib/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 interface AlbumRowVM {
   id: string;
@@ -19,6 +20,7 @@ interface AlbumRowVM {
 }
 
 export function Gallery({ query }: { query: string }) {
+  const { confirm } = useConfirm();
   const [albums, setAlbums] = useState<AlbumRowVM[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Album | "new" | null>(null);
@@ -68,7 +70,7 @@ export function Gallery({ query }: { query: string }) {
     void load();
   };
   const remove = async (a: AlbumRowVM) => {
-    if (!confirm(`Delete album “${a.title}” and its photos?`)) return;
+    if (!(await confirm({ title: `Delete album “${a.title}”?`, body: "Its photos will be deleted too.", danger: true, confirmLabel: "Delete" }))) return;
     await admin.deleteAlbum(getClient(), a.id);
     void load();
   };

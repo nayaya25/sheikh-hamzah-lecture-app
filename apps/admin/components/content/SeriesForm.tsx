@@ -8,6 +8,7 @@ import { SectionedForm, type FormSection } from "@/components/SectionedForm";
 import { getClient } from "@/lib/supabase";
 import { brand, mediaBadge, statusPill, YEARS } from "@/lib/ui";
 import { ActionMenu } from "@/components/ActionMenu";
+import { useConfirm } from "@/components/ConfirmProvider";
 import { EditorFooter } from "./EditorFooter";
 import type { SeriesNode } from "@/lib/useContentTree";
 
@@ -37,6 +38,7 @@ export function SeriesForm({
   onAddMultiple?: (seriesId: string) => void;
   onEpisodesChanged?: () => void;
 }) {
+  const { confirm } = useConfirm();
   const [titleEn, setTitleEn] = useState(series ? pick(series.title) : "");
   const [titleHa, setTitleHa] = useState(series?.title.ha ?? "");
   const [parent, setParent] = useState(series?.programId ?? programId ?? "");
@@ -64,7 +66,7 @@ export function SeriesForm({
     onEpisodesChanged?.();
   };
   const removeEp = async (id: string, title: string) => {
-    if (!confirm(`Delete episode “${title}”?`)) return;
+    if (!(await confirm({ title: `Delete episode “${title}”?`, danger: true, confirmLabel: "Delete" }))) return;
     await admin.deleteLecture(getClient(), id);
     setEps((cur) => cur.filter((e) => e.id !== id));
     onEpisodesChanged?.();

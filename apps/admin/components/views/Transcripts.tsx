@@ -6,6 +6,7 @@ import type { Lecture, Transcript } from "@althaqalayn/types";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { getClient } from "@/lib/supabase";
 import { brand, font } from "@/lib/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 const STATUS_UI: Record<string, { bg: string; fg: string; label: string }> = {
@@ -15,6 +16,7 @@ const STATUS_UI: Record<string, { bg: string; fg: string; label: string }> = {
 };
 
 export function Transcripts({ query }: { query: string }) {
+  const { confirm, alert } = useConfirm();
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
   const [byLecture, setByLecture] = useState<Record<string, Transcript>>({});
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +40,12 @@ export function Transcripts({ query }: { query: string }) {
   }, [load]);
 
   const removeTranscript = async (l: Lecture, tr: Transcript) => {
-    if (!confirm(`Delete the transcript for “${pick(l.title)}”? This cannot be undone.`)) return;
+    if (!(await confirm({ title: `Delete the transcript for “${pick(l.title)}”?`, body: "This cannot be undone.", danger: true, confirmLabel: "Delete" }))) return;
     try {
       await admin.deleteTranscript(getClient(), tr.id);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      await alert({ title: "Delete failed", body: e instanceof Error ? e.message : "Delete failed" });
     }
   };
 

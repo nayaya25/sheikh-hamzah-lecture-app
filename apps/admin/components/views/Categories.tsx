@@ -7,8 +7,10 @@ import { CategoryEditor } from "@/components/CategoryEditor";
 import { Toggle } from "@/components/form";
 import { getClient } from "@/lib/supabase";
 import { brand, font } from "@/lib/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export function Categories({ query }: { query: string }) {
+  const { confirm } = useConfirm();
   const [cats, setCats] = useState<Category[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Category | "new" | null>(null);
@@ -36,7 +38,7 @@ export function Categories({ query }: { query: string }) {
     void load();
   };
   const remove = async (c: Category) => {
-    if (!confirm(`Delete category “${c.label}”?`)) return;
+    if (!(await confirm({ title: `Delete category “${c.label}”?`, danger: true, confirmLabel: "Delete" }))) return;
     await admin.deleteCategory(getClient(), c.id);
     void load();
   };

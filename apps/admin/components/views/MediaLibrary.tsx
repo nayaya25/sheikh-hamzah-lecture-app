@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { getClient } from "@/lib/supabase";
 import { brand, font } from "@/lib/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 interface FileVM {
   folder: string;
@@ -15,6 +16,7 @@ interface FileVM {
 const FOLDERS = ["lectures", "gallery"];
 
 export function MediaLibrary({ query }: { query: string }) {
+  const { confirm } = useConfirm();
   const [files, setFiles] = useState<FileVM[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +52,7 @@ export function MediaLibrary({ query }: { query: string }) {
   const totalMB = (files ?? []).reduce((s, f) => s + f.size, 0) / 1024 / 1024;
 
   const remove = async (f: FileVM) => {
-    if (!confirm(`Delete ${f.name}? Lectures/albums pointing at it will lose their media.`)) return;
+    if (!(await confirm({ title: `Delete ${f.name}?`, body: "Lectures/albums pointing at it will lose their media.", danger: true, confirmLabel: "Delete" }))) return;
     await getClient().storage.from("media").remove([`${f.folder}/${f.name}`]);
     void load();
   };
