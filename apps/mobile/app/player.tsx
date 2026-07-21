@@ -1,44 +1,57 @@
-import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  type LayoutChangeEvent,
-  type GestureResponderEvent,
-} from "react-native";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRef } from "react";
+import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@althaqalayn/theme";
+import { colors, typePresets } from "@althaqalayn/theme";
+import { AppText } from "@/components/ui/AppText";
+import { CoverArt } from "@/components/ui/CoverArt";
+import { Icon } from "@/components/ui/Icon";
+import { Touchable } from "@/components/ui/Touchable";
 import { RotatingRing } from "@/components/RotatingRing";
-import { formatTime } from "@/lib/catalog";
+import { Scrubber } from "@/components/player/Scrubber";
+import { ValueSheet } from "@/components/player/ValueSheet";
+import { formatTime, gradientForLecture } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { usePlayer } from "@/lib/player";
+import { useTheme } from "@/lib/theme";
 
 const ART = 270;
+const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2].map((v) => ({ label: `${v}×`, value: v }));
+const SLEEP_OPTIONS = [0, 15, 30, 45, 60].map((v) => ({ label: v === 0 ? "Off" : `${v} min`, value: v }));
 
 export default function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useI18n();
+  const t = useTheme();
+  const { t: msgs } = useI18n();
   const {
     current,
     isPlaying,
     position,
     speed,
     sleep,
+    sleepRemainingSec,
+    buffering,
+    hasNext,
+    hasPrev,
     togglePlay,
     seekTo,
     nudge,
+    next,
+    prev,
     cycleSpeed,
+    setSpeedValue,
     cycleSleep,
+    setSleepMinutes,
   } = usePlayer();
-  const [trackWidth, setTrackWidth] = useState(0);
+
+  const speedSheetRef = useRef<BottomSheetModal>(null);
+  const sleepSheetRef = useRef<BottomSheetModal>(null);
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
   if (!current) {
@@ -46,14 +59,12 @@ export default function PlayerScreen() {
     return null;
   }
 
-  const gradient = current.gradient ?? ["#0B4634", "#17795E"];
-  const seriesTitle = current.seriesTitle;
+  const gradient = gradientForLecture(current);
   const durSec = current.durSec;
 
-  const onSeek = (e: GestureResponderEvent) => {
-    if (trackWidth > 0) seekTo(e.nativeEvent.locationX / trackWidth);
+  const onShare = () => {
+    void Share.share({ message: current.title });
   };
-  const onTrackLayout = (e: LayoutChangeEvent) => setTrackWidth(e.nativeEvent.layout.width);
 
   return (
     <View style={styles.root}>
@@ -65,87 +76,156 @@ export default function PlayerScreen() {
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 28 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + t.space.md, paddingBottom: insets.bottom + t.space.xxl },
+        ]}
       >
         {/* Top bar */}
         <View style={styles.topBar}>
-          <Pressable style={styles.roundBtn} onPress={() => router.back()}>
-            <Feather name="chevron-down" size={22} color="#fff" />
-          </Pressable>
+          <Touchable
+            onPress={() => router.back()}
+            accessibilityLabel="Close player"
+            style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+          >
+            <Icon name="chevron-down" size={22} color="onBrand" />
+          </Touchable>
           <View style={{ alignItems: "center" }}>
-            <Text style={styles.nowPlaying}>{t.player.nowPlaying.toUpperCase()}</Text>
-            <Text style={styles.nowSeries}>{seriesTitle}</Text>
+            <AppText color="rgba(255,255,255,0.6)" style={styles.nowPlaying}>
+              {msgs.player.nowPlaying.toUpperCase()}
+            </AppText>
+            <AppText color="rgba(255,255,255,0.85)" style={styles.nowSeries}>
+              {current.seriesTitle}
+            </AppText>
           </View>
-          <Pressable style={styles.roundBtn}>
-            <Feather name="share-2" size={18} color="#fff" />
-          </Pressable>
+          <Touchable
+            onPress={onShare}
+            accessibilityLabel="Share"
+            style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+          >
+            <Icon name="share-2" size={18} color="onBrand" />
+          </Touchable>
         </View>
 
         {/* Artwork */}
         <View style={styles.artWrap}>
           <RotatingRing playing={isPlaying} size={ART} />
-          <View style={styles.artInner}>
-            <LinearGradient colors={[gradient[0], gradient[1]]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
-            <View style={{ alignItems: "center" }}>
-              <Text style={styles.artAr} allowFontScaling={false}>
-                {current.ar}
-              </Text>
-              <Text style={styles.artType}>{current.type.toUpperCase()}</Text>
-            </View>
-          </View>
+          <CoverArt gradient={[gradient[0], gradient[1]]} glyph={current.ar} size={ART} radius={t.radii.hero} />
         </View>
 
         {/* Title */}
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>{current.title}</Text>
-          <Text style={styles.sub}>{current.sub}</Text>
+          <AppText color="onBrand" style={styles.title} numberOfLines={2}>
+            {current.title}
+          </AppText>
+          <AppText color="accentText" style={styles.sub}>
+            {current.sub}
+          </AppText>
         </View>
 
         {/* Scrubber */}
         <View style={styles.scrubBlock}>
-          <Pressable onPress={onSeek} onLayout={onTrackLayout} style={styles.track} hitSlop={10}>
-            <View style={[styles.trackFill, { width: `${position * 100}%` }]} />
-            <View style={[styles.knob, { left: `${position * 100}%` }]} />
-          </Pressable>
+          <Scrubber position={position} durationSec={durSec} onSeek={seekTo} />
           <View style={styles.timeRow}>
-            <Text style={styles.time}>{formatTime(position * durSec)}</Text>
-            <Text style={styles.time}>{formatTime(durSec)}</Text>
+            <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
+              {formatTime(position * durSec)}
+            </AppText>
+            <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
+              {formatTime(durSec)}
+            </AppText>
           </View>
         </View>
 
         {/* Transport */}
         <View style={styles.transport}>
-          <Ionicons name="play-skip-back" size={26} color="rgba(255,255,255,0.85)" />
-          <Pressable style={styles.skip} onPress={() => nudge(-0.05)}>
+          <Touchable
+            onPress={prev}
+            disabled={!hasPrev}
+            haptic="light"
+            accessibilityLabel="Previous"
+            style={styles.skipEnd}
+          >
+            <Ionicons name="play-skip-back" size={26} color={hasPrev ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
+          </Touchable>
+          <Touchable onPress={() => nudge(-0.05)} haptic="light" accessibilityLabel="Rewind 15 seconds" style={styles.skip}>
             <MaterialCommunityIcons name="rewind-15" size={30} color="#fff" />
-          </Pressable>
-          <Pressable style={styles.bigPlay} onPress={togglePlay}>
-            <Ionicons name={isPlaying ? "pause" : "play"} size={30} color={colors.greenDeep} />
-          </Pressable>
-          <Pressable style={styles.skip} onPress={() => nudge(0.05)}>
+          </Touchable>
+          <Touchable onPress={togglePlay} haptic="light" accessibilityLabel={isPlaying ? "Pause" : "Play"} style={styles.bigPlay}>
+            {buffering ? (
+              <ActivityIndicator color={colors.greenDeep} />
+            ) : (
+              <Ionicons name={isPlaying ? "pause" : "play"} size={30} color={colors.greenDeep} />
+            )}
+          </Touchable>
+          <Touchable onPress={() => nudge(0.05)} haptic="light" accessibilityLabel="Forward 30 seconds" style={styles.skip}>
             <MaterialCommunityIcons name="fast-forward-30" size={30} color="#fff" />
-          </Pressable>
-          <Ionicons name="play-skip-forward" size={26} color="rgba(255,255,255,0.85)" />
+          </Touchable>
+          <Touchable
+            onPress={next}
+            disabled={!hasNext}
+            haptic="light"
+            accessibilityLabel="Next"
+            style={styles.skipEnd}
+          >
+            <Ionicons name="play-skip-forward" size={26} color={hasNext ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
+          </Touchable>
         </View>
 
         {/* Secondary controls */}
         <View style={styles.secondary}>
-          <Pressable style={styles.secItem} onPress={cycleSpeed}>
-            <Text style={styles.speedLabel}>{speed}×</Text>
-            <Text style={styles.secLabel}>{t.player.speed}</Text>
-          </Pressable>
-          <Pressable style={styles.secItem} onPress={cycleSleep}>
-            <Feather name="clock" size={19} color="#fff" />
-            <Text style={[styles.secLabel, sleep ? styles.secActive : null]}>
-              {sleep ? `${sleep}m` : t.player.sleep}
-            </Text>
-          </Pressable>
-          <Pressable style={styles.secItem}>
-            <Feather name="download" size={19} color="#fff" />
-            <Text style={styles.secLabel}>{t.player.download}</Text>
-          </Pressable>
+          <Touchable
+            style={styles.secItem}
+            onPress={cycleSpeed}
+            onLongPress={() => speedSheetRef.current?.present()}
+            accessibilityLabel="Playback speed"
+          >
+            <AppText color="accentText" style={styles.speedLabel}>
+              {speed}×
+            </AppText>
+            <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
+              {msgs.player.speed}
+            </AppText>
+          </Touchable>
+          <Touchable
+            style={styles.secItem}
+            onPress={cycleSleep}
+            onLongPress={() => sleepSheetRef.current?.present()}
+            accessibilityLabel="Sleep timer"
+          >
+            <Icon name="clock" size={19} color={sleep ? "accentText" : "onBrand"} />
+            <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
+              {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
+            </AppText>
+          </Touchable>
+          <Touchable style={styles.secItem} onPress={onShare} accessibilityLabel="Share">
+            <Icon name="share-2" size={19} color="onBrand" />
+            <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
+              {msgs.player.share}
+            </AppText>
+          </Touchable>
         </View>
       </ScrollView>
+
+      <ValueSheet
+        ref={speedSheetRef}
+        title="Playback speed"
+        options={SPEED_OPTIONS}
+        selected={speed}
+        onSelect={(v) => {
+          setSpeedValue(v);
+          speedSheetRef.current?.dismiss();
+        }}
+      />
+      <ValueSheet
+        ref={sleepSheetRef}
+        title="Sleep timer"
+        options={SLEEP_OPTIONS}
+        selected={sleep}
+        onSelect={(v) => {
+          setSleepMinutes(v);
+          sleepSheetRef.current?.dismiss();
+        }}
+      />
     </View>
   );
 }
@@ -157,54 +237,46 @@ const styles = StyleSheet.create({
   roundBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  nowPlaying: { fontFamily: font.sans.extrabold, fontSize: 10, letterSpacing: 1.2, color: "rgba(255,255,255,0.6)" },
-  nowSeries: { fontFamily: font.sans.regular, fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  nowPlaying: {
+    fontFamily: font.sans.extrabold,
+    fontSize: typePresets.caption.fontSize,
+    lineHeight: typePresets.caption.lineHeight,
+    letterSpacing: 1.2,
+  },
+  nowSeries: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.meta.fontSize,
+    lineHeight: typePresets.meta.lineHeight,
+    marginTop: 2,
+  },
 
   artWrap: { width: ART, height: ART, alignSelf: "center", marginTop: 34, alignItems: "center", justifyContent: "center" },
-  artInner: {
-    position: "absolute",
-    top: 14,
-    left: 14,
-    right: 14,
-    bottom: 14,
-    borderRadius: 26,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  artAr: { fontFamily: font.arabic.regular, fontSize: 80, color: "rgba(255,255,255,0.92)", lineHeight: 92 },
-  artType: { fontFamily: font.sans.regular, fontSize: 11, letterSpacing: 2, color: "rgba(255,255,255,0.7)", marginTop: 4 },
 
   titleBlock: { marginTop: 36, alignItems: "center" },
-  title: { fontFamily: font.serif.semibold, fontSize: 22, color: "#fff", textAlign: "center", lineHeight: 28 },
-  sub: { fontFamily: font.sans.regular, fontSize: 13, color: colors.goldLight, marginTop: 6 },
-
-  scrubBlock: { marginTop: 26 },
-  track: { height: 5, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 3, justifyContent: "center" },
-  trackFill: { position: "absolute", left: 0, height: "100%", backgroundColor: colors.goldLight, borderRadius: 3 },
-  knob: {
-    position: "absolute",
-    marginLeft: -6.5,
-    width: 13,
-    height: 13,
-    borderRadius: 6.5,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+  title: {
+    fontFamily: font.serif.semibold,
+    fontSize: typePresets.screen.fontSize,
+    lineHeight: typePresets.screen.lineHeight,
+    textAlign: "center",
   },
+  sub: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.body.fontSize,
+    lineHeight: typePresets.body.lineHeight,
+    marginTop: 6,
+  },
+
+  scrubBlock: { marginTop: 4 },
   timeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-  time: { fontFamily: font.sans.regular, fontSize: 11, color: "rgba(255,255,255,0.65)" },
+  time: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize, lineHeight: typePresets.caption.lineHeight },
 
   transport: { marginTop: 22, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   skip: { alignItems: "center" },
+  skipEnd: { alignItems: "center", justifyContent: "center" },
   bigPlay: {
     width: 74,
     height: 74,
@@ -221,21 +293,10 @@ const styles = StyleSheet.create({
 
   secondary: { marginTop: 26, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 },
   secItem: { alignItems: "center", gap: 4 },
-  speedLabel: { fontFamily: font.serif.semibold, fontSize: 15, color: colors.goldLight },
-  secLabel: { fontFamily: font.sans.regular, fontSize: 9.5, color: "rgba(255,255,255,0.6)" },
-  secActive: { color: colors.goldLight },
-
-  transcript: {
-    marginTop: 22,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
-    borderRadius: 18,
-    padding: 16,
+  speedLabel: { fontFamily: font.serif.semibold, fontSize: typePresets.cardTitle.fontSize, lineHeight: typePresets.cardTitle.lineHeight },
+  secLabel: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.caption.fontSize,
+    lineHeight: typePresets.caption.lineHeight,
   },
-  transcriptHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  transcriptTag: { fontFamily: font.sans.extrabold, fontSize: 11, letterSpacing: 0.8, color: colors.goldLight },
-  transcriptMeta: { fontFamily: font.sans.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
-  transcriptBody: { fontFamily: font.sans.regular, fontSize: 13, lineHeight: 22, color: "rgba(255,255,255,0.9)" },
-  transcriptHl: { backgroundColor: "rgba(228,199,123,0.24)", color: "#fff" },
 });
