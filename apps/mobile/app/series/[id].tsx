@@ -145,12 +145,6 @@ export default function SeriesDetailScreen() {
                 {msgs.common.playAll}
               </AppText>
             </Touchable>
-            <Touchable accessibilityLabel={msgs.common.downloadAll} style={styles.downloadAll}>
-              <Icon name="download" size={16} color="onBrand" />
-              <AppText style={styles.downloadAllText} color="onBrand">
-                {msgs.common.downloadAll}
-              </AppText>
-            </Touchable>
           </View>
         </View>
 
@@ -309,18 +303,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   playAllText: { fontFamily: font.sans.bold, fontSize: typePresets.meta.fontSize + 1 },
-  downloadAll: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-  },
-  downloadAllText: { fontFamily: font.sans.bold, fontSize: typePresets.meta.fontSize + 1 },
 
   listHeader: {
     flexDirection: "row",
