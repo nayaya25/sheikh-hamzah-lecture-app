@@ -1,23 +1,46 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { useEffect, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
 import { getAlbumWithPhotos } from "@althaqalayn/api";
 import type { Album, Photo } from "@althaqalayn/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@althaqalayn/theme";
-import { font } from "@/lib/fonts";
+import { Lightbox } from "@/components/Lightbox";
+import { AppText } from "@/components/ui/AppText";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Header } from "@/components/ui/Header";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Touchable } from "@/components/ui/Touchable";
 import { useI18n } from "@/lib/i18n";
 import { getClient } from "@/lib/supabase";
+import { useTheme } from "@/lib/theme";
+
+const aspectOf = (p: Photo) => (p.width && p.height ? p.width / p.height : 0.75);
+
+/**
+ * Packs photos into two columns using shorter-column placement: each photo
+ * goes into whichever column currently has the smaller running height (sum
+ * of `1/aspect`, since both columns share the same width), instead of the
+ * naive alternating `i % 2` which can leave one column visibly longer.
+ */
+function packMasonry(photos: Photo[]): [Photo[], Photo[]] {
+  const columns: [Photo[], Photo[]] = [[], []];
+  const heights = [0, 0];
+  for (const p of photos) {
+    const col = heights[0] <= heights[1] ? 0 : 1;
+    columns[col].push(p);
+    heights[col] += 1 / aspectOf(p);
+  }
+  return columns;
+}
 
 export default function AlbumScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useI18n();
+  const t = useTheme();
+  const { t: msgs } = useI18n();
   const [album, setAlbum] = useState<Album | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -33,56 +56,69 @@ export default function AlbumScreen() {
   }, [id]);
 
   const photos = album?.photos ?? [];
-  const columns: [Photo[], Photo[]] = [[], []];
-  photos.forEach((p, i) => columns[i % 2].push(p));
-  const aspect = (p: Photo) => (p.width && p.height ? p.width / p.height : 0.75);
+  const columns = useMemo(() => packMasonry(photos), [photos]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
+    <View style={[styles.root, { backgroundColor: t.c.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={[styles.hero, { paddingTop: insets.top + 14 }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="chevron-left" size={20} color="#fff" />
-          </Pressable>
-          <Text style={styles.heroTitle}>{album?.title ?? "Album"}</Text>
-          {album ? (
-            <Text style={styles.heroMeta}>
-              {album.date} · {photos.length} {t.gallery.photos}
-            </Text>
-          ) : null}
-        </View>
+        <Header title={album?.title ?? "Album"} onBack={() => router.back()} />
+        {album ? (
+          <AppText color="textMuted" style={[styles.heroMeta, { paddingHorizontal: t.space.screen }]}>
+            {album.date} · {photos.length} {msgs.gallery.photos}
+          </AppText>
+        ) : null}
 
         {loading ? (
-          <ActivityIndicator color={colors.greenMid} style={{ marginTop: 40 }} />
+          <View style={styles.masonry}>
+            {[0, 1].map((ci) => (
+              <View key={ci} style={styles.column}>
+                {[0, 1, 2].map((ri) => (
+                  <Skeleton key={ri} height={ci === 0 ? 160 : 210} radius={14} />
+                ))}
+              </View>
+            ))}
+          </View>
         ) : !album ? (
-          <Text style={styles.empty}>Album not found.</Text>
+          <EmptyState icon="alert-circle" title="Album not found" />
         ) : photos.length === 0 ? (
-          <Text style={styles.empty}>No photos in this album yet.</Text>
+          <EmptyState icon="image" title="No photos yet" body="This album has no photos in it yet." />
         ) : (
           <View style={styles.masonry}>
             {columns.map((col, ci) => (
               <View key={ci} style={styles.column}>
                 {col.map((p) => (
-                  <Image key={p.id} source={{ uri: p.url }} style={[styles.photo, { aspectRatio: aspect(p) }]} />
+                  <Touchable
+                    key={p.id}
+                    haptic="light"
+                    accessibilityLabel="Open photo"
+                    onPress={() => setLightboxIndex(photos.findIndex((x) => x.id === p.id))}
+                  >
+                    <Image
+                      source={{ uri: p.url }}
+                      style={[styles.photo, { aspectRatio: aspectOf(p), backgroundColor: t.c.surfaceAlt }]}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
+                  </Touchable>
                 ))}
               </View>
             ))}
           </View>
         )}
       </ScrollView>
+
+      {lightboxIndex !== null ? (
+        <Lightbox photos={photos} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cream },
-  hero: { paddingHorizontal: 20, paddingBottom: 20, backgroundColor: colors.greenDeep, borderBottomLeftRadius: 26, borderBottomRightRadius: 26 },
-  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { fontFamily: font.serif.semibold, fontSize: 22, color: "#fff", marginTop: 14, lineHeight: 26 },
-  heroMeta: { fontFamily: font.sans.regular, fontSize: 12.5, color: "rgba(255,255,255,0.8)", marginTop: 6 },
-  empty: { fontFamily: font.sans.medium, fontSize: 13, color: colors.faint, textAlign: "center", marginTop: 40 },
+  root: { flex: 1 },
+  heroMeta: { fontSize: 12.5, marginTop: 10 },
   masonry: { flexDirection: "row", padding: 16, gap: 10 },
   column: { flex: 1, gap: 10 },
-  photo: { width: "100%", borderRadius: 14, backgroundColor: colors.hairline },
+  photo: { width: "100%", borderRadius: 14 },
 });
