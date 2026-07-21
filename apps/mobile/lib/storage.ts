@@ -13,6 +13,7 @@ export const StorageKeys = {
   lastPlayed: "lastPlayed", // { id: string } — most recent track for "Continue listening"
   recentSearches: "recentSearches", // string[] — recent search queries
   themeMode: "themeMode", // "system" | "light" | "dark"
+  wifiOnly: "wifiOnly", // boolean — download over Wi-Fi only preference (Settings)
   downloads: "downloads", // DownloadsState — persisted offline-download entries
   bookmarks: "bookmarks", // string[] — saved/bookmarked lecture ids
   readerTheme: "readerTheme", // "light" | "dark" | null — local override for the reader's reading theme

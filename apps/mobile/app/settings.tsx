@@ -1,86 +1,136 @@
-import { useState, type ReactNode } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { useEffect, useState, type ReactNode } from "react";
+import { Image, Linking, ScrollView, Share, StyleSheet, Switch, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@althaqalayn/theme";
+import { colors, typography } from "@althaqalayn/theme";
 import { languageNames } from "@althaqalayn/i18n";
+import { AppText } from "@/components/ui/AppText";
+import { Icon } from "@/components/ui/Icon";
+import { Touchable } from "@/components/ui/Touchable";
 import { logos } from "@/lib/assets";
-import { font } from "@/lib/fonts";
+import { formatBytes } from "@/lib/catalog";
+import { useDownloads } from "@/lib/downloads";
 import { useI18n } from "@/lib/i18n";
 import { usePlayer } from "@/lib/player";
+import { totalBytes } from "@/lib/reducers/downloads";
+import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
+import { useTheme, useThemeMode, type ThemeMode } from "@/lib/theme";
+
+// Foundation contact address - the same one published on the /privacy page.
+const CONTACT_EMAIL = "althaqalaynfoundation@gmail.com";
+const SHARE_MESSAGE =
+  "Althaqalayn - a free archive of the lectures, sermons and tafsir of Sheikh Hamzah Muhammad Lawal, preserved and shared by the Althaqalayn Cultural Foundation.";
+
+const APPEARANCE_OPTIONS: { key: ThemeMode; label: string; icon: string }[] = [
+  { key: "system", label: "System", icon: "smartphone" },
+  { key: "light", label: "Light", icon: "sun" },
+  { key: "dark", label: "Dark", icon: "moon" },
+];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t, lang, arabic } = useI18n();
+  const t = useTheme();
+  const { t: msgs, lang, arabic } = useI18n();
+  const { mode, setMode } = useThemeMode();
   const { speed, cycleSpeed } = usePlayer();
-  const [wifiOnly, setWifiOnly] = useState(true);
+  const { state } = useDownloads();
+  const [wifiOnly, setWifiOnlyState] = useState(true);
+
+  // Hydrate the persisted Wi-Fi-only preference once on mount.
+  useEffect(() => {
+    void loadJSON<boolean>(StorageKeys.wifiOnly, true).then(setWifiOnlyState);
+  }, []);
+
+  const setWifiOnly = (value: boolean) => {
+    setWifiOnlyState(value);
+    void saveJSON(StorageKeys.wifiOnly, value);
+  };
+
+  const storageUsed = formatBytes(totalBytes(state));
+  const appearanceCaption =
+    mode === "system" ? "Follows your device" : mode === "light" ? "Always light" : "Always dark";
+
+  const onShareApp = () => {
+    void Share.share({ message: SHARE_MESSAGE });
+  };
+  const onContact = () => {
+    void Linking.openURL(`mailto:${CONTACT_EMAIL}`);
+  };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: t.c.bg }]}>
       <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
-        {/* Green header */}
+        {/* Green header - brand chrome, fixed regardless of theme (matches Home). */}
         <LinearGradient
           colors={[colors.greenDeep, colors.greenMid]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.7, y: 1 }}
-          style={[styles.header, { paddingTop: insets.top + 14 }]}
+          style={[styles.header, { paddingTop: insets.top + t.space.md, borderBottomLeftRadius: t.radii.hero, borderBottomRightRadius: t.radii.hero }]}
         >
-          <Text style={styles.headerWatermark} allowFontScaling={false}>
+          <AppText allowFontScaling={false} style={styles.headerWatermark}>
             {arabic.allah}
-          </Text>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="chevron-left" size={20} color="#fff" />
-          </Pressable>
-          <Text style={styles.headerArabic} allowFontScaling={false}>
+          </AppText>
+          <Touchable haptic="light" onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backBtn}>
+            <Icon name="chevron-left" size={20} color="#fff" />
+          </Touchable>
+          <AppText allowFontScaling={false} color={colors.goldLight} style={styles.headerArabic}>
             {arabic.settings}
-          </Text>
-          <Text style={styles.headerTitle}>{t.settings.title}</Text>
+          </AppText>
+          <AppText variant="screen" color="onBrand" style={{ marginTop: 2 }}>
+            {msgs.settings.title}
+          </AppText>
         </LinearGradient>
 
-        <View style={styles.body}>
+        <View style={[styles.body, { paddingHorizontal: t.space.lg }]}>
           {/* Profile */}
-          <View style={styles.profile}>
-            <View style={styles.avatar}>
+          <View style={[styles.profile, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
+            <View style={[styles.avatar, { borderRadius: t.radii.pill }]}>
               <Image source={logos.icon} style={{ width: 40, height: 40 }} resizeMode="contain" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>
-                Sheikh Hamzah Muhammad Lawal <Text style={{ color: colors.gold }}>(QS)</Text>
-              </Text>
-              <Text style={styles.profileOrg}>Althaqalayn Cultural Foundation</Text>
+              <AppText variant="cardTitle" style={{ fontSize: 15 }}>
+                Sheikh Hamzah Muhammad Lawal <AppText style={{ color: colors.gold }}>(QS)</AppText>
+              </AppText>
+              <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+                Althaqalayn Cultural Foundation
+              </AppText>
             </View>
           </View>
 
           {/* Preferences */}
-          <Text style={styles.groupLabel}>{t.settings.preferences.toUpperCase()}</Text>
-          <View style={styles.card}>
+          <GroupLabel>{msgs.settings.preferences.toUpperCase()}</GroupLabel>
+          <View style={[styles.card, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
+            <Row
+              icon="sun"
+              label="Appearance"
+              caption={appearanceCaption}
+              right={<AppearanceControl mode={mode} setMode={setMode} />}
+            />
             <Row
               icon="globe"
-              label={t.settings.appLanguage}
+              label={msgs.settings.appLanguage}
               onPress={() => router.push("/language")}
-              right={<Text style={styles.value}>{languageNames[lang]}</Text>}
+              right={<AppText variant="meta" color="textMuted">{languageNames[lang]}</AppText>}
               chevron
             />
             <Row
               icon="align-left"
-              label={t.settings.contentLanguage}
-              caption="Hausa & English lectures"
-              right={<Text style={styles.value}>{t.settings.contentLanguageValue}</Text>}
+              label={msgs.settings.contentLanguage}
+              right={<AppText variant="meta" color="textMuted">{msgs.settings.contentLanguageValue}</AppText>}
             />
             <Row
               icon="download"
-              label={t.settings.downloadWifiOnly}
+              label={msgs.settings.downloadWifiOnly}
               last
               right={
                 <Switch
                   value={wifiOnly}
                   onValueChange={setWifiOnly}
-                  trackColor={{ false: "#d5cdb8", true: colors.greenDeep }}
+                  trackColor={{ false: t.c.trackInactive, true: t.c.accent }}
                   thumbColor="#fff"
                 />
               }
@@ -88,42 +138,101 @@ export default function SettingsScreen() {
           </View>
 
           {/* Playback */}
-          <Text style={styles.groupLabel}>{t.settings.playback.toUpperCase()}</Text>
-          <View style={styles.card}>
+          <GroupLabel>{msgs.settings.playback.toUpperCase()}</GroupLabel>
+          <View style={[styles.card, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
             <Row
               icon="clock"
-              label={t.settings.defaultSpeed}
+              label={msgs.settings.defaultSpeed}
               onPress={cycleSpeed}
-              right={<Text style={[styles.value, styles.valueStrong]}>{speed}×</Text>}
+              right={
+                <AppText variant="meta" color="accent" style={{ fontWeight: "700" }}>
+                  {speed}x
+                </AppText>
+              }
             />
             <Row
               icon="list"
-              label={t.settings.manageDownloads}
+              label={msgs.settings.manageDownloads}
               last
-              right={<Text style={styles.value}>1.4 GB</Text>}
+              onPress={() => router.push("/downloads")}
+              right={<AppText variant="meta" color="textMuted">{storageUsed}</AppText>}
+              chevron
             />
           </View>
 
           {/* About */}
-          <Text style={styles.groupLabel}>{t.settings.about.toUpperCase()}</Text>
-          <View style={styles.aboutCard}>
-            <Text style={styles.aboutText}>
-              A public archive of the lectures, sermons and tafsīr of Sheikh Hamzah Muhammad Lawal,
+          <GroupLabel>{msgs.settings.about.toUpperCase()}</GroupLabel>
+          <View style={[styles.aboutCard, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
+            <AppText variant="body" color="textMuted" style={{ lineHeight: 21 }}>
+              A public archive of the lectures, sermons and tafsir of Sheikh Hamzah Muhammad Lawal,
               preserved and shared freely by the Althaqalayn Cultural Foundation.
-            </Text>
+            </AppText>
             <View style={styles.aboutActions}>
-              <Pressable style={styles.aboutBtn}>
-                <Text style={styles.aboutBtnText}>{t.settings.shareApp}</Text>
-              </Pressable>
-              <Pressable style={styles.aboutBtn}>
-                <Text style={styles.aboutBtnText}>{t.settings.contact}</Text>
-              </Pressable>
+              <Touchable
+                haptic="light"
+                onPress={onShareApp}
+                accessibilityLabel={msgs.settings.shareApp}
+                style={[styles.aboutBtn, { backgroundColor: t.c.surfaceAlt, borderRadius: t.radii.md }]}
+              >
+                <AppText variant="meta" color="accent" style={{ fontWeight: "700" }}>
+                  {msgs.settings.shareApp}
+                </AppText>
+              </Touchable>
+              <Touchable
+                haptic="light"
+                onPress={onContact}
+                accessibilityLabel={msgs.settings.contact}
+                style={[styles.aboutBtn, { backgroundColor: t.c.surfaceAlt, borderRadius: t.radii.md }]}
+              >
+                <AppText variant="meta" color="accent" style={{ fontWeight: "700" }}>
+                  {msgs.settings.contact}
+                </AppText>
+              </Touchable>
             </View>
-            <Text style={styles.version}>{t.settings.version} 1.0 · صدقة جارية</Text>
+            <AppText variant="caption" color="textFaint" style={{ textAlign: "center", marginTop: t.space.md }}>
+              {msgs.settings.version} 1.0 - Sadaqah Jariyah
+            </AppText>
           </View>
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+/** Compact System / Light / Dark segmented control, wired to `useThemeMode()`. */
+function AppearanceControl({ mode, setMode }: { mode: ThemeMode; setMode: (m: ThemeMode) => void }) {
+  const t = useTheme();
+  return (
+    <View style={[styles.segmented, { backgroundColor: t.c.surfaceAlt, borderRadius: t.radii.pill }]}>
+      {APPEARANCE_OPTIONS.map((opt) => {
+        const active = mode === opt.key;
+        return (
+          <Touchable
+            key={opt.key}
+            haptic="light"
+            onPress={() => setMode(opt.key)}
+            accessibilityLabel={`Appearance: ${opt.label}`}
+            accessibilityState={{ selected: active }}
+            style={[
+              styles.segmentBtn,
+              { borderRadius: t.radii.pill },
+              active ? { backgroundColor: t.c.surface, ...t.elevation.sm } : null,
+            ]}
+          >
+            <Icon name={opt.icon} size={14} color={active ? "accent" : "textFaint"} />
+          </Touchable>
+        );
+      })}
+    </View>
+  );
+}
+
+function GroupLabel({ children }: { children: string }) {
+  const t = useTheme();
+  return (
+    <AppText variant="caption" color="textFaint" style={{ letterSpacing: 1, fontWeight: "800", marginTop: t.space.xl - 2, marginBottom: t.space.sm, marginLeft: 4 }}>
+      {children}
+    </AppText>
   );
 }
 
@@ -136,7 +245,7 @@ function Row({
   chevron,
   last,
 }: {
-  icon: keyof typeof Feather.glyphMap;
+  icon: string;
   label: string;
   caption?: string;
   right?: ReactNode;
@@ -144,76 +253,48 @@ function Row({
   chevron?: boolean;
   last?: boolean;
 }) {
+  const t = useTheme();
   return (
-    <Pressable style={[styles.row, last ? null : styles.rowBorder]} onPress={onPress} disabled={!onPress}>
-      <Feather name={icon} size={20} color={colors.greenMid} />
+    <Touchable
+      haptic="light"
+      onPress={onPress}
+      disabled={!onPress}
+      style={[styles.row, !last ? [styles.rowBorder, { borderBottomColor: t.c.borderSubtle }] : null]}
+    >
+      <Icon name={icon} size={20} color="accent" />
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        {caption ? <Text style={styles.rowCaption}>{caption}</Text> : null}
+        <AppText variant="body" style={{ fontWeight: "600" }}>{label}</AppText>
+        {caption ? (
+          <AppText variant="caption" color="textMuted" style={{ marginTop: 1 }}>
+            {caption}
+          </AppText>
+        ) : null}
       </View>
       {right}
-      {chevron ? <Feather name="chevron-right" size={18} color="#c4ccc5" /> : null}
-    </Pressable>
+      {chevron ? <Icon name="chevron-right" size={18} color="textFaint" /> : null}
+    </Touchable>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.cream },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 22,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
-    overflow: "hidden",
-  },
-  headerWatermark: { position: "absolute", right: -24, top: 0, fontFamily: font.arabic.regular, fontSize: 120, color: "rgba(255,255,255,0.06)" },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerArabic: { fontFamily: font.arabic.regular, color: colors.goldLight, fontSize: 15, marginTop: 16 },
-  headerTitle: { fontFamily: font.serif.semibold, fontSize: 25, color: "#fff", lineHeight: 28 },
+  root: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 22, overflow: "hidden" },
+  headerWatermark: { position: "absolute", right: -24, top: 0, fontFamily: typography.fonts.arabic, fontSize: 120, color: "rgba(255,255,255,0.06)" },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
+  headerArabic: { fontFamily: typography.fonts.arabic, fontSize: 15, marginTop: 16 },
 
-  body: { paddingHorizontal: 16, paddingTop: 18 },
-  profile: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 13,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: 18,
-    padding: 16,
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.greenDeep,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetter: { fontFamily: font.arabic.bold, fontSize: 26, color: colors.goldLight },
-  profileName: { fontFamily: font.serif.semibold, fontSize: 15, color: colors.ink },
-  profileOrg: { fontFamily: font.sans.regular, fontSize: 11.5, color: colors.mutedAlt, marginTop: 2 },
+  body: { paddingTop: 18 },
+  profile: { flexDirection: "row", alignItems: "center", gap: 13, borderWidth: 1, padding: 16 },
+  avatar: { width: 54, height: 54, backgroundColor: colors.greenDeep, alignItems: "center", justifyContent: "center" },
 
-  groupLabel: { fontFamily: font.sans.extrabold, fontSize: 10.5, letterSpacing: 1, color: "#a3ada4", marginTop: 22, marginBottom: 8, marginLeft: 4 },
-  card: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.hairline, borderRadius: 18, overflow: "hidden" },
+  card: { borderWidth: 1, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", gap: 13, padding: 15 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: "#F0E9D9" },
-  rowLabel: { fontFamily: font.sans.semibold, fontSize: 14, color: colors.ink },
-  rowCaption: { fontFamily: font.sans.regular, fontSize: 11, color: colors.mutedAlt, marginTop: 1 },
-  value: { fontFamily: font.sans.regular, fontSize: 12.5, color: colors.mutedAlt },
-  valueStrong: { fontFamily: font.sans.bold, color: colors.greenMid },
+  rowBorder: { borderBottomWidth: 1 },
 
-  aboutCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.hairline, borderRadius: 18, padding: 16 },
-  aboutText: { fontFamily: font.sans.regular, fontSize: 13, color: "#5a665f", lineHeight: 21 },
+  segmented: { flexDirection: "row", padding: 3, gap: 2 },
+  segmentBtn: { width: 30, height: 26, alignItems: "center", justifyContent: "center" },
+
+  aboutCard: { borderWidth: 1, padding: 16 },
   aboutActions: { flexDirection: "row", gap: 8, marginTop: 14 },
-  aboutBtn: { flex: 1, alignItems: "center", backgroundColor: "#EAF3EF", borderRadius: 11, paddingVertical: 10 },
-  aboutBtnText: { fontFamily: font.sans.bold, fontSize: 12.5, color: colors.greenMid },
-  version: { textAlign: "center", fontFamily: font.sans.regular, fontSize: 10.5, color: "#b3bcb4", marginTop: 14 },
+  aboutBtn: { flex: 1, alignItems: "center", paddingVertical: 10 },
 });
