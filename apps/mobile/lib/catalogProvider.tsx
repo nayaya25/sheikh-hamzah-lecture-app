@@ -4,9 +4,11 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,6 +30,8 @@ const DEFAULT_GRADIENT: Gradient = ["#0B4634", "#17795E"];
 
 interface CatalogValue {
   loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
   configured: boolean;
   series: SampleSeries[];
   lectures: Playable[];
@@ -109,93 +113,103 @@ interface AlbumWithPhotos {
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const configured = isBackendConfigured();
   const [loading, setLoading] = useState(configured);
+  const [error, setError] = useState<string | null>(null);
   const [series, setSeries] = useState<SampleSeries[]>([]);
   const [lectures, setLectures] = useState<Playable[]>([]);
   const [categories, setCategories] = useState<HomeCategory[]>([]);
   const [albums, setAlbums] = useState<HomeAlbum[]>([]);
   const [homeFeatured, setHomeFeatured] = useState<HomeSeries[]>([]);
   const [homeLatest, setHomeLatest] = useState<HomeLecture[]>([]);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const client = getClient();
-    if (!client) return;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const [seriesRows, lectureRows, categoryRows, albumRows] = await Promise.all([
-          client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r)),
-          client.from("lectures").select("*").order("date", { ascending: false }).then((r) => unwrap<LectureRow[]>(r)),
-          client.from("categories").select("*").order("position").then((r) => unwrap<CategoryRow[]>(r)),
-          client.from("albums").select("id,title,date,photos(url)").order("date", { ascending: false }).then((r) => unwrap<AlbumWithPhotos[]>(r)),
-        ]);
-        if (cancelled) return;
-
-        const domainSeries = seriesRows.map((row) => mapSeries(row));
-        const domainLectures = lectureRows.map((row) => mapLecture(row));
-        const seriesMap = new Map(domainSeries.map((s) => [s.id, s]));
-
-        const playables = domainLectures.map((l) =>
-          toPlayable(l, l.seriesId ? seriesMap.get(l.seriesId) : undefined),
-        );
-        const bySeries = new Map<string, Playable[]>();
-        for (const p of playables) {
-          if (!p.seriesId) continue;
-          const arr = bySeries.get(p.seriesId) ?? [];
-          arr.push(p);
-          bySeries.set(p.seriesId, arr);
-        }
-
-        setSeries(domainSeries.map((s) => toSampleSeries(s, bySeries.get(s.id) ?? [])));
-        setLectures(playables);
-        setCategories(
-          categoryRows
-            .map((row) => mapCategory(row))
-            .filter((c: Category) => c.active && !c.archived)
-            .map((c): HomeCategory => ({ ar: c.ar, label: c.label, meta: c.meta ?? "" })),
-        );
-        setAlbums(
-          albumRows.map((a): HomeAlbum => ({
-            id: a.id,
-            title: a.title,
-            date: a.date,
-            count: a.photos.length,
-            cover: a.photos[0]?.url,
-          })),
-        );
-        setHomeFeatured(
-          domainSeries
-            .filter((s) => s.featured)
-            .map((s): HomeSeries => {
-              const vm = toSampleSeries(s, bySeries.get(s.id) ?? []);
-              return { id: vm.id, kind: vm.kind, title: vm.title, ar: vm.ar, metaShort: `${vm.count} parts · ${vm.lang}`, gradient: vm.gradient };
-            }),
-        );
-        setHomeLatest(
-          domainLectures.slice(0, 6).map((l): HomeLecture => {
-            const s = l.seriesId ? seriesMap.get(l.seriesId) : undefined;
-            return {
-              id: l.id,
-              title: pick(l.title),
-              sub: s ? pick(s.title) : (l.year ?? ""),
-              type: l.type,
-              date: relativeDate(l.date),
-              ar: s?.cover.arabic ?? "",
-              gradient: s?.cover.gradient ?? DEFAULT_GRADIENT,
-            };
-          }),
-        );
-      } catch {
-        // leave empty → screens show empty states
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
+    mountedRef.current = true;
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
     };
   }, []);
+
+  const load = useCallback(async () => {
+    const client = getClient();
+    if (!client) return;
+    setLoading(true);
+
+    try {
+      const [seriesRows, lectureRows, categoryRows, albumRows] = await Promise.all([
+        client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r)),
+        client.from("lectures").select("*").order("date", { ascending: false }).then((r) => unwrap<LectureRow[]>(r)),
+        client.from("categories").select("*").order("position").then((r) => unwrap<CategoryRow[]>(r)),
+        client.from("albums").select("id,title,date,photos(url)").order("date", { ascending: false }).then((r) => unwrap<AlbumWithPhotos[]>(r)),
+      ]);
+      if (!mountedRef.current) return;
+
+      const domainSeries = seriesRows.map((row) => mapSeries(row));
+      const domainLectures = lectureRows.map((row) => mapLecture(row));
+      const seriesMap = new Map(domainSeries.map((s) => [s.id, s]));
+
+      const playables = domainLectures.map((l) =>
+        toPlayable(l, l.seriesId ? seriesMap.get(l.seriesId) : undefined),
+      );
+      const bySeries = new Map<string, Playable[]>();
+      for (const p of playables) {
+        if (!p.seriesId) continue;
+        const arr = bySeries.get(p.seriesId) ?? [];
+        arr.push(p);
+        bySeries.set(p.seriesId, arr);
+      }
+
+      setSeries(domainSeries.map((s) => toSampleSeries(s, bySeries.get(s.id) ?? [])));
+      setLectures(playables);
+      setCategories(
+        categoryRows
+          .map((row) => mapCategory(row))
+          .filter((c: Category) => c.active && !c.archived)
+          .map((c): HomeCategory => ({ ar: c.ar, label: c.label, meta: c.meta ?? "" })),
+      );
+      setAlbums(
+        albumRows.map((a): HomeAlbum => ({
+          id: a.id,
+          title: a.title,
+          date: a.date,
+          count: a.photos.length,
+          cover: a.photos[0]?.url,
+        })),
+      );
+      setHomeFeatured(
+        domainSeries
+          .filter((s) => s.featured)
+          .map((s): HomeSeries => {
+            const vm = toSampleSeries(s, bySeries.get(s.id) ?? []);
+            return { id: vm.id, kind: vm.kind, title: vm.title, ar: vm.ar, metaShort: `${vm.count} parts · ${vm.lang}`, gradient: vm.gradient };
+          }),
+      );
+      setHomeLatest(
+        domainLectures.slice(0, 6).map((l): HomeLecture => {
+          const s = l.seriesId ? seriesMap.get(l.seriesId) : undefined;
+          return {
+            id: l.id,
+            title: pick(l.title),
+            sub: s ? pick(s.title) : (l.year ?? ""),
+            type: l.type,
+            date: relativeDate(l.date),
+            ar: s?.cover.arabic ?? "",
+            gradient: s?.cover.gradient ?? DEFAULT_GRADIENT,
+          };
+        }),
+      );
+      setError(null);
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setError(e instanceof Error ? e.message : "Failed to load");
+      // leave existing data in place → screens fall back to empty states
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const value = useMemo<CatalogValue>(() => {
     const byId = new Map(series.map((s) => [s.id, s]));
@@ -209,6 +223,8 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     }
     return {
       loading,
+      error,
+      refetch: load,
       configured,
       series,
       lectures,
@@ -221,7 +237,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       episodesForSeries: (s) => episodes.get(s.id) ?? [],
       gradientForLecture: (p) => p.gradient ?? byId.get(p.seriesId)?.gradient ?? DEFAULT_GRADIENT,
     };
-  }, [loading, configured, series, lectures, categories, albums, homeFeatured, homeLatest]);
+  }, [loading, error, load, configured, series, lectures, categories, albums, homeFeatured, homeLatest]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }
