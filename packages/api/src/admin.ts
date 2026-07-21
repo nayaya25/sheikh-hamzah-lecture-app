@@ -241,6 +241,20 @@ export async function deleteCategory(client: AlthaqalaynClient, id: string): Pro
   if (error) throw new Error(error.message);
 }
 
+/** Persist a new category display order (writes the `position` column). */
+export async function setCategoryPositions(
+  client: AlthaqalaynClient,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client.from("categories").update({ position: index }).eq("id", id).then((r) => {
+        if (r.error) throw new Error(r.error.message);
+      }),
+    ),
+  );
+}
+
 // ── Transcripts ──────────────────────────────────────────────────────────────
 export async function upsertTranscript(
   client: AlthaqalaynClient,
@@ -302,5 +316,29 @@ export async function addPhoto(
 
 export async function deletePhoto(client: AlthaqalaynClient, id: string): Promise<void> {
   const { error } = await client.from("photos").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Persist a new photo order within an album (writes the `position` column). */
+export async function setPhotoPositions(
+  client: AlthaqalaynClient,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client.from("photos").update({ position: index }).eq("id", id).then((r) => {
+        if (r.error) throw new Error(r.error.message);
+      }),
+    ),
+  );
+}
+
+/** Update an existing photo's caption (null clears it). */
+export async function updatePhoto(
+  client: AlthaqalaynClient,
+  id: string,
+  patch: { caption?: string | null },
+): Promise<void> {
+  const { error } = await client.from("photos").update({ caption: patch.caption ?? null }).eq("id", id);
   if (error) throw new Error(error.message);
 }
