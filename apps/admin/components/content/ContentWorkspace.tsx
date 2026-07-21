@@ -62,6 +62,27 @@ export function ContentWorkspace() {
     return null;
   };
 
+  /** Swap a program-series with its in-program neighbour, persisting the FULL position-ordered id list. */
+  const reorderProgramSeries = async (programId: string, movedId: string, dir: -1 | 1) => {
+    const prog = tree.programs.find((p) => p.id === programId);
+    if (!prog) return;
+    const inProg = prog.seriesNodes; // display (position) order within program
+    const idx = inProg.findIndex((s) => s.id === movedId);
+    const neighbour = inProg[idx + dir];
+    if (!neighbour) return;
+    // Full global position order: all programs' series (in program order) then orphanSeries.
+    const fullIds = [
+      ...tree.programs.flatMap((p) => p.seriesNodes.map((s) => s.id)),
+      ...tree.orphanSeries.map((s) => s.id),
+    ];
+    const a = fullIds.indexOf(movedId);
+    const b = fullIds.indexOf(neighbour.id);
+    if (a < 0 || b < 0) return;
+    [fullIds[a], fullIds[b]] = [fullIds[b], fullIds[a]];
+    await admin.setSeriesPositions(getClient(), fullIds);
+    await reload();
+  };
+
   return (
     <div style={shell}>
       <ContentTree
@@ -89,7 +110,14 @@ export function ContentWorkspace() {
             onEpisodesChanged={() => void reload()}
           />
         ) : mode === "edit" && selected?.kind === "program" ? (
-          <ProgramForm program={findProgram(selected.id)} onCancel={() => setMode("read")} onSaved={afterSave} />
+          <ProgramForm
+            program={findProgram(selected.id)}
+            onCancel={() => setMode("read")}
+            onSaved={afterSave}
+            seriesInProgram={findProgram(selected.id)?.seriesNodes ?? []}
+            onReorderProgramSeries={(movedId, dir) => reorderProgramSeries(selected.id, movedId, dir)}
+            onEditSeries={(id) => { setSelected({ kind: "series", id }); setMode("edit"); }}
+          />
         ) : mode === "edit" && selected?.kind === "series" ? (
           <SeriesForm
             series={findSeriesNode(selected.id)}
