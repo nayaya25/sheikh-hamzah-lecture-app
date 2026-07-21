@@ -5,7 +5,7 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-nativ
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui/AppText";
 import { formatTime } from "@/lib/catalog";
-import { useTheme } from "@/lib/theme";
+import { colors } from "@althaqalayn/theme";
 
 const KNOB_SIZE = 14;
 const BUBBLE_WIDTH = 52;
@@ -28,7 +28,6 @@ export interface ScrubberProps {
  * committing (`onSeek` + haptic tick) on release.
  */
 export function Scrubber({ position, durationSec, onSeek }: ScrubberProps) {
-  const t = useTheme();
   const [scrubbing, setScrubbing] = useState(false);
   const [bubbleLabel, setBubbleLabel] = useState("0:00");
 
@@ -52,18 +51,18 @@ export function Scrubber({ position, durationSec, onSeek }: ScrubberProps) {
     .hitSlop({ top: 16, bottom: 16 })
     .onBegin((e) => {
       isScrubbing.value = true;
-      const frac = clampFraction(e.x / trackWidth.value);
+      const frac = trackWidth.value > 0 ? clampFraction(e.x / trackWidth.value) : 0;
       dragFraction.value = frac;
       runOnJS(setScrubbing)(true);
       runOnJS(updateLabel)(frac);
     })
     .onUpdate((e) => {
-      const frac = clampFraction(e.x / trackWidth.value);
+      const frac = trackWidth.value > 0 ? clampFraction(e.x / trackWidth.value) : 0;
       dragFraction.value = frac;
       runOnJS(updateLabel)(frac);
     })
     .onEnd((e) => {
-      const frac = clampFraction(e.x / trackWidth.value);
+      const frac = trackWidth.value > 0 ? clampFraction(e.x / trackWidth.value) : 0;
       dragFraction.value = frac;
       isScrubbing.value = false;
       runOnJS(setScrubbing)(false);
@@ -94,8 +93,8 @@ export function Scrubber({ position, durationSec, onSeek }: ScrubberProps) {
         </Animated.View>
       ) : null}
       <GestureDetector gesture={pan}>
-        <View onLayout={onTrackLayout} style={[styles.track, { backgroundColor: t.c.trackInactive }]}>
-          <Animated.View style={[styles.fill, fillStyle, { backgroundColor: t.c.accent }]} />
+        <View onLayout={onTrackLayout} style={[styles.track, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+          <Animated.View style={[styles.fill, fillStyle, { backgroundColor: colors.goldLight }]} />
           <Animated.View style={[styles.knob, knobStyle]} />
         </View>
       </GestureDetector>

@@ -17,7 +17,7 @@ import type { Playable } from "@/lib/catalog";
 import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
 
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75] as const;
-const SLEEPS = [0, 15, 30, 45] as const;
+const SLEEPS = [0, 15, 30, 45, 60] as const;
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
