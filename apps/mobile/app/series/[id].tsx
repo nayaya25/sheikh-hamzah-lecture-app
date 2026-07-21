@@ -153,7 +153,7 @@ export default function SeriesDetailScreen() {
           <AppText color="textPrimary" style={styles.listCount}>
             All {series.count} {msgs.library.parts}
           </AppText>
-          <AppText color={colors.greenMid} style={styles.newestFirst}>
+          <AppText color={t.c.textMuted} style={styles.newestFirst}>
             {msgs.common.newestFirst}
           </AppText>
         </View>
@@ -180,7 +180,7 @@ export default function SeriesDetailScreen() {
               ]}
             >
               <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
-                <AppText style={styles.numChipText} color={colors.greenMid}>
+                <AppText style={styles.numChipText} color={t.c.accent}>
                   {ep.episode ?? i + 1}
                 </AppText>
               </View>
