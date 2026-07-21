@@ -13,13 +13,14 @@ import { AppText } from "@/components/ui/AppText";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import { InlineErrorBanner } from "@/components/ui/InlineErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
 import { useBookmarks } from "@/lib/bookmarks";
 import { durationLabel, type Playable, type SampleSeries } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
-import { TAB_BAR_HEIGHT } from "@/lib/layout";
+import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
 import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { useTheme } from "@/lib/theme";
@@ -147,8 +148,11 @@ export default function LibraryScreen() {
 
   const hasData = lecturesList.length > 0 || series.length > 0;
   const showSkeleton = loading && !hasData;
-  const bottomPadding = TAB_BAR_HEIGHT + insets.bottom + t.space.lg;
+  const bottomPadding = TAB_BAR_HEIGHT + insets.bottom + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg;
   const statusBarStyle = t.scheme === "dark" ? "light" : "dark";
+  // Background refetch failed but we still have cached data — keep the lists
+  // on screen with a small inline banner instead of a full-screen EmptyState.
+  const showInlineError = Boolean(error) && hasData;
 
   const emptyTitle = (isSeries: boolean) => (q ? "No matches." : isSeries ? "Nothing here yet." : "No lectures yet.");
 
@@ -183,7 +187,9 @@ export default function LibraryScreen() {
         </View>
       ) : null}
 
-      {segment === "recent" && !showSkeleton && !error ? (
+      {showInlineError ? <InlineErrorBanner message={error as string} onRetry={() => void refetch()} /> : null}
+
+      {segment === "recent" && !showSkeleton ? (
         <View style={styles.mediaWrap}>
           <FilterChips chips={mediaChips} active={mediaFilter} onPick={setMediaFilter} />
         </View>
@@ -191,7 +197,9 @@ export default function LibraryScreen() {
     </>
   );
 
-  if (error) {
+  // Full-screen error state only when there's nothing cached to fall back on;
+  // otherwise the lists render below with the inline banner from `header`.
+  if (error && !hasData) {
     return (
       <View style={[styles.root, { backgroundColor: t.c.bg }]}>
         <StatusBar style={statusBarStyle} />

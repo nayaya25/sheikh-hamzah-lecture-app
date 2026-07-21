@@ -21,12 +21,13 @@ import { Card } from "@/components/ui/Card";
 import { CoverArt } from "@/components/ui/CoverArt";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import { InlineErrorBanner } from "@/components/ui/InlineErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
 import { logos } from "@/lib/assets";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
-import { TAB_BAR_HEIGHT } from "@/lib/layout";
+import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
 import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { loadJSON, StorageKeys } from "@/lib/storage";
@@ -124,7 +125,10 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={[styles.scroll, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + t.space.lg }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg },
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={t.c.textPrimary} colors={[colors.greenMid]} />
         }
@@ -187,7 +191,7 @@ export default function HomeScreen() {
 
         {loading && !hasData ? (
           <HomeSkeleton />
-        ) : error ? (
+        ) : error && !hasData ? (
           <EmptyState
             icon="alert-triangle"
             title="Couldn't load content"
@@ -198,6 +202,8 @@ export default function HomeScreen() {
           <EmptyState icon="headphones" title="No lectures yet" body="Published content will appear here." />
         ) : (
           <>
+            {error ? <InlineErrorBanner message={error} onRetry={() => void refetch()} /> : null}
+
             {/* ── Continue listening ─────────────────────────────────── */}
             {contLecture ? (
               <Touchable haptic="light" onPress={() => openById(contLecture.id)} style={styles.continueWrap}>

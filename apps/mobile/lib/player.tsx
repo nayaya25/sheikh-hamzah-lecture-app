@@ -248,28 +248,56 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, [sleep, isPlaying, hasAudio, player]);
 
-  // Lock-screen (Now Playing) metadata: activate/update while a lecture with
-  // real media is current, deactivate when it's cleared/switched away.
+  // Lock-screen (Now Playing) metadata. Activates once when a track with real
+  // media first becomes current, then just pushes updated metadata on later
+  // track changes — deactivating and reactivating on every change (the
+  // previous approach) made the OS Now-Playing UI blink on every track
+  // switch. Only deactivates when playback is cleared, or on unmount.
+  const lockScreenActiveRef = useRef(false);
+
   useEffect(() => {
-    if (!current || !current.mediaUrl) return;
+    if (!current || !current.mediaUrl) {
+      if (lockScreenActiveRef.current) {
+        try {
+          player.setActiveForLockScreen(false);
+        } catch {
+          // ignore
+        }
+        lockScreenActiveRef.current = false;
+      }
+      return;
+    }
+    const metadata = {
+      title: current.title,
+      artist: current.seriesTitle ?? current.sub,
+      albumTitle: current.seriesTitle ?? "Althaqalayn Lectures",
+      // artworkUrl: omitted for now — generated covers have no URL.
+    };
     try {
-      player.setActiveForLockScreen(true, {
-        title: current.title,
-        artist: current.seriesTitle ?? current.sub,
-        albumTitle: current.seriesTitle ?? "Althaqalayn Lectures",
-        // artworkUrl: omitted for now — generated covers have no URL.
-      });
+      if (!lockScreenActiveRef.current) {
+        player.setActiveForLockScreen(true, metadata);
+        lockScreenActiveRef.current = true;
+      } else {
+        player.updateLockScreenMetadata(metadata);
+      }
     } catch {
       // API shape guard — swallow if unsupported on this platform/build.
     }
+  }, [current, player]);
+
+  // Deactivate on unmount only (not on every `current` change — see above).
+  useEffect(() => {
     return () => {
-      try {
-        player.setActiveForLockScreen(false);
-      } catch {
-        // ignore
+      if (lockScreenActiveRef.current) {
+        try {
+          player.setActiveForLockScreen(false);
+        } catch {
+          // ignore
+        }
       }
     };
-  }, [current, player]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = useMemo<PlayerValue>(
     () => ({

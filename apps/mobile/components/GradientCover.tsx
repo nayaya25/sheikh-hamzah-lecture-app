@@ -17,6 +17,13 @@ interface GradientCoverProps {
  * A CSS-gradient cover reproduced with expo-linear-gradient. The design uses
  * `linear-gradient(140deg,…)`; 140° (CSS, clockwise from top) points down-right,
  * so start=top-left → end=bottom-right.
+ *
+ * Adds the same "lit" treatment as `components/ui/CoverArt` (a soft top-left
+ * highlight + a bottom-right vignette over the base gradient) so gradient
+ * tiles look consistent wherever they appear. The tile's own colors come from
+ * the caller (per-lecture/series gradients), not from app theme state, so
+ * this component has nothing scheme-dependent to theme — it renders the same
+ * in light and dark.
  */
 export function GradientCover({
   gradient,
@@ -32,6 +39,20 @@ export function GradientCover({
         start={{ x: 0.15, y: 0 }}
         end={{ x: 0.85, y: 1 }}
         style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={["rgba(255,255,255,0.22)", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.7, y: 0.7 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.30)"]}
+        start={{ x: 0.3, y: 0.3 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
       {arabic ? (
         <Text style={[styles.watermark, { fontSize: arabicSize }]} allowFontScaling={false}>

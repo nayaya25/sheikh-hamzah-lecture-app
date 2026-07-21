@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@althaqalayn/theme";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
 import { useBookmarks } from "@/lib/bookmarks";
 import { gradientForLecture, type Playable } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
+import { useTheme } from "@/lib/theme";
 
 /**
  * Shared lecture row (gradient play-cover + type badge + title + sub), used by
@@ -23,6 +23,7 @@ export function LectureListRow({
   onPress?: () => void;
   coverSize?: number;
 }) {
+  const t = useTheme();
   const { isBookmarked, toggle } = useBookmarks();
   const bookmarked = isBookmarked(lecture.id);
   return (
@@ -31,17 +32,17 @@ export function LectureListRow({
         gradient={gradientForLecture(lecture)}
         style={[styles.cover, { width: coverSize, height: coverSize }]}
       >
-        <Ionicons name="play" size={16} color="#fff" />
+        <Ionicons name="play" size={16} color={t.c.onBrand} />
       </GradientCover>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.metaRow}>
           <MediaBadge type={lecture.type} />
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+          {meta ? <Text style={[styles.meta, { color: t.c.textFaint }]}>{meta}</Text> : null}
         </View>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: t.c.textPrimary }]} numberOfLines={1}>
           {lecture.title}
         </Text>
-        <Text style={styles.sub} numberOfLines={1}>
+        <Text style={[styles.sub, { color: t.c.textMuted }]} numberOfLines={1}>
           {lecture.sub}
         </Text>
       </View>
@@ -54,7 +55,7 @@ export function LectureListRow({
         <Ionicons
           name={bookmarked ? "bookmark" : "bookmark-outline"}
           size={18}
-          color={bookmarked ? colors.gold : colors.faintAlt}
+          color={bookmarked ? t.c.accent : t.c.textFaint}
         />
       </Pressable>
     </Pressable>
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
   bookmarkBtn: { padding: 4 },
   cover: { borderRadius: 13, alignItems: "center", justifyContent: "center" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 7 },
-  meta: { fontFamily: font.sans.regular, fontSize: 10.5, color: colors.faintAlt },
-  title: { fontFamily: font.serif.semibold, fontSize: 14, color: colors.ink, marginTop: 3 },
-  sub: { fontFamily: font.sans.regular, fontSize: 11.5, color: colors.mutedAlt, marginTop: 2 },
+  meta: { fontFamily: font.sans.regular, fontSize: 10.5 },
+  title: { fontFamily: font.serif.semibold, fontSize: 14, marginTop: 3 },
+  sub: { fontFamily: font.sans.regular, fontSize: 11.5, marginTop: 2 },
 });

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "@althaqalayn/theme";
 import { font } from "@/lib/fonts";
+import { useTheme } from "@/lib/theme";
 
 export interface Chip<K extends string> {
   key: K;
@@ -22,6 +23,7 @@ export function FilterChips<K extends string>({
   active: K;
   onPick: (key: K) => void;
 }) {
+  const t = useTheme();
   return (
     <ScrollView
       horizontal
@@ -34,12 +36,26 @@ export function FilterChips<K extends string>({
           <Pressable
             key={chip.key}
             onPress={() => onPick(chip.key)}
-            style={[styles.chip, on ? styles.chipOn : styles.chipOff]}
+            style={[
+              styles.chip,
+              on
+                ? { backgroundColor: colors.greenDeep }
+                : { backgroundColor: t.c.surface, borderWidth: 1, borderColor: t.c.border },
+            ]}
           >
             {chip.dotColor ? (
-              <View style={[styles.dot, { backgroundColor: on ? "#fff" : chip.dotColor }]} />
+              <View style={[styles.dot, { backgroundColor: on ? t.c.onBrand : chip.dotColor }]} />
             ) : null}
-            <Text style={[styles.label, on ? styles.labelOn : styles.labelOff]}>{chip.label}</Text>
+            <Text
+              style={[
+                styles.label,
+                on
+                  ? { fontFamily: font.sans.bold, color: t.c.onBrand }
+                  : { fontFamily: font.sans.semibold, color: t.c.textMuted },
+              ]}
+            >
+              {chip.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -56,10 +72,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 7,
   },
-  chipOn: { backgroundColor: colors.greenDeep },
-  chipOff: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E4DCC9" },
   dot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 6 },
   label: { fontSize: 12 },
-  labelOn: { fontFamily: font.sans.bold, color: "#fff" },
-  labelOff: { fontFamily: font.sans.semibold, color: "#5a665f" },
 });
