@@ -61,7 +61,7 @@ export default function SeriesDetailScreen() {
       <View style={[styles.missing, { backgroundColor: t.c.bg }]}>
         <StatusBar style="dark" />
         <AppText color="textMuted" style={styles.missingText}>
-          Series not found
+          {msgs.series.notFound}
         </AppText>
       </View>
     );
@@ -103,7 +103,7 @@ export default function SeriesDetailScreen() {
             {series.ar}
           </AppText>
 
-          <Touchable onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backBtn}>
+          <Touchable onPress={() => router.back()} accessibilityLabel={msgs.common.goBack} style={styles.backBtn}>
             <Icon name="chevron-left" size={20} color="onBrand" />
           </Touchable>
 
@@ -126,12 +126,12 @@ export default function SeriesDetailScreen() {
             <Touchable
               onPress={() => openEpisodeAt(continueIdx)}
               haptic="light"
-              accessibilityLabel="Continue listening"
+              accessibilityLabel={msgs.home.continueListening}
               style={styles.continueChip}
             >
               <Icon name="play" size={13} color={colors.greenDeep} />
               <AppText style={styles.continueChipText} color={colors.greenDeep}>
-                {`Continue · Ep ${continueEp.episode ?? continueIdx + 1} · ${continueMinLeft} min left`}
+                {`${msgs.series.continuePrefix} · ${msgs.series.episodePrefix} ${continueEp.episode ?? continueIdx + 1} · ${continueMinLeft} ${msgs.home.minutesLeft}`}
               </AppText>
             </Touchable>
           ) : null}
@@ -166,7 +166,7 @@ export default function SeriesDetailScreen() {
         {/* Episodes */}
         <View style={styles.listHeader}>
           <AppText color="textPrimary" style={styles.listCount}>
-            All {series.count} {msgs.library.parts}
+            {msgs.series.allPrefix} {series.count} {msgs.library.parts}
           </AppText>
           <AppText color={t.c.textMuted} style={styles.newestFirst}>
             {msgs.common.newestFirst}
@@ -175,7 +175,7 @@ export default function SeriesDetailScreen() {
 
         {episodes.length === 0 ? (
           <AppText color="textFaint" style={styles.noEpisodes}>
-            No episodes published yet.
+            {msgs.series.noEpisodesYet}
           </AppText>
         ) : null}
         {episodes.map((ep, i) => {
@@ -213,7 +213,7 @@ export default function SeriesDetailScreen() {
                     <View style={styles.playedMeta}>
                       <Icon name="check-circle" size={11} color="textFaint" />
                       <AppText style={styles.episodeDur} color="textFaint">
-                        Played
+                        {msgs.series.played}
                       </AppText>
                     </View>
                   ) : (

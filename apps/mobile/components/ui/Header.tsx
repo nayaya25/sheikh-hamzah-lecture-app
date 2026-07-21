@@ -6,12 +6,14 @@ import { colors, typography } from "@althaqalayn/theme";
 import { AppText } from "./AppText";
 import { Icon } from "./Icon";
 import { Touchable } from "./Touchable";
+import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 
 export function Header({
   title, arabic, variant = "hero", onBack, right,
 }: { title: string; arabic?: string; variant?: "hero" | "compact"; onBack?: () => void; right?: ReactNode }) {
   const t = useTheme();
+  const { t: msgs } = useI18n();
   const insets = useSafeAreaInsets();
   const hero = variant === "hero";
   return (
@@ -33,7 +35,7 @@ export function Header({
       ) : null}
       <View style={{ flexDirection: "row", alignItems: "center", gap: t.space.md }}>
         {onBack ? (
-          <Touchable onPress={onBack} accessibilityLabel="Go back" style={{ width: 38, height: 38, borderRadius: t.radii.pill, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" }}>
+          <Touchable onPress={onBack} accessibilityLabel={msgs.common.goBack} style={{ width: 38, height: 38, borderRadius: t.radii.pill, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" }}>
             <Icon name="chevron-left" color="#FFFFFF" />
           </Touchable>
         ) : null}

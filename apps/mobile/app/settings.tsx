@@ -23,10 +23,10 @@ const CONTACT_EMAIL = "althaqalaynfoundation@gmail.com";
 const SHARE_MESSAGE =
   "Althaqalayn - a free archive of the lectures, sermons and tafsīr of Sheikh Hamzah Muhammad Lawal, preserved and shared by the Althaqalayn Cultural Foundation.";
 
-const APPEARANCE_OPTIONS: { key: ThemeMode; label: string; icon: string }[] = [
-  { key: "system", label: "System", icon: "smartphone" },
-  { key: "light", label: "Light", icon: "sun" },
-  { key: "dark", label: "Dark", icon: "moon" },
+const APPEARANCE_OPTIONS: { key: ThemeMode; icon: string }[] = [
+  { key: "system", icon: "smartphone" },
+  { key: "light", icon: "sun" },
+  { key: "dark", icon: "moon" },
 ];
 
 export default function SettingsScreen() {
@@ -51,7 +51,11 @@ export default function SettingsScreen() {
 
   const storageUsed = formatBytes(totalBytes(state));
   const appearanceCaption =
-    mode === "system" ? "Follows your device" : mode === "light" ? "Always light" : "Always dark";
+    mode === "system"
+      ? msgs.appearance.systemCaption
+      : mode === "light"
+        ? msgs.appearance.lightCaption
+        : msgs.appearance.darkCaption;
 
   const onShareApp = () => {
     void Share.share({ message: SHARE_MESSAGE });
@@ -74,7 +78,7 @@ export default function SettingsScreen() {
           <AppText allowFontScaling={false} style={styles.headerWatermark}>
             {arabic.allah}
           </AppText>
-          <Touchable haptic="light" onPress={() => router.back()} accessibilityLabel="Go back" style={styles.backBtn}>
+          <Touchable haptic="light" onPress={() => router.back()} accessibilityLabel={msgs.common.goBack} style={styles.backBtn}>
             <Icon name="chevron-left" size={20} color="#fff" />
           </Touchable>
           <AppText allowFontScaling={false} color={colors.goldLight} style={styles.headerArabic}>
@@ -106,7 +110,7 @@ export default function SettingsScreen() {
           <View style={[styles.card, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
             <Row
               icon="sun"
-              label="Appearance"
+              label={msgs.appearance.title}
               caption={appearanceCaption}
               right={<AppearanceControl mode={mode} setMode={setMode} />}
             />
@@ -202,16 +206,18 @@ export default function SettingsScreen() {
 /** Compact System / Light / Dark segmented control, wired to `useThemeMode()`. */
 function AppearanceControl({ mode, setMode }: { mode: ThemeMode; setMode: (m: ThemeMode) => void }) {
   const t = useTheme();
+  const { t: msgs } = useI18n();
   return (
     <View style={[styles.segmented, { backgroundColor: t.c.surfaceAlt, borderRadius: t.radii.pill }]}>
       {APPEARANCE_OPTIONS.map((opt) => {
         const active = mode === opt.key;
+        const label = msgs.appearance[opt.key];
         return (
           <Touchable
             key={opt.key}
             haptic="light"
             onPress={() => setMode(opt.key)}
-            accessibilityLabel={`Appearance: ${opt.label}`}
+            accessibilityLabel={`${msgs.appearance.title}: ${label}`}
             accessibilityState={{ selected: active }}
             style={[
               styles.segmentBtn,

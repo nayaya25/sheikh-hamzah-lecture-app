@@ -55,9 +55,9 @@ export function DownloadButton({
       return;
     }
     if (status === "downloaded") {
-      Alert.alert("Remove download?", `"${lecture.title}" will be deleted from this device.`, [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => remove(lecture.id) },
+      Alert.alert(msgs.download.removeTitle, `"${lecture.title}" ${msgs.download.removeBodySuffix}`, [
+        { text: msgs.common.cancel, style: "cancel" },
+        { text: msgs.download.remove, style: "destructive", onPress: () => remove(lecture.id) },
       ]);
     }
     // queued/downloading: no-op — the Touchable below is disabled.
@@ -68,16 +68,19 @@ export function DownloadButton({
   let a11yLabel: string;
   if (busy) {
     icon = <ActivityIndicator size="small" color={resolve(activeTint)} />;
-    caption = status === "downloading" ? `${pct}%` : "Queued";
-    a11yLabel = status === "downloading" ? `Downloading, ${pct} percent` : "Queued for download";
+    caption = status === "downloading" ? `${pct}%` : msgs.download.queued;
+    a11yLabel =
+      status === "downloading"
+        ? `${msgs.download.downloading}, ${pct} ${msgs.download.percent}`
+        : msgs.download.queuedA11y;
   } else if (status === "downloaded") {
     icon = <Icon name="check-circle" size={size} color={activeTint} />;
-    caption = "Downloaded";
-    a11yLabel = "Downloaded. Double tap to remove.";
+    caption = msgs.download.downloaded;
+    a11yLabel = msgs.download.downloadedA11y;
   } else if (status === "failed") {
     icon = <Icon name="alert-circle" size={size} color={FAILED_TINT} />;
-    caption = "Retry";
-    a11yLabel = "Download failed. Double tap to retry.";
+    caption = msgs.common.retry;
+    a11yLabel = msgs.download.failedA11y;
   } else {
     icon = <Icon name="download" size={size} color={tint} />;
     caption = msgs.player.download;

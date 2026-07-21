@@ -56,11 +56,11 @@ export default function DownloadsScreen() {
 
   const onClearAll = () => {
     Alert.alert(
-      "Clear all downloads?",
-      "Every downloaded lecture will be removed from this device to free up space.",
+      msgs.downloads.clearAllTitle,
+      msgs.downloads.clearAllBody,
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Clear all", style: "destructive", onPress: () => clearAll() },
+        { text: msgs.common.cancel, style: "cancel" },
+        { text: msgs.downloads.clearAll, style: "destructive", onPress: () => clearAll() },
       ],
     );
   };
@@ -79,13 +79,13 @@ export default function DownloadsScreen() {
         <EmptyState
           icon="download-cloud"
           title={msgs.downloads.empty}
-          body="Downloaded lectures play offline, without using any data."
+          body={msgs.downloads.offlineBody}
         />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
           {active.length > 0 ? (
             <>
-              <SectionLabel>{`Downloading (${active.length})`}</SectionLabel>
+              <SectionLabel>{`${msgs.download.downloading} (${active.length})`}</SectionLabel>
               <View>
                 {active.map((e) => (
                   <DownloadingRow key={e.id} entry={e} lecture={lectureById(e.id)} />
@@ -96,7 +96,7 @@ export default function DownloadsScreen() {
 
           {downloaded.length > 0 ? (
             <>
-              <SectionLabel>{`Downloaded (${downloaded.length})`}</SectionLabel>
+              <SectionLabel>{`${msgs.download.downloaded} (${downloaded.length})`}</SectionLabel>
               <View>
                 {downloaded.map((lecture) => (
                   <DownloadedRow key={lecture.id} lecture={lecture} onPress={() => openDownload(lecture)} />
@@ -116,11 +116,11 @@ export default function DownloadsScreen() {
               haptic="light"
               onPress={onClearAll}
               disabled={downloaded.length === 0}
-              accessibilityLabel="Clear all downloads"
+              accessibilityLabel={msgs.downloads.clearAllA11y}
               style={{ opacity: downloaded.length === 0 ? 0.4 : 1 }}
             >
               <AppText variant="body" color="accent" style={styles.clearAll}>
-                Clear all
+                {msgs.downloads.clearAll}
               </AppText>
             </Touchable>
           </Card>
@@ -143,12 +143,13 @@ function SectionLabel({ children }: { children: string }) {
 /** A queued/downloading entry: title (once the catalog resolves it) + a progress bar. */
 function DownloadingRow({ entry, lecture }: { entry: DownloadEntry; lecture?: Playable }) {
   const t = useTheme();
+  const { t: msgs } = useI18n();
   const pct = Math.round(entry.progress * 100);
   return (
     <View style={styles.downloadingRow}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <AppText variant="cardTitle" numberOfLines={1} style={{ fontSize: 14 }}>
-          {lecture?.title ?? "Downloading…"}
+          {lecture?.title ?? msgs.downloads.resolvingTitle}
         </AppText>
         <View style={[styles.track, { backgroundColor: t.c.trackInactive, marginTop: t.space.sm }]}>
           <View
@@ -160,7 +161,7 @@ function DownloadingRow({ entry, lecture }: { entry: DownloadEntry; lecture?: Pl
         </View>
       </View>
       <AppText variant="caption" color="textMuted" style={styles.pct}>
-        {entry.status === "queued" ? "Queued" : `${pct}%`}
+        {entry.status === "queued" ? msgs.download.queued : `${pct}%`}
       </AppText>
     </View>
   );

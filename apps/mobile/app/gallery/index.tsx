@@ -24,7 +24,7 @@ export default function GalleryScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         <Header title={msgs.gallery.title} arabic="معرض" onBack={() => router.back()} />
         <AppText color="textMuted" style={[styles.headerSub, { paddingHorizontal: t.space.screen }]}>
-          Photographs from Foundation events
+          {msgs.gallery.subtitle}
         </AppText>
 
         {loading ? (
@@ -34,7 +34,7 @@ export default function GalleryScreen() {
             ))}
           </View>
         ) : albums.length === 0 ? (
-          <EmptyState icon="image" title="No albums yet" />
+          <EmptyState icon="image" title={msgs.gallery.noAlbums} />
         ) : (
           <View style={styles.list}>
             {albums.map((album) => (

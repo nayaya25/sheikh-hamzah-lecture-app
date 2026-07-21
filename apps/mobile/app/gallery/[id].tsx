@@ -61,7 +61,7 @@ export default function AlbumScreen() {
   return (
     <View style={[styles.root, { backgroundColor: t.c.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <Header title={album?.title ?? "Album"} onBack={() => router.back()} />
+        <Header title={album?.title ?? msgs.gallery.albumFallback} onBack={() => router.back()} />
         {album ? (
           <AppText color="textMuted" style={[styles.heroMeta, { paddingHorizontal: t.space.screen }]}>
             {album.date} · {photos.length} {msgs.gallery.photos}
@@ -79,9 +79,9 @@ export default function AlbumScreen() {
             ))}
           </View>
         ) : !album ? (
-          <EmptyState icon="alert-circle" title="Album not found" />
+          <EmptyState icon="alert-circle" title={msgs.gallery.albumNotFound} />
         ) : photos.length === 0 ? (
-          <EmptyState icon="image" title="No photos yet" body="This album has no photos in it yet." />
+          <EmptyState icon="image" title={msgs.gallery.noPhotos} body={msgs.gallery.noPhotosBody} />
         ) : (
           <View style={styles.masonry}>
             {columns.map((col, ci) => (
@@ -90,7 +90,7 @@ export default function AlbumScreen() {
                   <Touchable
                     key={p.id}
                     haptic="light"
-                    accessibilityLabel="Open photo"
+                    accessibilityLabel={msgs.gallery.openPhotoA11y}
                     onPress={() => setLightboxIndex(photos.findIndex((x) => x.id === p.id))}
                   >
                     <Image

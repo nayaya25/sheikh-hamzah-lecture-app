@@ -27,10 +27,10 @@ import { loadJSON, saveJSON, StorageKeys } from "@/lib/storage";
 import { useTheme } from "@/lib/theme";
 
 const FONT_SIZES = [
-  { key: "sm", label: "Small", scale: 0.85 },
-  { key: "md", label: "Medium", scale: 1 },
-  { key: "lg", label: "Large", scale: 1.2 },
-  { key: "xl", label: "Extra large", scale: 1.5 },
+  { key: "sm", labelKey: "small" as const, scale: 0.85 },
+  { key: "md", labelKey: "medium" as const, scale: 1 },
+  { key: "lg", labelKey: "large" as const, scale: 1.2 },
+  { key: "xl", labelKey: "extraLarge" as const, scale: 1.5 },
 ];
 const DEFAULT_FONT_SCALE = 1;
 const SAVE_SCROLL_DEBOUNCE_MS = 400;
@@ -220,7 +220,7 @@ export default function ReaderScreen() {
   );
 
   const meta = lectureById(id);
-  const title = lecture ? (lecture.title.en ?? lecture.title.ha ?? "") : (meta?.title ?? "Reading");
+  const title = lecture ? (lecture.title.en ?? lecture.title.ha ?? "") : (meta?.title ?? t.reader.reading);
   const body = lang === "ha" ? lecture?.body?.ha ?? lecture?.body?.en : lecture?.body?.en ?? lecture?.body?.ha;
   const paragraphs = (body ?? "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
@@ -241,21 +241,21 @@ export default function ReaderScreen() {
         <Pressable
           style={[styles.iconBtn, { backgroundColor: pal.iconBg, borderColor: pal.border }]}
           onPress={() => fontSheetRef.current?.present()}
-          accessibilityLabel="Font size"
+          accessibilityLabel={t.reader.fontSize}
         >
           <Text style={[styles.aaLabel, { color: pal.icon }]}>Aa</Text>
         </Pressable>
         <Pressable
           style={[styles.iconBtn, { backgroundColor: pal.iconBg, borderColor: pal.border }]}
           onPress={toggleReaderTheme}
-          accessibilityLabel={scheme === "dark" ? "Switch to light reading theme" : "Switch to dark reading theme"}
+          accessibilityLabel={scheme === "dark" ? t.reader.lightThemeA11y : t.reader.darkThemeA11y}
         >
           <Feather name={scheme === "dark" ? "sun" : "moon"} size={17} color={pal.accent} />
         </Pressable>
         <Pressable
           style={[styles.iconBtn, { backgroundColor: pal.iconBg, borderColor: pal.border }]}
           onPress={() => toggleBookmark(id)}
-          accessibilityLabel={bookmarked ? "Remove bookmark" : t.reader.bookmark}
+          accessibilityLabel={bookmarked ? t.reader.removeBookmark : t.reader.bookmark}
         >
           <Ionicons name={bookmarked ? "bookmark" : "bookmark-outline"} size={17} color={pal.accent} />
         </Pressable>
@@ -291,7 +291,7 @@ export default function ReaderScreen() {
           </View>
 
           {paragraphs.length === 0 ? (
-            <Text style={[styles.empty, { color: pal.empty }]}>No text available for this lecture yet.</Text>
+            <Text style={[styles.empty, { color: pal.empty }]}>{t.reader.noText}</Text>
           ) : (
             paragraphs.map((p, i) =>
               i === 0 ? (
@@ -319,7 +319,7 @@ export default function ReaderScreen() {
         handleIndicatorStyle={{ backgroundColor: pal.border }}
       >
         <BottomSheetView style={[styles.sheetContent, { paddingBottom: insets.bottom + 24 }]}>
-          <Text style={[styles.sheetTitle, { color: pal.title }]}>Font size</Text>
+          <Text style={[styles.sheetTitle, { color: pal.title }]}>{t.reader.fontSize}</Text>
           {FONT_SIZES.map((opt) => {
             const isSelected = opt.scale === fontScale;
             return (
@@ -329,7 +329,7 @@ export default function ReaderScreen() {
                 style={[styles.sheetRow, { borderBottomColor: pal.sheetRowBorder }]}
               >
                 <Text style={{ fontFamily: font.serif.regular, fontSize: 15 * opt.scale, color: isSelected ? pal.accent : pal.body }}>
-                  {opt.label}
+                  {t.reader[opt.labelKey]}
                 </Text>
                 {isSelected ? <Feather name="check" size={18} color={pal.accent} /> : <View style={{ width: 18 }} />}
               </Pressable>

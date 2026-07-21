@@ -88,7 +88,7 @@ export default function LibraryScreen() {
     { key: "occasions", label: `${msgs.library.occasions} (${segmentCounts.occasions})` },
     { key: "topics", label: `${msgs.library.topics} (${segmentCounts.topics})` },
     { key: "series", label: `${msgs.library.series} (${segmentCounts.series})` },
-    { key: "saved", label: `Saved (${segmentCounts.saved})` },
+    { key: "saved", label: `${msgs.library.saved} (${segmentCounts.saved})` },
   ];
 
   const mediaChips: ChipDef<MediaFilter>[] = (["all", "audio", "video", "text"] as const).map((k) => ({
@@ -125,14 +125,14 @@ export default function LibraryScreen() {
     if (segment !== "series") return [];
     const groups = new Map<string, SampleSeries[]>();
     for (const s of seriesRows) {
-      const key = s.year.trim() || "Undated";
+      const key = s.year.trim() || msgs.library.undated;
       const arr = groups.get(key) ?? [];
       arr.push(s);
       groups.set(key, arr);
     }
     const keys = Array.from(groups.keys()).sort((a, b) => {
-      if (a === "Undated") return 1;
-      if (b === "Undated") return -1;
+      if (a === msgs.library.undated) return 1;
+      if (b === msgs.library.undated) return -1;
       return b.localeCompare(a);
     });
     return keys.map((key) => ({ title: key, data: groups.get(key) ?? [] }));
@@ -154,7 +154,8 @@ export default function LibraryScreen() {
   // on screen with a small inline banner instead of a full-screen EmptyState.
   const showInlineError = Boolean(error) && hasData;
 
-  const emptyTitle = (isSeries: boolean) => (q ? "No matches." : isSeries ? "Nothing here yet." : "No lectures yet.");
+  const emptyTitle = (isSeries: boolean) =>
+    q ? msgs.library.noMatches : isSeries ? msgs.library.nothingHereYet : msgs.library.noLecturesYet;
 
   const header = (
     <>
@@ -174,7 +175,7 @@ export default function LibraryScreen() {
         <Touchable
           haptic="light"
           onPress={toggleSearch}
-          accessibilityLabel={searchOpen ? "Close search" : "Filter this list"}
+          accessibilityLabel={searchOpen ? msgs.library.closeSearchA11y : msgs.library.filterListA11y}
           style={[styles.searchToggle, { backgroundColor: searchOpen ? t.c.surfaceAlt : "transparent", borderRadius: t.radii.pill }]}
         >
           <Icon name={searchOpen ? "x" : "search"} size={19} color={searchOpen ? "accent" : "textMuted"} />
@@ -183,7 +184,7 @@ export default function LibraryScreen() {
 
       {searchOpen ? (
         <View style={styles.searchWrap}>
-          <SearchField value={query} onChangeText={setQuery} placeholder="Filter this list…" autoFocus />
+          <SearchField value={query} onChangeText={setQuery} placeholder={msgs.library.filterPlaceholder} autoFocus />
         </View>
       ) : null}
 
@@ -207,9 +208,9 @@ export default function LibraryScreen() {
           {header}
           <EmptyState
             icon="alert-triangle"
-            title="Couldn't load content"
+            title={msgs.library.couldntLoad}
             body={error}
-            action={{ label: "Retry", onPress: () => void refetch() }}
+            action={{ label: msgs.common.retry, onPress: () => void refetch() }}
           />
         </ScrollView>
       </View>
@@ -261,7 +262,13 @@ export default function LibraryScreen() {
           activeLectures.length === 0 ? (
             <EmptyState
               icon={segment === "saved" ? "bookmark" : "headphones"}
-              title={segment === "saved" ? (q ? "No matches." : "No saved lectures yet.") : emptyTitle(false)}
+              title={
+                segment === "saved"
+                  ? q
+                    ? msgs.library.noMatches
+                    : msgs.library.noSavedLecturesYet
+                  : emptyTitle(false)
+              }
             />
           ) : (
             <View>
