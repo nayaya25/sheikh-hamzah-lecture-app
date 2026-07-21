@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, typePresets } from "@althaqalayn/theme";
+import { DownloadButton } from "@/components/DownloadButton";
 import { EqBars } from "@/components/EqBars";
 import { MediaBadge } from "@/components/MediaBadge";
 import { AppText } from "@/components/ui/AppText";
@@ -12,6 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
 import { durationLabel } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
+import { useDownloads } from "@/lib/downloads";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
 import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
@@ -25,6 +27,7 @@ export default function SeriesDetailScreen() {
   const t = useTheme();
   const { t: msgs } = useI18n();
   const { current, isPlaying, progressFor, playSeries } = usePlayer();
+  const { download } = useDownloads();
   const { seriesById, episodesForSeries } = useCatalog();
 
   const series = seriesById(id);
@@ -145,6 +148,18 @@ export default function SeriesDetailScreen() {
                 {msgs.common.playAll}
               </AppText>
             </Touchable>
+            <Touchable
+              onPress={() => episodes.forEach((ep) => download(ep))}
+              disabled={episodes.length === 0}
+              haptic="light"
+              accessibilityLabel={msgs.common.downloadAll}
+              style={styles.downloadAll}
+            >
+              <Icon name="download" size={16} color="onBrand" />
+              <AppText style={styles.downloadAllText} color="onBrand">
+                {msgs.common.downloadAll}
+              </AppText>
+            </Touchable>
           </View>
         </View>
 
@@ -218,7 +233,10 @@ export default function SeriesDetailScreen() {
                   </View>
                 ) : null}
               </View>
-              {isCurrent ? <EqBars playing={isPlaying} /> : null}
+              <View style={styles.trailing}>
+                {isCurrent ? <EqBars playing={isPlaying} /> : null}
+                <DownloadButton lecture={ep} size={18} />
+              </View>
             </Touchable>
           );
         })}
@@ -303,6 +321,18 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   playAllText: { fontFamily: font.sans.bold, fontSize: typePresets.meta.fontSize + 1 },
+  downloadAll: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  downloadAllText: { fontFamily: font.sans.bold, fontSize: typePresets.meta.fontSize + 1 },
 
   listHeader: {
     flexDirection: "row",
@@ -337,6 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   numChipText: { fontFamily: font.sans.extrabold, fontSize: typePresets.meta.fontSize },
+  trailing: { flexDirection: "row", alignItems: "center", gap: 10 },
   episodeTitle: { fontFamily: font.serif.semibold, fontSize: typePresets.body.fontSize },
   episodeMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
   episodeDur: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize },

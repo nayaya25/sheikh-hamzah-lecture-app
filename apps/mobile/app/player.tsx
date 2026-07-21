@@ -11,6 +11,7 @@ import { AppText } from "@/components/ui/AppText";
 import { CoverArt } from "@/components/ui/CoverArt";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
+import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
 import { Scrubber } from "@/components/player/Scrubber";
 import { ValueSheet } from "@/components/player/ValueSheet";
@@ -197,6 +198,13 @@ export default function PlayerScreen() {
               {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
             </AppText>
           </Touchable>
+          <DownloadButton
+            lecture={current}
+            size={19}
+            showLabel
+            tint="onBrand"
+            activeTint="accentText"
+          />
           <Touchable style={styles.secItem} onPress={onShare} accessibilityLabel="Share">
             <Icon name="share-2" size={19} color="onBrand" />
             <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
