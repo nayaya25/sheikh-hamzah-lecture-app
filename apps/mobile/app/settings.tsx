@@ -21,7 +21,7 @@ import { useTheme, useThemeMode, type ThemeMode } from "@/lib/theme";
 // Foundation contact address - the same one published on the /privacy page.
 const CONTACT_EMAIL = "althaqalaynfoundation@gmail.com";
 const SHARE_MESSAGE =
-  "Althaqalayn - a free archive of the lectures, sermons and tafsir of Sheikh Hamzah Muhammad Lawal, preserved and shared by the Althaqalayn Cultural Foundation.";
+  "Althaqalayn - a free archive of the lectures, sermons and tafsīr of Sheikh Hamzah Muhammad Lawal, preserved and shared by the Althaqalayn Cultural Foundation.";
 
 const APPEARANCE_OPTIONS: { key: ThemeMode; label: string; icon: string }[] = [
   { key: "system", label: "System", icon: "smartphone" },
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
               onPress={cycleSpeed}
               right={
                 <AppText variant="meta" color="accent" style={{ fontWeight: "700" }}>
-                  {speed}x
+                  {speed}×
                 </AppText>
               }
             />
@@ -164,7 +164,7 @@ export default function SettingsScreen() {
           <GroupLabel>{msgs.settings.about.toUpperCase()}</GroupLabel>
           <View style={[styles.aboutCard, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
             <AppText variant="body" color="textMuted" style={{ lineHeight: 21 }}>
-              A public archive of the lectures, sermons and tafsir of Sheikh Hamzah Muhammad Lawal,
+              A public archive of the lectures, sermons and tafsīr of Sheikh Hamzah Muhammad Lawal,
               preserved and shared freely by the Althaqalayn Cultural Foundation.
             </AppText>
             <View style={styles.aboutActions}>
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
               </Touchable>
             </View>
             <AppText variant="caption" color="textFaint" style={{ textAlign: "center", marginTop: t.space.md }}>
-              {msgs.settings.version} 1.0 - Sadaqah Jariyah
+              {msgs.settings.version} 1.0 · صدقة جارية
             </AppText>
           </View>
         </View>
