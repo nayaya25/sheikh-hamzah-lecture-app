@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { LANGUAGES, SERIES_KINDS, type Language, type SeriesKind } from "@althaqalayn/types";
 import { GradientPicker, ParentPicker, SelectField, TextArea, BilingualField, TextField } from "@/components/fields";
@@ -52,6 +52,7 @@ export function SeriesForm({
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [eps, setEps] = useState(series?.episodes ?? []);
+  const titleRef = useRef<HTMLDivElement>(null);
 
   const move = async (index: number, dir: -1 | 1) => {
     const next = [...eps];
@@ -70,7 +71,7 @@ export function SeriesForm({
   };
 
   const save = async () => {
-    if (!titleEn.trim()) { setTitleError("English title is required."); return; }
+    if (!titleEn.trim()) { setTitleError("English title is required."); titleRef.current?.scrollIntoView({ block: "center" }); return; }
     setBusy(true); setError(null);
     try {
       await admin.upsertSeries(
@@ -102,7 +103,9 @@ export function SeriesForm({
       title: "Details",
       render: () => (
         <>
-          <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Series title" errorEn={titleError} />
+          <div ref={titleRef}>
+            <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Series title" errorEn={titleError} />
+          </div>
           <ParentPicker label="PROGRAM" value={parent} onChange={setParent} options={programs} onCreate={onCreateProgram} allowNone />
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}>

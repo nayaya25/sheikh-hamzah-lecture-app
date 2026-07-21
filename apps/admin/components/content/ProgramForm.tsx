@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { BilingualField, TextArea, TextField } from "@/components/fields";
 import { SectionedForm, type FormSection } from "@/components/SectionedForm";
@@ -32,9 +32,10 @@ export function ProgramForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
 
   const save = async () => {
-    if (!titleEn.trim()) { setTitleError("English title is required."); return; }
+    if (!titleEn.trim()) { setTitleError("English title is required."); titleRef.current?.scrollIntoView({ block: "center" }); return; }
     setBusy(true); setError(null);
     try {
       await admin.upsertProgram(
@@ -60,7 +61,9 @@ export function ProgramForm({
       title: "Details",
       render: () => (
         <>
-          <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Program title" errorEn={titleError} />
+          <div ref={titleRef}>
+            <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Program title" errorEn={titleError} />
+          </div>
           <TextField label="ARABIC MOTIF (OPTIONAL)" value={arabic} onChange={setArabic} placeholder="ﷺ" dir="rtl" />
           <TextArea label="DESCRIPTION" value={descEn} onChange={setDescEn} rows={3} placeholder="What this program covers…" />
         </>

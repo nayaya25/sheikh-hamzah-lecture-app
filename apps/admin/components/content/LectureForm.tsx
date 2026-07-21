@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { admin } from "@althaqalayn/api";
 import { LANGUAGES, MEDIA_TYPES, type Language, type MediaType, type Lecture, type PublishStatus } from "@althaqalayn/types";
 import { BilingualField, DateField, NumberStepper, ParentPicker, PublishControl, SelectField, TextArea } from "@/components/fields";
@@ -51,13 +51,14 @@ export function LectureForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMediaBusy(false);
   }, [type]);
 
   const save = async () => {
-    if (!titleEn.trim()) { setTitleError("English title is required."); return; }
+    if (!titleEn.trim()) { setTitleError("English title is required."); titleRef.current?.scrollIntoView({ block: "center" }); return; }
     setBusy(true); setError(null);
     try {
       await admin.upsertLecture(
@@ -95,7 +96,9 @@ export function LectureForm({
       title: "Details",
       render: () => (
         <>
-          <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Lecture title" errorEn={titleError} />
+          <div ref={titleRef}>
+            <BilingualField label="TITLE" en={titleEn} ha={titleHa} onEn={(v) => { setTitleEn(v); setTitleError(null); }} onHa={setTitleHa} placeholder="Lecture title" errorEn={titleError} />
+          </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><SelectField label="MEDIA TYPE" value={type} onChange={(v) => setType(v as MediaType)} options={MEDIA_TYPES.map((t) => ({ value: t, label: TYPE_LABELS[t] }))} /></div>
             <div style={{ flex: 1 }}><SelectField label="LANGUAGE" value={language} onChange={(v) => setLanguage(v as Language)} options={LANGUAGES.map((l) => ({ value: l, label: l === "ha" ? "Hausa" : "English" }))} /></div>
