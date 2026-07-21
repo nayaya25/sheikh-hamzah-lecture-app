@@ -29,13 +29,17 @@ export function AlbumEditor({
   const [photos, setPhotos] = useState<Photo[]>(album?.photos ?? []);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const [captionDrafts, setCaptionDrafts] = useState<Record<string, string>>({});
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadPhotos = useCallback(async (id: string) => {
     const r = await getClient().from("photos").select("*").eq("album_id", id).order("position");
-    setPhotos(unwrap<PhotoRow[]>(r).map(mapPhoto));
+    const mapped = unwrap<PhotoRow[]>(r).map(mapPhoto);
+    setPhotos(mapped);
+    return mapped;
   }, []);
 
   useEffect(() => {
@@ -96,6 +100,10 @@ export function AlbumEditor({
         const { url } = await uploadMedia(file, "gallery");
         await admin.addPhoto(getClient(), albumId, { url });
       }
+      const loaded = await loadPhotos(albumId);
+      // Newly added photos default to position 0 in the DB — normalize so
+      // positions are 0..N-1 in the order just fetched, avoiding collisions.
+      await admin.setPhotoPositions(getClient(), loaded.map((p) => p.id));
       await loadPhotos(albumId);
       onChanged();
     } catch (e) {
@@ -109,6 +117,33 @@ export function AlbumEditor({
     await admin.deletePhoto(getClient(), id);
     await loadPhotos(albumId);
     onChanged();
+  };
+
+  /** Swap two photos' `position`; the displayed `photos` list IS the full
+   *  album photo list in position order (single album, no filtering), so
+   *  swapping the pair here and persisting the whole list is the true order. */
+  const movePhoto = async (index: number, dir: -1 | 1) => {
+    if (reordering) return;
+    const j = index + dir;
+    if (j < 0 || j >= photos.length) return;
+    const next = [...photos];
+    [next[index], next[j]] = [next[j], next[index]];
+    setReordering(true);
+    try {
+      await admin.setPhotoPositions(getClient(), next.map((p) => p.id));
+      await loadPhotos(albumId);
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  const captionValue = (p: Photo) => captionDrafts[p.id] ?? p.caption ?? "";
+
+  const saveCaption = async (p: Photo) => {
+    const value = captionValue(p).trim() || null;
+    if ((p.caption ?? null) === value) return;
+    await admin.updatePhoto(getClient(), p.id, { caption: value });
+    await loadPhotos(albumId);
   };
 
   const sections: FormSection[] = [
@@ -196,11 +231,40 @@ export function AlbumEditor({
         ) : (
           <>
             <div style={styles.photoGrid}>
-              {photos.map((p) => (
+              {photos.map((p, i) => (
                 <div key={p.id} style={styles.photo}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt={p.caption ?? ""} style={styles.photoImg} />
-                  <button onClick={() => void removePhoto(p.id)} style={styles.photoDel} aria-label="Delete photo">✕</button>
+                  <div style={styles.photoImgWrap}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.url} alt={p.caption ?? ""} style={styles.photoImg} />
+                    <div style={styles.reorderOverlay}>
+                      <button
+                        type="button"
+                        onClick={() => void movePhoto(i, -1)}
+                        disabled={reordering || i === 0}
+                        style={styles.reorderBtn}
+                        aria-label="Move photo earlier"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void movePhoto(i, 1)}
+                        disabled={reordering || i === photos.length - 1}
+                        style={styles.reorderBtn}
+                        aria-label="Move photo later"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <button onClick={() => void removePhoto(p.id)} style={styles.photoDel} aria-label="Delete photo">✕</button>
+                  </div>
+                  <input
+                    value={captionValue(p)}
+                    onChange={(e) => setCaptionDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                    onBlur={() => void saveCaption(p)}
+                    placeholder="Caption (optional)"
+                    style={styles.captionInput}
+                  />
                 </div>
               ))}
             </div>
@@ -293,7 +357,8 @@ const styles: Record<string, CSSProperties> = {
   },
   coverError: { fontSize: 11.5, color: "#a23e3e", marginTop: 8, fontWeight: 600 },
   photoGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 },
-  photo: { position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1 / 1" },
+  photo: { display: "flex", flexDirection: "column", gap: 4 },
+  photoImgWrap: { position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1 / 1" },
   photoImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
   photoDel: {
     position: "absolute",
@@ -307,6 +372,35 @@ const styles: Record<string, CSSProperties> = {
     border: "none",
     fontSize: 11,
     cursor: "pointer",
+  },
+  reorderOverlay: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+  reorderBtn: {
+    width: 20,
+    height: 16,
+    lineHeight: 1,
+    borderRadius: 4,
+    background: "rgba(0,0,0,.55)",
+    color: "#fff",
+    border: "none",
+    fontSize: 9,
+    cursor: "pointer",
+  },
+  captionInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    fontSize: 11,
+    padding: "5px 7px",
+    border: "1px solid var(--line)",
+    borderRadius: 6,
+    background: "var(--input)",
+    color: "var(--ink)",
   },
   addPhotos: {
     display: "block",
