@@ -13,6 +13,7 @@ import { useCatalog } from "@/lib/catalogProvider";
 import type { Playable } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
+import { TAB_BAR_HEIGHT } from "@/lib/layout";
 import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { loadJSON, StorageKeys } from "@/lib/storage";
@@ -60,7 +61,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }]}>
         {/* ── Green header ─────────────────────────────────────────── */}
         <LinearGradient
           colors={[colors.greenDeep, colors.greenMid, colors.greenHighlight]}
