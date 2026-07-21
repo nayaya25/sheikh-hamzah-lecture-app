@@ -93,17 +93,22 @@ export function AlbumEditor({
     setError(null);
     setUploading(true);
     try {
+      // New rows land with the DB default position = 0, tying with the
+      // album's existing first photo. Reloading and sorting by that
+      // ambiguous tie can let a fresh upload jump ahead of existing photos —
+      // so build the normalize order explicitly: existing photos keep their
+      // current display order, newly-added ones are appended after them.
+      const existingIdsInOrder = photos.map((p) => p.id);
+      const newlyAddedIds: string[] = [];
       for (const file of Array.from(files)) {
         if (file.size > MAX_MEDIA_BYTES) {
           throw new Error(`File is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is 50 MB.`);
         }
         const { url } = await uploadMedia(file, "gallery");
-        await admin.addPhoto(getClient(), albumId, { url });
+        const created = await admin.addPhoto(getClient(), albumId, { url });
+        newlyAddedIds.push(created.id);
       }
-      const loaded = await loadPhotos(albumId);
-      // Newly added photos default to position 0 in the DB — normalize so
-      // positions are 0..N-1 in the order just fetched, avoiding collisions.
-      await admin.setPhotoPositions(getClient(), loaded.map((p) => p.id));
+      await admin.setPhotoPositions(getClient(), [...existingIdsInOrder, ...newlyAddedIds]);
       await loadPhotos(albumId);
       onChanged();
     } catch (e) {
