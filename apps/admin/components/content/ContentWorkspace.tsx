@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
@@ -19,6 +19,9 @@ export function ContentWorkspace() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"read" | "edit" | "new">("read");
   const [draftNew, setDraftNew] = useState<NewKind | null>(null);
+  // Busy latch so a rapid double-click (or slow network) on the ▲/▼ reorder
+  // buttons can't fire two overlapping mutations against the same stale `tree`.
+  const reorderingRef = useRef(false);
 
   if (loading) return <div style={pad}>Loading…</div>;
   if (error || !tree) {
@@ -99,26 +102,38 @@ export function ContentWorkspace() {
 
   /** Swap a collection with its adjacent neighbour, rewriting the full ordered id list (`position = index`). Tree order already reflects `position`, so no re-fetch is needed. */
   const onReorderCollection = async (id: string, dir: -1 | 1) => {
-    const ids = tree.collections.map((c) => c.id);
-    const a = ids.indexOf(id);
-    const b = a + dir;
-    if (a < 0 || b < 0 || b >= ids.length) return;
-    [ids[a], ids[b]] = [ids[b], ids[a]];
-    await admin.setCollectionPositions(getClient(), ids);
-    await reload();
+    if (reorderingRef.current) return;
+    reorderingRef.current = true;
+    try {
+      const ids = tree.collections.map((c) => c.id);
+      const a = ids.indexOf(id);
+      const b = a + dir;
+      if (a < 0 || b < 0 || b >= ids.length) return;
+      [ids[a], ids[b]] = [ids[b], ids[a]];
+      await admin.setCollectionPositions(getClient(), ids);
+      await reload();
+    } finally {
+      reorderingRef.current = false;
+    }
   };
 
   /** Swap a lecture with its adjacent neighbour within one collection, rewriting that collection's full ordered id list (`sort = index`). */
   const onReorderLecture = async (collectionId: string, lectureId: string, dir: -1 | 1) => {
-    const cn = findCollection(collectionId);
-    if (!cn) return;
-    const ids = cn.lectures.map((l) => l.id);
-    const a = ids.indexOf(lectureId);
-    const b = a + dir;
-    if (a < 0 || b < 0 || b >= ids.length) return;
-    [ids[a], ids[b]] = [ids[b], ids[a]];
-    await admin.setLectureSort(getClient(), ids);
-    await reload();
+    if (reorderingRef.current) return;
+    reorderingRef.current = true;
+    try {
+      const cn = findCollection(collectionId);
+      if (!cn) return;
+      const ids = cn.lectures.map((l) => l.id);
+      const a = ids.indexOf(lectureId);
+      const b = a + dir;
+      if (a < 0 || b < 0 || b >= ids.length) return;
+      [ids[a], ids[b]] = [ids[b], ids[a]];
+      await admin.setLectureSort(getClient(), ids);
+      await reload();
+    } finally {
+      reorderingRef.current = false;
+    }
   };
 
   return (
