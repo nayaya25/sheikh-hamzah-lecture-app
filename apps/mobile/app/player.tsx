@@ -96,7 +96,7 @@ export default function PlayerScreen() {
               {msgs.player.nowPlaying.toUpperCase()}
             </AppText>
             <AppText color="rgba(255,255,255,0.85)" style={styles.nowSeries}>
-              {current.seriesTitle}
+              {current.collectionTitle}
             </AppText>
           </View>
           <Touchable

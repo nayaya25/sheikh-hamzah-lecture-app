@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Image, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,6 +15,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, typography } from "@althaqalayn/theme";
+import type { CollectionKind } from "@althaqalayn/types";
 import { MediaBadge } from "@/components/MediaBadge";
 import { AppText } from "@/components/ui/AppText";
 import { Card } from "@/components/ui/Card";
@@ -25,6 +26,7 @@ import { InlineErrorBanner } from "@/components/ui/InlineErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
 import { logos } from "@/lib/assets";
+import { durationLabel, gradientForLecture } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
 import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
@@ -34,6 +36,14 @@ import { loadJSON, StorageKeys } from "@/lib/storage";
 import { useTheme } from "@/lib/theme";
 
 const DEFAULT_ALBUM_GRADIENT: [string, string] = [colors.greenDeep, colors.greenHighlightAlt];
+
+// Icon + library-segment-label lookups for the "Browse by kind" tiles.
+const KIND_ICON: Record<CollectionKind, string> = { occasion: "calendar", series: "layers", topic: "tag" };
+const KIND_LIBRARY_KEY: Record<CollectionKind, "occasions" | "series" | "topics"> = {
+  occasion: "occasions",
+  series: "series",
+  topic: "topics",
+};
 
 // Scroll distance (px) over which the hero fades and the compact bar takes over.
 const COMPACT_START = 70;
@@ -46,7 +56,14 @@ export default function HomeScreen() {
   const isDark = t.scheme === "dark";
   const { t: msgs, lang, arabic } = useI18n();
   const { play, progressFor } = usePlayer();
-  const { loading, error, refetch, categories, albums, homeFeatured, homeLatest, lectureById } = useCatalog();
+  const { loading, error, refetch, collections, albums, featuredCollections, latestLectures, lectureById } = useCatalog();
+
+  // Collection counts per kind, driving the "Browse by kind" tiles.
+  const kindCounts = useMemo(() => {
+    const counts: Record<CollectionKind, number> = { occasion: 0, series: 0, topic: 0 };
+    for (const c of collections) counts[c.kind] += 1;
+    return counts;
+  }, [collections]);
 
   const [contId, setContId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,11 +100,11 @@ export default function HomeScreen() {
     const lecture = lectureById(id);
     if (lecture) openLecture(router, play, lecture);
   };
-  const openSeries = (id: string) => router.push(`/series/${id}`);
-  const searchFor = (q: string) => router.push(`/search?q=${encodeURIComponent(q)}`);
+  const openCollection = (id: string) => router.push(`/collection/${id}`);
+  const openLibrarySegment = (kind: CollectionKind) => router.push(`/library?segment=${kind}`);
 
-  const empty = !contLecture && !categories.length && !homeFeatured.length && !albums.length && !homeLatest.length;
-  const hasData = homeLatest.length > 0 || homeFeatured.length > 0 || categories.length > 0;
+  const empty = !contLecture && !featuredCollections.length && !albums.length && !latestLectures.length;
+  const hasData = latestLectures.length > 0 || featuredCollections.length > 0;
 
   // ── Collapsing header ──────────────────────────────────────────────────
   const scrollY = useSharedValue(0);
@@ -232,43 +249,35 @@ export default function HomeScreen() {
               </Touchable>
             ) : null}
 
-            {/* ── Explore ────────────────────────────────────────────── */}
-            {categories.length ? (
-              <>
-                <SectionHeader title={msgs.home.explore} arabic="استكشف" />
-                <View style={styles.grid}>
-                  {categories.map((cat) => (
-                    <Touchable key={cat.label} haptic="light" onPress={() => searchFor(cat.label)} style={styles.categoryTile}>
-                      <Card elevation="none" padded={false} style={styles.categoryCard}>
-                        <AppText allowFontScaling={false} color="accent" style={styles.categoryAr}>
-                          {cat.ar}
-                        </AppText>
-                        <AppText variant="cardTitle" style={{ fontSize: 12, textAlign: "center" }}>
-                          {cat.label}
-                        </AppText>
-                        {cat.meta ? (
-                          <AppText variant="caption" color="textFaint" style={{ fontSize: 9.5, textAlign: "center" }}>
-                            {cat.meta}
-                          </AppText>
-                        ) : null}
-                      </Card>
-                    </Touchable>
-                  ))}
-                </View>
-              </>
-            ) : null}
+            {/* ── Browse by kind ────────────────────────────────────── */}
+            <SectionHeader title={msgs.home.explore} arabic="استكشف" />
+            <View style={styles.kindRow}>
+              {(["occasion", "series", "topic"] as const).map((kind) => (
+                <Touchable key={kind} haptic="light" onPress={() => openLibrarySegment(kind)} style={styles.kindTile}>
+                  <Card elevation="none" padded={false} style={styles.kindCard}>
+                    <Icon name={KIND_ICON[kind]} size={22} color="accent" />
+                    <AppText variant="cardTitle" style={{ fontSize: 12.5, textAlign: "center" }}>
+                      {msgs.library[KIND_LIBRARY_KEY[kind]]}
+                    </AppText>
+                    <AppText variant="caption" color="textFaint" style={{ fontSize: 9.5, textAlign: "center" }}>
+                      {kindCounts[kind]}
+                    </AppText>
+                  </Card>
+                </Touchable>
+              ))}
+            </View>
 
-            {/* ── Featured series ────────────────────────────────────── */}
-            {homeFeatured.length ? (
+            {/* ── Featured collections ───────────────────────────────── */}
+            {featuredCollections.length ? (
               <>
                 <SectionHeader title={msgs.home.featuredSeries} action={msgs.common.seeAll} onAction={() => router.push("/library")} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railContent}>
-                  {homeFeatured.map((s) => (
-                    <Touchable key={s.id} haptic="light" onPress={() => openSeries(s.id)} style={styles.featuredCard}>
+                  {featuredCollections.map((s) => (
+                    <Touchable key={s.id} haptic="light" onPress={() => openCollection(s.id)} style={styles.featuredCard}>
                       <View style={styles.featuredCoverWrap}>
-                        <CoverArt gradient={[s.gradient[0], s.gradient[1]]} glyph={s.ar} size={118} radius={t.radii.lg} style={styles.coverFill} />
+                        <CoverArt gradient={[s.cover.gradient[0], s.cover.gradient[1]]} glyph={s.cover.arabic} size={118} radius={t.radii.lg} style={styles.coverFill} />
                         <View style={styles.kindBadge} pointerEvents="none">
-                          <AppText variant="caption" color="onBrand" style={{ fontWeight: "800", letterSpacing: 0.6, fontSize: 9.5 }}>
+                          <AppText variant="caption" color="onBrand" style={{ fontWeight: "800", letterSpacing: 0.6, fontSize: 9.5, textTransform: "capitalize" }}>
                             {s.kind}
                           </AppText>
                         </View>
@@ -277,7 +286,7 @@ export default function HomeScreen() {
                         {s.title}
                       </AppText>
                       <AppText variant="meta" color="textFaint" style={{ marginTop: 3 }}>
-                        {s.metaShort}
+                        {s.count} {msgs.library.parts}
                       </AppText>
                     </Touchable>
                   ))}
@@ -318,14 +327,14 @@ export default function HomeScreen() {
             ) : null}
 
             {/* ── Latest lectures ────────────────────────────────────── */}
-            {homeLatest.length ? (
+            {latestLectures.length ? (
               <>
                 <SectionHeader title={msgs.home.latestLectures} arabic="جديد" />
                 <View>
-                  {homeLatest.map((l) => (
+                  {latestLectures.map((l) => (
                     <Touchable key={l.id} haptic="light" onPress={() => openById(l.id)} style={styles.lectureRow}>
                       <View style={styles.lectureCoverWrap}>
-                        <CoverArt gradient={[l.gradient[0], l.gradient[1]]} glyph={l.ar} size={60} radius={t.radii.md} />
+                        <CoverArt gradient={[gradientForLecture(l)[0], gradientForLecture(l)[1]]} glyph={l.ar} size={60} radius={t.radii.md} />
                         <View style={styles.coverPlayOverlay} pointerEvents="none">
                           <Icon name="play" size={16} color="onBrand" />
                         </View>
@@ -334,7 +343,7 @@ export default function HomeScreen() {
                         <View style={styles.lectureMetaRow}>
                           <MediaBadge type={l.type} />
                           <AppText variant="caption" color="textFaint">
-                            {l.date}
+                            {durationLabel(l)}
                           </AppText>
                         </View>
                         <AppText variant="cardTitle" style={{ fontSize: 14.5, marginTop: 3 }} numberOfLines={1}>
@@ -408,8 +417,8 @@ function HomeSkeleton() {
         <Skeleton height={84} radius={t.radii.lg} />
       </View>
 
-      <View style={styles.grid}>
-        {Array.from({ length: 6 }).map((_, i) => (
+      <View style={styles.kindRow}>
+        {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} width="31%" height={96} radius={t.radii.lg} />
         ))}
       </View>
@@ -458,10 +467,9 @@ const styles = StyleSheet.create({
 
   sectionHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
 
-  grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 11 },
-  categoryTile: { width: "31%" },
-  categoryCard: { alignItems: "center", gap: 7, paddingVertical: 15, paddingHorizontal: 11 },
-  categoryAr: { fontFamily: typography.fonts.arabic, fontSize: 25 },
+  kindRow: { flexDirection: "row", paddingHorizontal: 16, gap: 11 },
+  kindTile: { flex: 1 },
+  kindCard: { alignItems: "center", gap: 7, paddingVertical: 15, paddingHorizontal: 11 },
 
   railContent: { paddingHorizontal: 16, gap: 14, paddingBottom: 4 },
   featuredCard: { width: 178 },

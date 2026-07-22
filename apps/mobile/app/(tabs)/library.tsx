@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
-import { ScrollView, SectionList, StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { typography } from "@althaqalayn/theme";
-import type { MediaType, SeriesKind } from "@althaqalayn/types";
-import { FilterChips, type Chip as ChipDef } from "@/components/FilterChips";
+import type { CollectionKind } from "@althaqalayn/types";
 import { LectureListRow } from "@/components/LectureListRow";
 import { SearchField } from "@/components/SearchField";
 import { SeriesListRow } from "@/components/SeriesListRow";
@@ -17,7 +16,7 @@ import { InlineErrorBanner } from "@/components/ui/InlineErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
 import { useBookmarks } from "@/lib/bookmarks";
-import { durationLabel, type Playable, type SampleSeries } from "@/lib/catalog";
+import { durationLabel, type CollectionVM, type Playable } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
 import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
@@ -25,40 +24,32 @@ import { openLecture } from "@/lib/openLecture";
 import { usePlayer } from "@/lib/player";
 import { useTheme } from "@/lib/theme";
 
-type Segment = "recent" | "occasions" | "topics" | "series" | "saved";
-type MediaFilter = "all" | MediaType;
-
-// Occasions/Topics filter series by kind; "Series" shows all series.
-const SEGMENT_KIND: Partial<Record<Segment, SeriesKind>> = {
-  occasions: "occasion",
-  topics: "topic",
-};
-
-const MEDIA_DOTS: Record<MediaFilter, string> = {
-  all: "#0B4634",
-  audio: "#12634E",
-  video: "#a23e3e",
-  text: "#6a4f9c",
-};
-
-interface YearSection {
-  title: string;
-  data: SampleSeries[];
-}
+// The three collection-kind segments, plus the bookmarked-lectures "Saved" segment.
+type Segment = CollectionKind | "saved";
+const KIND_SEGMENTS: CollectionKind[] = ["occasion", "series", "topic"];
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ segment?: string }>();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
   const { play } = usePlayer();
-  const { lectures: lecturesList, series, loading, error, refetch, lectureById } = useCatalog();
+  const { collections, loading, error, refetch, lectureById } = useCatalog();
   const { ids: bookmarkIds } = useBookmarks();
 
-  const [segment, setSegment] = useState<Segment>("recent");
-  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const [segment, setSegment] = useState<Segment>("occasion");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Adopt an incoming ?segment= (e.g. tapping a "Browse by kind" tile on Home).
+  useEffect(() => {
+    if (params.segment && (KIND_SEGMENTS as string[]).includes(params.segment)) {
+      setSegment(params.segment as Segment);
+    } else if (params.segment === "saved") {
+      setSegment("saved");
+    }
+  }, [params.segment]);
 
   // Collapsing the field also clears the query — closed search means "not filtering".
   const toggleSearch = () => {
@@ -74,35 +65,27 @@ export default function LibraryScreen() {
   // sense of how much lives in each segment before picking it.
   const segmentCounts = useMemo(
     () => ({
-      recent: lecturesList.length,
-      occasions: series.filter((s) => s.kindRaw === "occasion").length,
-      topics: series.filter((s) => s.kindRaw === "topic").length,
-      series: series.length,
+      occasion: collections.filter((c) => c.kind === "occasion").length,
+      series: collections.filter((c) => c.kind === "series").length,
+      topic: collections.filter((c) => c.kind === "topic").length,
       saved: bookmarkIds.length,
     }),
-    [lecturesList, series, bookmarkIds],
+    [collections, bookmarkIds],
   );
 
   const segmentChips: { key: Segment; label: string }[] = [
-    { key: "recent", label: `${msgs.library.recent} (${segmentCounts.recent})` },
-    { key: "occasions", label: `${msgs.library.occasions} (${segmentCounts.occasions})` },
-    { key: "topics", label: `${msgs.library.topics} (${segmentCounts.topics})` },
+    { key: "occasion", label: `${msgs.library.occasions} (${segmentCounts.occasion})` },
     { key: "series", label: `${msgs.library.series} (${segmentCounts.series})` },
+    { key: "topic", label: `${msgs.library.topics} (${segmentCounts.topic})` },
     { key: "saved", label: `${msgs.library.saved} (${segmentCounts.saved})` },
   ];
 
-  const mediaChips: ChipDef<MediaFilter>[] = (["all", "audio", "video", "text"] as const).map((k) => ({
-    key: k,
-    label: msgs.mediaFilter[k],
-    dotColor: MEDIA_DOTS[k],
-  }));
-
-  const lectures = useMemo(() => {
-    return lecturesList.filter((l) => {
-      if (mediaFilter !== "all" && l.type !== mediaFilter) return false;
-      return !q || `${l.title} ${l.sub}`.toLowerCase().includes(q);
-    });
-  }, [mediaFilter, q, lecturesList]);
+  const collectionRows = useMemo(() => {
+    if (segment === "saved") return [];
+    return collections
+      .filter((c) => c.kind === segment)
+      .filter((c) => !q || c.title.toLowerCase().includes(q));
+  }, [segment, q, collections]);
 
   const savedLectures = useMemo(() => {
     return bookmarkIds
@@ -111,42 +94,13 @@ export default function LibraryScreen() {
       .filter((l) => !q || `${l.title} ${l.sub}`.toLowerCase().includes(q));
   }, [bookmarkIds, lectureById, q]);
 
-  const seriesRows = useMemo(() => {
-    if (segment === "recent" || segment === "saved") return [];
-    const kind = SEGMENT_KIND[segment];
-    return series
-      .filter((s) => (kind ? s.kindRaw === kind : true))
-      .filter((s) => !q || `${s.title} ${s.kind}`.toLowerCase().includes(q));
-  }, [segment, q, series]);
-
-  // Series segment only: group the filtered rows by year, newest first, with
-  // undated series trailing in their own section.
-  const seriesSections = useMemo<YearSection[]>(() => {
-    if (segment !== "series") return [];
-    const groups = new Map<string, SampleSeries[]>();
-    for (const s of seriesRows) {
-      const key = s.year.trim() || msgs.library.undated;
-      const arr = groups.get(key) ?? [];
-      arr.push(s);
-      groups.set(key, arr);
-    }
-    const keys = Array.from(groups.keys()).sort((a, b) => {
-      if (a === msgs.library.undated) return 1;
-      if (b === msgs.library.undated) return -1;
-      return b.localeCompare(a);
-    });
-    return keys.map((key) => ({ title: key, data: groups.get(key) ?? [] }));
-  }, [segment, seriesRows]);
-
   const openById = (lectureId: string) => {
-    const lecture = lecturesList.find((l) => l.id === lectureId);
+    const lecture = lectureById(lectureId);
     if (lecture) openLecture(router, play, lecture);
   };
 
-  const isLectureSegment = segment === "recent" || segment === "saved";
-  const activeLectures = segment === "saved" ? savedLectures : lectures;
-
-  const hasData = lecturesList.length > 0 || series.length > 0;
+  const isSaved = segment === "saved";
+  const hasData = collections.length > 0 || bookmarkIds.length > 0;
   const showSkeleton = loading && !hasData;
   const bottomPadding = TAB_BAR_HEIGHT + insets.bottom + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg;
   const statusBarStyle = t.scheme === "dark" ? "light" : "dark";
@@ -154,8 +108,8 @@ export default function LibraryScreen() {
   // on screen with a small inline banner instead of a full-screen EmptyState.
   const showInlineError = Boolean(error) && hasData;
 
-  const emptyTitle = (isSeries: boolean) =>
-    q ? msgs.library.noMatches : isSeries ? msgs.library.nothingHereYet : msgs.library.noLecturesYet;
+  const emptyTitle = (isCollections: boolean) =>
+    q ? msgs.library.noMatches : isCollections ? msgs.library.nothingHereYet : msgs.library.noLecturesYet;
 
   const header = (
     <>
@@ -189,12 +143,6 @@ export default function LibraryScreen() {
       ) : null}
 
       {showInlineError ? <InlineErrorBanner message={error as string} onRetry={() => void refetch()} /> : null}
-
-      {segment === "recent" && !showSkeleton ? (
-        <View style={styles.mediaWrap}>
-          <FilterChips chips={mediaChips} active={mediaFilter} onPick={setMediaFilter} />
-        </View>
-      ) : null}
     </>
   );
 
@@ -217,72 +165,34 @@ export default function LibraryScreen() {
     );
   }
 
-  if (segment === "series") {
-    return (
-      <View style={[styles.root, { backgroundColor: t.c.bg }]}>
-        <StatusBar style={statusBarStyle} />
-        <SectionList
-          sections={showSkeleton ? [] : seriesSections}
-          keyExtractor={(item) => item.id}
-          stickySectionHeadersEnabled
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
-          ListHeaderComponent={
-            <>
-              {header}
-              {showSkeleton ? <SeriesRowSkeleton /> : null}
-            </>
-          }
-          ListEmptyComponent={!showSkeleton ? <EmptyState icon="folder" title={emptyTitle(true)} /> : null}
-          renderSectionHeader={({ section }) => (
-            <View style={[styles.sectionHeader, { backgroundColor: t.c.bg }]}>
-              <AppText variant="meta" color="textFaint" style={{ fontWeight: "700", letterSpacing: 0.4 }}>
-                {section.title}
-              </AppText>
-            </View>
-          )}
-          renderItem={({ item }) => (
-            <View style={styles.rowWrap}>
-              <SeriesListRow series={item} onPress={() => router.push(`/series/${item.id}`)} />
-            </View>
-          )}
-        />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.root, { backgroundColor: t.c.bg }]}>
       <StatusBar style={statusBarStyle} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         {header}
         {showSkeleton ? (
-          isLectureSegment ? <LectureRowSkeleton /> : <SeriesRowSkeleton />
-        ) : isLectureSegment ? (
-          activeLectures.length === 0 ? (
+          isSaved ? <LectureRowSkeleton /> : <CollectionRowSkeleton />
+        ) : isSaved ? (
+          savedLectures.length === 0 ? (
             <EmptyState
-              icon={segment === "saved" ? "bookmark" : "headphones"}
-              title={
-                segment === "saved"
-                  ? q
-                    ? msgs.library.noMatches
-                    : msgs.library.noSavedLecturesYet
-                  : emptyTitle(false)
-              }
+              icon="bookmark"
+              title={q ? msgs.library.noMatches : msgs.library.noSavedLecturesYet}
             />
           ) : (
             <View>
-              {activeLectures.map((l) => (
+              {savedLectures.map((l) => (
                 <LectureListRow key={l.id} lecture={l} meta={durationLabel(l)} onPress={() => openById(l.id)} />
               ))}
             </View>
           )
         ) : (
-          <View style={styles.seriesWrap}>
-            {seriesRows.length === 0 ? (
+          <View style={styles.collectionsWrap}>
+            {collectionRows.length === 0 ? (
               <EmptyState icon="folder" title={emptyTitle(true)} />
             ) : (
-              seriesRows.map((s) => <SeriesListRow key={s.id} series={s} onPress={() => router.push(`/series/${s.id}`)} />)
+              collectionRows.map((c: CollectionVM) => (
+                <SeriesListRow key={c.id} series={c} onPress={() => router.push(`/collection/${c.id}`)} />
+              ))
             )}
           </View>
         )}
@@ -310,13 +220,13 @@ function LectureRowSkeleton() {
   );
 }
 
-/** Loading placeholders shaped like the series card row, used by Occasions/Topics/Series segments. */
-function SeriesRowSkeleton() {
+/** Loading placeholders shaped like the collection card row, used by the Occasions/Series/Topics segments. */
+function CollectionRowSkeleton() {
   const t = useTheme();
   return (
-    <View style={styles.seriesWrap}>
+    <View style={styles.collectionsWrap}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <View key={i} style={[styles.seriesSkeletonRow, { borderColor: t.c.borderSubtle }]}>
+        <View key={i} style={[styles.collectionSkeletonRow, { borderColor: t.c.borderSubtle }]}>
           <Skeleton width={70} height={70} radius={t.radii.lg} />
           <View style={{ flex: 1, gap: t.space.xs }}>
             <Skeleton width="25%" height={9} />
@@ -337,10 +247,7 @@ const styles = StyleSheet.create({
   segmentScrollContent: { gap: 8, paddingHorizontal: 18, paddingVertical: 2 },
   searchToggle: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   searchWrap: { paddingHorizontal: 16, paddingTop: 8 },
-  mediaWrap: { paddingTop: 4, paddingBottom: 6 },
-  seriesWrap: { paddingHorizontal: 16, paddingTop: 8 },
-  sectionHeader: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
-  rowWrap: { paddingHorizontal: 16 },
+  collectionsWrap: { paddingHorizontal: 16, paddingTop: 8 },
   lectureSkeletonRow: { flexDirection: "row", alignItems: "center", gap: 13, paddingHorizontal: 16, paddingVertical: 11 },
-  seriesSkeletonRow: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1, borderRadius: 18, padding: 12, marginBottom: 12 },
+  collectionSkeletonRow: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1, borderRadius: 18, padding: 12, marginBottom: 12 },
 });

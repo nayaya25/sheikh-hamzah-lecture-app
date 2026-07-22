@@ -11,7 +11,7 @@ import { MediaBadge } from "@/components/MediaBadge";
 import { AppText } from "@/components/ui/AppText";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
-import { durationLabel } from "@/lib/catalog";
+import { durationLabel, type LectureGroup, type Playable } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useDownloads } from "@/lib/downloads";
 import { font } from "@/lib/fonts";
@@ -20,43 +20,54 @@ import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layou
 import { usePlayer } from "@/lib/player";
 import { useTheme } from "@/lib/theme";
 
-export default function SeriesDetailScreen() {
+export default function CollectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const t = useTheme();
   const { t: msgs } = useI18n();
-  const { current, isPlaying, progressFor, playSeries } = usePlayer();
+  const { current, isPlaying, progressFor, playCollection } = usePlayer();
   const { download } = useDownloads();
-  const { seriesById, episodesForSeries } = useCatalog();
+  const { collectionById, lecturesForCollection } = useCatalog();
 
-  const series = seriesById(id);
-  const episodes = useMemo(
-    () => (series ? episodesForSeries(series) : []),
-    [series, episodesForSeries],
+  const collection = collectionById(id);
+
+  // `lecturesForCollection` is a flat `sort`-ordered list for `series`
+  // collections, or `{label, lectures}[]` groups (by `groupLabel`, in
+  // first-appearance order) for `occasion`/`topic`. Flatten it once into a
+  // single play-queue order — used for Continue/Play All/Download All and as
+  // the queue handed to `playCollection` — while keeping the grouped shape
+  // around for rendering occasion/topic sections.
+  const raw = useMemo(() => (collection ? lecturesForCollection(collection.id) : []), [collection, lecturesForCollection]);
+  const isFlat = collection?.kind === "series";
+  const groups = isFlat ? [] : (raw as LectureGroup[]);
+  const lectures = useMemo<Playable[]>(
+    () => (isFlat ? (raw as Playable[]) : groups.flatMap((g) => g.lectures)),
+    [isFlat, raw, groups],
   );
+  const indexById = useMemo(() => new Map(lectures.map((l, i) => [l.id, i])), [lectures]);
 
-  // Last-played-with-progress episode in this series drives the Continue chip:
-  // the one with the highest resume fraction that's neither fresh (0) nor
-  // effectively finished (>=0.98).
+  // Last-played-with-progress lecture in this collection drives the Continue
+  // chip: the one with the highest resume fraction that's neither fresh (0)
+  // nor effectively finished (>=0.98).
   const continueIdx = useMemo(() => {
     let idx = -1;
     let best = 0;
-    episodes.forEach((ep, i) => {
-      const p = progressFor(ep.id);
+    lectures.forEach((l, i) => {
+      const p = progressFor(l.id);
       if (p > 0 && p < 0.98 && p > best) {
         best = p;
         idx = i;
       }
     });
     return idx;
-  }, [episodes, progressFor]);
-  const continueEp = continueIdx >= 0 ? episodes[continueIdx] : null;
-  const continueMinLeft = continueEp
-    ? Math.round(((1 - progressFor(continueEp.id)) * continueEp.durSec) / 60)
+  }, [lectures, progressFor]);
+  const continueLecture = continueIdx >= 0 ? lectures[continueIdx] : null;
+  const continueMinLeft = continueLecture
+    ? Math.round(((1 - progressFor(continueLecture.id)) * continueLecture.durSec) / 60)
     : 0;
 
-  if (!series) {
+  if (!collection) {
     return (
       <View style={[styles.missing, { backgroundColor: t.c.bg }]}>
         <StatusBar style={t.scheme === "dark" ? "light" : "dark"} />
@@ -67,19 +78,85 @@ export default function SeriesDetailScreen() {
     );
   }
 
-  // Tapping a row (or Play All / Continue) loads the *whole series* as the
+  // Tapping a row (or Play All / Continue) loads the *whole collection* as the
   // play queue at that index, so prev/next in the mini-player and full player
-  // walk the series in order. Text lectures still open the reader instead —
+  // walk the collection in order. Text lectures still open the reader instead —
   // they never touch the audio queue (README: text never hits the player).
-  const openEpisodeAt = (index: number) => {
-    const ep = episodes[index];
-    if (!ep) return;
-    if (ep.type === "text") {
-      router.push(`/reader/${ep.id}`);
+  const openLectureAt = (index: number) => {
+    const l = lectures[index];
+    if (!l) return;
+    if (l.type === "text") {
+      router.push(`/reader/${l.id}`);
       return;
     }
-    playSeries(episodes, index);
+    playCollection(lectures, index);
     router.push("/player");
+  };
+
+  const gradient = collection.cover.gradient;
+
+  const renderRow = (l: Playable, i: number) => {
+    const isCurrent = current?.id === l.id;
+    const progress = progressFor(l.id);
+    const played = !isCurrent && progress >= 0.98;
+    const inProgress = !isCurrent && progress > 0 && progress < 0.98;
+
+    return (
+      <View
+        key={l.id}
+        style={[
+          styles.lectureRow,
+          { borderTopColor: t.c.borderSubtle },
+          isCurrent ? { backgroundColor: "rgba(199,154,59,0.12)" } : null,
+        ]}
+      >
+        <Touchable onPress={() => openLectureAt(i)} style={styles.lectureMain}>
+          <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
+            <AppText style={styles.numChipText} color={t.c.accent}>
+              {i + 1}
+            </AppText>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText
+              style={styles.lectureTitle}
+              color={isCurrent ? "accent" : "textPrimary"}
+              numberOfLines={1}
+            >
+              {l.title}
+            </AppText>
+            <View style={styles.lectureMeta}>
+              <MediaBadge type={l.type} />
+              {played ? (
+                <View style={styles.playedMeta}>
+                  <Icon name="check-circle" size={11} color="textFaint" />
+                  <AppText style={styles.lectureDur} color="textFaint">
+                    {msgs.series.played}
+                  </AppText>
+                </View>
+              ) : (
+                <AppText style={styles.lectureDur} color="textMuted">
+                  {durationLabel(l)}
+                </AppText>
+              )}
+            </View>
+            {inProgress ? (
+              <View style={[styles.progressTrack, { backgroundColor: t.c.trackInactive }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.round(progress * 100)}%`, backgroundColor: colors.gold },
+                  ]}
+                />
+              </View>
+            ) : null}
+          </View>
+        </Touchable>
+        <View style={styles.trailing}>
+          {isCurrent ? <EqBars playing={isPlaying} /> : null}
+          {l.type !== "text" ? <DownloadButton lecture={l} size={18} /> : null}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -94,13 +171,13 @@ export default function SeriesDetailScreen() {
         {/* Colored hero */}
         <View style={[styles.hero, { paddingTop: insets.top + t.space.md }]}>
           <LinearGradient
-            colors={[series.gradient[0], series.gradient[1]]}
+            colors={[gradient[0], gradient[1]]}
             start={{ x: 0.15, y: 0 }}
             end={{ x: 0.85, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
           <AppText allowFontScaling={false} style={styles.heroWatermark}>
-            {series.ar}
+            {collection.cover.arabic ?? ""}
           </AppText>
 
           <Touchable onPress={() => router.back()} accessibilityLabel={msgs.common.goBack} style={styles.backBtn}>
@@ -109,36 +186,38 @@ export default function SeriesDetailScreen() {
 
           <View style={styles.kindChip}>
             <AppText color="onBrand" style={styles.kindChipText}>
-              {series.kind}
+              {collection.kind}
             </AppText>
           </View>
           <AppText color="onBrand" style={styles.heroTitle}>
-            {series.title}
+            {collection.title}
           </AppText>
           <AppText color="rgba(255,255,255,0.78)" style={styles.heroMeta}>
-            {series.count} {msgs.library.parts} · {series.media} · {series.lang} · {series.year}
+            {collection.count} {msgs.library.parts} · {collection.language.toUpperCase()}
           </AppText>
-          <AppText color="rgba(255,255,255,0.85)" style={styles.heroDesc}>
-            {series.desc}
-          </AppText>
+          {collection.description ? (
+            <AppText color="rgba(255,255,255,0.85)" style={styles.heroDesc}>
+              {collection.description}
+            </AppText>
+          ) : null}
 
-          {continueEp ? (
+          {continueLecture ? (
             <Touchable
-              onPress={() => openEpisodeAt(continueIdx)}
+              onPress={() => openLectureAt(continueIdx)}
               haptic="light"
               accessibilityLabel={msgs.home.continueListening}
               style={styles.continueChip}
             >
               <Icon name="play" size={13} color={colors.greenDeep} />
               <AppText style={styles.continueChipText} color={colors.greenDeep}>
-                {`${msgs.series.continuePrefix} · ${msgs.series.episodePrefix} ${continueEp.episode ?? continueIdx + 1} · ${continueMinLeft} ${msgs.home.minutesLeft}`}
+                {`${msgs.series.continuePrefix} · ${msgs.series.episodePrefix} ${continueIdx + 1} · ${continueMinLeft} ${msgs.home.minutesLeft}`}
               </AppText>
             </Touchable>
           ) : null}
 
           <View style={styles.actions}>
             <Touchable
-              onPress={() => episodes.length > 0 && openEpisodeAt(0)}
+              onPress={() => lectures.length > 0 && openLectureAt(0)}
               haptic="light"
               accessibilityLabel={msgs.common.playAll}
               style={styles.playAll}
@@ -149,8 +228,8 @@ export default function SeriesDetailScreen() {
               </AppText>
             </Touchable>
             <Touchable
-              onPress={() => episodes.filter((ep) => ep.type !== "text").forEach((ep) => download(ep))}
-              disabled={episodes.length === 0 || episodes.every((ep) => ep.type === "text")}
+              onPress={() => lectures.filter((l) => l.type !== "text").forEach((l) => download(l))}
+              disabled={lectures.length === 0 || lectures.every((l) => l.type === "text")}
               haptic="light"
               accessibilityLabel={msgs.common.downloadAll}
               style={styles.downloadAll}
@@ -163,84 +242,34 @@ export default function SeriesDetailScreen() {
           </View>
         </View>
 
-        {/* Episodes */}
+        {/* Lectures */}
         <View style={styles.listHeader}>
           <AppText color="textPrimary" style={styles.listCount}>
-            {msgs.series.allPrefix} {series.count} {msgs.library.parts}
+            {msgs.series.allPrefix} {collection.count} {msgs.library.parts}
           </AppText>
           <AppText color={t.c.textMuted} style={styles.newestFirst}>
             {msgs.common.newestFirst}
           </AppText>
         </View>
 
-        {episodes.length === 0 ? (
-          <AppText color="textFaint" style={styles.noEpisodes}>
+        {lectures.length === 0 ? (
+          <AppText color="textFaint" style={styles.noLectures}>
             {msgs.series.noEpisodesYet}
           </AppText>
         ) : null}
-        {episodes.map((ep, i) => {
-          const isCurrent = current?.id === ep.id;
-          const progress = progressFor(ep.id);
-          const played = !isCurrent && progress >= 0.98;
-          const inProgress = !isCurrent && progress > 0 && progress < 0.98;
 
-          return (
-            <View
-              key={ep.id}
-              style={[
-                styles.episodeRow,
-                { borderTopColor: t.c.borderSubtle },
-                isCurrent ? { backgroundColor: "rgba(199,154,59,0.12)" } : null,
-              ]}
-            >
-              <Touchable onPress={() => openEpisodeAt(i)} style={styles.episodeMain}>
-                <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
-                  <AppText style={styles.numChipText} color={t.c.accent}>
-                    {ep.episode ?? i + 1}
+        {isFlat
+          ? lectures.map((l, i) => renderRow(l, i))
+          : groups.map((g) => (
+              <View key={g.label}>
+                <View style={styles.groupHeader}>
+                  <AppText variant="meta" color="textFaint" style={styles.groupHeaderText}>
+                    {g.label}
                   </AppText>
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <AppText
-                    style={styles.episodeTitle}
-                    color={isCurrent ? "accent" : "textPrimary"}
-                    numberOfLines={1}
-                  >
-                    {ep.title}
-                  </AppText>
-                  <View style={styles.episodeMeta}>
-                    <MediaBadge type={ep.type} />
-                    {played ? (
-                      <View style={styles.playedMeta}>
-                        <Icon name="check-circle" size={11} color="textFaint" />
-                        <AppText style={styles.episodeDur} color="textFaint">
-                          {msgs.series.played}
-                        </AppText>
-                      </View>
-                    ) : (
-                      <AppText style={styles.episodeDur} color="textMuted">
-                        {durationLabel(ep)}
-                      </AppText>
-                    )}
-                  </View>
-                  {inProgress ? (
-                    <View style={[styles.progressTrack, { backgroundColor: t.c.trackInactive }]}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${Math.round(progress * 100)}%`, backgroundColor: colors.gold },
-                        ]}
-                      />
-                    </View>
-                  ) : null}
-                </View>
-              </Touchable>
-              <View style={styles.trailing}>
-                {isCurrent ? <EqBars playing={isPlaying} /> : null}
-                {ep.type !== "text" ? <DownloadButton lecture={ep} size={18} /> : null}
+                {g.lectures.map((l) => renderRow(l, indexById.get(l.id) ?? 0))}
               </View>
-            </View>
-          );
-        })}
+            ))}
       </ScrollView>
     </View>
   );
@@ -284,6 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: font.sans.extrabold,
     fontSize: typePresets.caption.fontSize,
     letterSpacing: 0.8,
+    textTransform: "capitalize",
   },
   heroTitle: {
     fontFamily: font.serif.semibold,
@@ -344,7 +374,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   listCount: { fontFamily: font.serif.semibold, fontSize: typePresets.cardTitle.fontSize },
-  noEpisodes: {
+  noLectures: {
     fontFamily: font.sans.medium,
     fontSize: typePresets.body.fontSize,
     textAlign: "center",
@@ -352,7 +382,10 @@ const styles = StyleSheet.create({
   },
   newestFirst: { fontFamily: font.sans.bold, fontSize: typePresets.caption.fontSize },
 
-  episodeRow: {
+  groupHeader: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 4 },
+  groupHeaderText: { fontWeight: "700", letterSpacing: 0.4 },
+
+  lectureRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 13,
@@ -360,7 +393,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderTopWidth: 1,
   },
-  episodeMain: {
+  lectureMain: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
@@ -376,9 +409,9 @@ const styles = StyleSheet.create({
   },
   numChipText: { fontFamily: font.sans.extrabold, fontSize: typePresets.meta.fontSize },
   trailing: { flexDirection: "row", alignItems: "center", gap: 10 },
-  episodeTitle: { fontFamily: font.serif.semibold, fontSize: typePresets.body.fontSize },
-  episodeMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
-  episodeDur: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize },
+  lectureTitle: { fontFamily: font.serif.semibold, fontSize: typePresets.body.fontSize },
+  lectureMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
+  lectureDur: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize },
   playedMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   progressTrack: { height: 3, borderRadius: 2, overflow: "hidden", marginTop: 6 },
   progressFill: { height: "100%", borderRadius: 2 },
