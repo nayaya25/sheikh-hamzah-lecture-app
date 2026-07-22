@@ -6,6 +6,7 @@ import type { User } from "@althaqalayn/types";
 import { getClient } from "@/lib/supabase";
 import { useTheme } from "@/lib/theme";
 import { Toggle } from "@/components/form";
+import { MediaLibrarySection } from "@/components/MediaLibrarySection";
 import { brand, font } from "@/lib/ui";
 import { radii } from "@/lib/tokens";
 
@@ -85,6 +86,10 @@ export function Settings() {
           first
           control={<Toggle on={dark} onToggle={toggle} />}
         />
+      </Section>
+
+      <Section title="Media library" sub="Everything uploaded to storage. Open a file, or delete ones no longer in use.">
+        <MediaLibrarySection />
       </Section>
 
       <Section title="Language">

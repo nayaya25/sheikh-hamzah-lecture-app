@@ -57,6 +57,18 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
   const transcriptByLecture = useMemo(() => new Map(transcripts.map((t) => [t.lectureId, t])), [transcripts]);
 
   const all = lectures ?? [];
+
+  // Genuine "+N this month" trend, derived from the lecture publication/recording
+  // date (the only honest per-item timestamp on the client). Counts items whose
+  // `date` falls in the current calendar month — never a fabricated percentage.
+  const now = new Date();
+  const inThisMonth = (iso?: string) => {
+    if (!iso) return false;
+    const d = new Date(iso + (iso.length <= 10 ? "T00:00:00" : ""));
+    return !Number.isNaN(d.getTime()) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  };
+  const lecturesThisMonth = all.filter((l) => inThisMonth(l.date)).length;
+
   const published = all.filter((l) => l.status === "published");
   const scheduled = all.filter((l) => l.status === "scheduled");
   const drafts = all.filter((l) => l.status === "draft");
@@ -105,13 +117,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
   if (error) return <div style={styles.notice}>Couldn’t load the dashboard: {error}</div>;
   if (!lectures) return <div style={styles.notice}>Loading…</div>;
 
-  const stats = [
+  const stats: { key: string; label: string; value: number; icon: React.ReactNode; delta: string; trend?: number }[] = [
     {
       key: "total",
       label: "Total lectures",
       value: all.length,
       icon: <path d="M4 5h16M4 12h16M4 19h10" />,
       delta: `${published.length} published`,
+      trend: lecturesThisMonth,
     },
     {
       key: "collections",
@@ -191,6 +204,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
                     {s.icon}
                   </svg>
                 </div>
+                {s.trend ? (
+                  <span style={styles.trendChip} className="tnum">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" style={styles.trendArrow}>
+                      <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                    +{s.trend} this month
+                  </span>
+                ) : null}
               </div>
               <div style={styles.statLabel}>{s.label}</div>
               <div style={styles.statValue} className="tnum">{s.value}</div>
@@ -441,6 +462,20 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
   },
+  trendChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 3,
+    fontSize: 11.5,
+    fontWeight: 700,
+    color: "var(--up)",
+    background: "var(--up-bg)",
+    borderRadius: radii.pill,
+    padding: "4px 9px 4px 7px",
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+  },
+  trendArrow: { width: 12, height: 12, flexShrink: 0 },
   statLabel: { fontSize: 13.5, color: "var(--muted)", marginTop: 16 },
   statValue: { fontFamily: font.heading, fontSize: 30, fontWeight: 700, marginTop: 4, letterSpacing: "-0.02em", lineHeight: 1 },
   statDelta: { fontSize: 12, color: "var(--muted)", marginTop: 8 },
