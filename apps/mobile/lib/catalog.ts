@@ -1,23 +1,25 @@
 // View-model types + pure helpers for the catalog. The actual data comes from
 // Supabase via @/lib/catalogProvider — there is no bundled sample content.
 
-import type { MediaType, SeriesKind } from "@althaqalayn/types";
+import type { CollectionKind, Language, MediaType } from "@althaqalayn/types";
 import type { Gradient } from "@/lib/sampleData";
 
-export interface SampleSeries {
+/**
+ * Browse-list view-model for a Collection — id/title/kind/cover plus a
+ * derived lecture `count`; screens work off this instead of the raw domain
+ * `Collection` shape.
+ */
+export interface CollectionVM {
   id: string;
-  /** Display label (occasion label or uppercased kind). */
-  kind: string;
-  /** Raw enum kind, for filtering (Library segments). */
-  kindRaw: SeriesKind;
   title: string;
-  ar: string;
-  year: string;
+  kind: CollectionKind;
+  language: Language;
+  cover: { gradient: Gradient; arabic?: string };
+  description?: string;
+  /** Number of lectures in this collection. */
   count: number;
-  media: string;
-  lang: string;
-  gradient: Gradient;
-  desc: string;
+  featured?: boolean;
+  position?: number;
 }
 
 /** A lecture the player can load. */
@@ -25,14 +27,23 @@ export interface Playable {
   id: string;
   title: string;
   sub: string;
-  seriesId: string;
+  collectionId: string;
   type: MediaType;
   durSec: number;
   ar: string;
-  episode?: number;
+  /** Sub-heading within an occasion/topic collection ("1445 AH"); omitted for a flat series. */
+  groupLabel?: string;
+  /** Order within the parent collection (episode/sitting order). */
+  sort: number;
   mediaUrl?: string;
   gradient?: Gradient;
-  seriesTitle?: string;
+  collectionTitle?: string;
+}
+
+/** One `groupLabel` bucket within an occasion/topic collection's lecture list. */
+export interface LectureGroup {
+  label: string;
+  lectures: Playable[];
 }
 
 const DEFAULT_GRADIENT: Gradient = ["#0B4634", "#17795E"];
@@ -40,6 +51,39 @@ const DEFAULT_GRADIENT: Gradient = ["#0B4634", "#17795E"];
 /** The cover gradient for a lecture tile. */
 export function gradientForLecture(p: Playable): Gradient {
   return p.gradient ?? DEFAULT_GRADIENT;
+}
+
+/**
+ * Pure: the shared collection-lectures rendering rule — same rule as admin's
+ * `groupLectures` (apps/admin/lib/useContentTree.ts), owned separately here
+ * since mobile doesn't import from the admin app. `series` collections render
+ * as one flat `sort`-ordered list (ignoring `groupLabel`); `occasion`/`topic`
+ * collections group lectures by `groupLabel` (label-less lectures fall into a
+ * trailing "Ungrouped" bucket), groups appear in first-appearance order, and
+ * lectures within a group stay `sort`-ordered. `lectures` must already be
+ * `sort`-ordered.
+ */
+export function groupLectures(kind: CollectionKind, lectures: Playable[]): Playable[] | LectureGroup[] {
+  if (kind === "series") return lectures;
+
+  const order: string[] = [];
+  const byLabel = new Map<string, Playable[]>();
+  const ungrouped: Playable[] = [];
+  for (const l of lectures) {
+    if (!l.groupLabel) {
+      ungrouped.push(l);
+      continue;
+    }
+    if (!byLabel.has(l.groupLabel)) {
+      byLabel.set(l.groupLabel, []);
+      order.push(l.groupLabel);
+    }
+    byLabel.get(l.groupLabel)!.push(l);
+  }
+
+  const groups: LectureGroup[] = order.map((label) => ({ label, lectures: byLabel.get(label)! }));
+  if (ungrouped.length) groups.push({ label: "Ungrouped", lectures: ungrouped });
+  return groups;
 }
 
 /** "m:ss" for a scrubber. */

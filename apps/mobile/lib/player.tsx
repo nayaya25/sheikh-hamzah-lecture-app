@@ -34,14 +34,14 @@ interface PlayerValue {
   sleepRemainingSec: number;
   /** Whether the active player is currently buffering/loading. */
   buffering: boolean;
-  /** The current play queue (series episodes), and the index of `current` within it. */
+  /** The current play queue (a collection's lectures), and the index of `current` within it. */
   queue: Playable[];
   queueIndex: number;
   hasNext: boolean;
   hasPrev: boolean;
   play: (lecture: Playable) => void;
-  /** Set the queue to `episodes` and play `episodes[startIndex]`. */
-  playSeries: (episodes: Playable[], startIndex: number) => void;
+  /** Set the queue to `lectures` and play `lectures[startIndex]`. */
+  playCollection: (lectures: Playable[], startIndex: number) => void;
   next: () => void;
   prev: () => void;
   togglePlay: () => void;
@@ -144,7 +144,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [isPlaying]);
 
   // Core playback: loads + starts a lecture without touching the queue.
-  // Kept separate from `play` so `playSeries`/`playAt` can drive the queue
+  // Kept separate from `play` so `playCollection`/`playAt` can drive the queue
   // themselves without the queue reset below stomping their multi-item queue.
   const startPlayback = useCallback(
     (lecture: Playable) => {
@@ -184,11 +184,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [queue, startPlayback],
   );
 
-  const playSeries = useCallback(
-    (episodes: Playable[], startIndex: number) => {
-      setQueue(episodes);
+  const playCollection = useCallback(
+    (lectures: Playable[], startIndex: number) => {
+      setQueue(lectures);
       setQueueIndex(startIndex);
-      startPlayback(episodes[startIndex]);
+      startPlayback(lectures[startIndex]);
     },
     [startPlayback],
   );
@@ -274,8 +274,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!status.isLoaded) return;
     const metadata = {
       title: current.title,
-      artist: current.seriesTitle ?? current.sub,
-      albumTitle: current.seriesTitle ?? "Althaqalayn Lectures",
+      artist: current.collectionTitle ?? current.sub,
+      albumTitle: current.collectionTitle ?? "Althaqalayn Lectures",
       // artworkUrl: omitted for now — generated covers have no URL.
     };
     try {
@@ -318,7 +318,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       hasNext,
       hasPrev,
       play,
-      playSeries,
+      playCollection,
       next,
       prev,
       togglePlay,
@@ -343,7 +343,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       hasNext,
       hasPrev,
       play,
-      playSeries,
+      playCollection,
       next,
       prev,
       togglePlay,
