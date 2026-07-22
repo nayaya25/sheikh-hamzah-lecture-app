@@ -43,7 +43,6 @@ export default function PlayerScreen() {
     hasPrev,
     togglePlay,
     seekTo,
-    nudge,
     next,
     prev,
     cycleSpeed,
@@ -66,6 +65,13 @@ export default function PlayerScreen() {
 
   const gradient = gradientForLecture(current);
   const durSec = current.durSec;
+
+  // Seek by an absolute number of seconds (negative = rewind). seekTo takes a
+  // 0–1 fraction and clamps it, so [0, duration] is enforced for free.
+  const seekBySeconds = (sec: number) => {
+    if (!durSec) return;
+    seekTo(position + sec / durSec);
+  };
 
   const onShare = () => {
     void Share.share({ message: current.title });
@@ -90,7 +96,7 @@ export default function PlayerScreen() {
         <View style={styles.topBar}>
           <Touchable
             onPress={() => router.back()}
-            accessibilityLabel="Close player"
+            accessibilityLabel={msgs.player.closeA11y}
             style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
           >
             <Icon name="chevron-down" size={22} color="onBrand" />
@@ -105,7 +111,7 @@ export default function PlayerScreen() {
           </View>
           <Touchable
             onPress={onShare}
-            accessibilityLabel="Share"
+            accessibilityLabel={msgs.player.share}
             style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
           >
             <Icon name="share-2" size={18} color="onBrand" />
@@ -147,29 +153,29 @@ export default function PlayerScreen() {
             onPress={prev}
             disabled={!hasPrev}
             haptic="light"
-            accessibilityLabel="Previous"
+            accessibilityLabel={msgs.player.previousA11y}
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-back" size={26} color={hasPrev ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
           </Touchable>
-          <Touchable onPress={() => nudge(-0.05)} haptic="light" accessibilityLabel="Rewind 15 seconds" style={styles.skip}>
+          <Touchable onPress={() => seekBySeconds(-15)} haptic="light" accessibilityLabel={msgs.player.rewind15A11y} style={styles.skip}>
             <MaterialCommunityIcons name="rewind-15" size={30} color="#fff" />
           </Touchable>
-          <Touchable onPress={togglePlay} haptic="light" accessibilityLabel={isPlaying ? "Pause" : "Play"} style={styles.bigPlay}>
+          <Touchable onPress={togglePlay} haptic="light" accessibilityLabel={isPlaying ? msgs.common.pause : msgs.common.play} style={styles.bigPlay}>
             {buffering ? (
               <ActivityIndicator color={colors.greenDeep} />
             ) : (
               <Ionicons name={isPlaying ? "pause" : "play"} size={30} color={colors.greenDeep} />
             )}
           </Touchable>
-          <Touchable onPress={() => nudge(0.05)} haptic="light" accessibilityLabel="Forward 30 seconds" style={styles.skip}>
+          <Touchable onPress={() => seekBySeconds(30)} haptic="light" accessibilityLabel={msgs.player.forward30A11y} style={styles.skip}>
             <MaterialCommunityIcons name="fast-forward-30" size={30} color="#fff" />
           </Touchable>
           <Touchable
             onPress={next}
             disabled={!hasNext}
             haptic="light"
-            accessibilityLabel="Next"
+            accessibilityLabel={msgs.player.nextA11y}
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-forward" size={26} color={hasNext ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
@@ -205,7 +211,7 @@ export default function PlayerScreen() {
             style={styles.secItem}
             onPress={cycleSleep}
             onLongPress={() => sleepSheetRef.current?.present()}
-            accessibilityLabel="Sleep timer"
+            accessibilityLabel={msgs.player.sleepTimerA11y}
           >
             <Icon name="clock" size={20} color={sleep ? "accentText" : "onBrand"} />
             <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
@@ -216,7 +222,7 @@ export default function PlayerScreen() {
             style={styles.secItem}
             onPress={cycleSpeed}
             onLongPress={() => speedSheetRef.current?.present()}
-            accessibilityLabel="Playback speed"
+            accessibilityLabel={msgs.player.playbackSpeedA11y}
           >
             <AppText color="accentText" style={styles.speedLabel}>
               {speed}×
@@ -230,7 +236,7 @@ export default function PlayerScreen() {
 
       <ValueSheet
         ref={speedSheetRef}
-        title="Playback speed"
+        title={msgs.player.playbackSpeedA11y}
         options={SPEED_OPTIONS}
         selected={speed}
         onSelect={(v) => {
@@ -240,7 +246,7 @@ export default function PlayerScreen() {
       />
       <ValueSheet
         ref={sleepSheetRef}
-        title="Sleep timer"
+        title={msgs.player.sleepTimerA11y}
         options={SLEEP_OPTIONS}
         selected={sleep}
         onSelect={(v) => {

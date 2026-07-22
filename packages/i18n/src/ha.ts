@@ -103,6 +103,13 @@ export const ha: Messages = {
     download: "Sauke",
     transcript: "Rubutaccen bayani",
     share: "Raba",
+    closeA11y: "Rufe mai kunnawa",
+    previousA11y: "Na baya",
+    nextA11y: "Na gaba",
+    rewind15A11y: "Koma baya daƙiƙa 15",
+    forward30A11y: "Koma gaba daƙiƙa 30",
+    sleepTimerA11y: "Ma'aunin barci",
+    playbackSpeedA11y: "Gudun kunnawa",
   },
   reader: {
     reading: "Karatu",

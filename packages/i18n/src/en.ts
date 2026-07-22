@@ -100,6 +100,13 @@ export const en = {
     download: "Download",
     transcript: "Transcript",
     share: "Share",
+    closeA11y: "Close player",
+    previousA11y: "Previous",
+    nextA11y: "Next",
+    rewind15A11y: "Rewind 15 seconds",
+    forward30A11y: "Forward 30 seconds",
+    sleepTimerA11y: "Sleep timer",
+    playbackSpeedA11y: "Playback speed",
   },
   reader: {
     reading: "Reading",
