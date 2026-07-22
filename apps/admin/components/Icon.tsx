@@ -61,6 +61,29 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="12" cy="19" r="1.4" />
     </>
   ),
+  "arrow-right": <path d="M5 12h13M13 6l6 6-6 6" />,
+  "chevron-right": <path d="M9 6l6 6-6 6" />,
+  close: <path d="M6 6l12 12M18 6L6 18" />,
+  check: <path d="M4 12.5l5 5 11-11" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="16" rx="2" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    </>
+  ),
+  upload: <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />,
+  eye: (
+    <>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
 };
 
 export function Icon({

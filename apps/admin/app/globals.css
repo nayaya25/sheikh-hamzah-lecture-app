@@ -1,25 +1,90 @@
-/* Admin console theme tokens (mirrors @althaqalayn/theme adminLight/adminDark).
-   The sidebar stays deep-green in both modes; surfaces switch via these vars. */
+/* Admin console — Editorial Scholarly Luxury design tokens.
+   The deep-green sidebar/brand stays constant across themes; surfaces, ink,
+   lines, elevation and motion all flow from the custom properties below.
+   Existing var names (--bg/--card/--line/--ink/--muted/--faint/--input/--chip)
+   are preserved so un-migrated views keep working; new tokens elevate the craft
+   layer (surfaces, radii, shadows, motion). Typed mirror: lib/tokens.ts. */
 :root {
-  --bg: #faf6ee;
-  --card: #ffffff;
-  --line: #ece4d3;
-  --ink: #17231e;
-  --muted: #6a766e;
-  --faint: #9aa69e;
-  --input: #fbf8f1;
-  --chip: #eaf3ef;
+  /* Surfaces (warm, green-biased parchment) */
+  --bg: #f6f1e6; /* alias: --paper (app ground) */
+  --paper: #f6f1e6;
+  --paper-2: #efe8d8; /* recessed ground: rails, wells */
+  --card: #fffdf9; /* warm white surface (not cold #fff) */
+  --card-raised: #ffffff; /* top elevation */
+
+  /* Ink */
+  --ink: #15221d;
+  --muted: #5e6a62;
+  --faint: #97a199;
+
+  /* Lines */
+  --line: #e6dcc7; /* warm hairline */
+  --line-strong: #d8cbb0;
+
+  /* Fields + chips */
+  --input: #fbf7ee; /* alias: --field */
+  --field: #fbf7ee;
+  --chip: #e9f1ec;
+
+  /* Brand (constant across themes) */
+  --green: #0b4634;
+  --green-mid: #12634e;
+  --green-deepest: #08382a;
+  --green-bright: #17795e;
+  --gold: #c79a3b; /* on light surfaces */
+  --gold-soft: #e4c77b; /* on dark / on green */
+  --gold-wash: #fbf1da;
+
+  /* Radii — concentric discipline (inner = outer − padding) */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* Elevation — layered warm shadows over borders */
+  --sh-1: 0 1px 2px rgba(20, 35, 25, 0.05), 0 1px 1px rgba(20, 35, 25, 0.03);
+  --sh-2: 0 2px 6px rgba(20, 35, 25, 0.06), 0 8px 20px rgba(20, 35, 25, 0.06);
+  --sh-3: 0 12px 32px rgba(20, 35, 25, 0.12), 0 3px 8px rgba(20, 35, 25, 0.06);
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7); /* top inner highlight on light cards */
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 380ms;
+
+  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--gold);
 }
 
 :root.dark {
   --bg: #0e1512;
+  --paper: #0e1512;
+  --paper-2: #0a0f0d;
   --card: #16201b;
-  --line: #243029;
+  --card-raised: #1b2620;
+
   --ink: #f1ecdd;
   --muted: #9aa69e;
   --faint: #6a766e;
+
+  --line: #243029;
+  --line-strong: #2e3b33;
+
   --input: #1b2620;
+  --field: #1b2620;
   --chip: #17332a;
+
+  --gold: #e4c77b; /* gold reads brighter on dark ground */
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.3);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.45);
+  --sh-3: 0 12px 32px rgba(0, 0, 0, 0.6), 0 3px 8px rgba(0, 0, 0, 0.45);
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--gold);
 }
 
 * {
@@ -34,12 +99,12 @@ body {
 }
 
 body {
-  background: var(--bg);
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-instrument), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition: background var(--dur-base) var(--ease-standard), color var(--dur-base) var(--ease-standard);
 }
 
 a {
@@ -47,15 +112,31 @@ a {
   text-decoration: none;
 }
 
-input {
+input,
+textarea,
+select,
+button {
   font-family: inherit;
   color: var(--ink);
 }
-input::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--faint);
 }
 
-/* Hide scrollbars on scroll areas, matching the prototype's .ac/.noscroll */
+/* Numeric alignment for stats / counts / dates */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible keyboard focus on every interactive element */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-xs);
+}
+
+/* Hide scrollbars on designated scroll areas */
 .noscroll::-webkit-scrollbar {
   display: none;
 }
@@ -64,6 +145,46 @@ input::placeholder {
 }
 
 @keyframes mediaZoneBar {
-  0% { margin-left: -40%; }
-  100% { margin-left: 100%; }
+  0% {
+    margin-left: -40%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+/* Login: 50/50 on desktop, stacked below 820px (brand panel becomes a band) */
+@media (max-width: 820px) {
+  .login-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .login-grid > section:first-child {
+    min-height: 240px;
+    padding: 40px !important;
+  }
+}
+
+/* Staggered content entrance (used by redesigned views) */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: riseIn var(--dur-slow) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

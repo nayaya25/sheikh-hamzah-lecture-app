@@ -7,7 +7,9 @@ import { ConfirmProvider } from "@/components/ConfirmProvider";
 
 const sora = Sora({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sora" });
 const instrument = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument" });
-const amiri = Amiri({ subsets: ["arabic"], weight: ["400", "700"], variable: "--font-amiri" });
+// Latin subset included so Amiri also carries the editorial English display
+// headings (login title, dashboard greeting), not just Arabic marks.
+const amiri = Amiri({ subsets: ["arabic", "latin"], weight: ["400", "700"], variable: "--font-amiri" });
 
 export const metadata: Metadata = {
   title: "Althaqalayn — Admin Console",

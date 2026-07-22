@@ -25,7 +25,7 @@ export function Console() {
       <Sidebar view={view} onNavigate={setView} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--bg)" }}>
         <Topbar view={view} query={query} onQuery={setQuery} onPrimary={onPrimary} />
-        <div className="noscroll" style={{ flex: 1, overflowY: "auto", padding: 26 }}>
+        <div className="noscroll" style={{ flex: 1, overflowY: "auto", padding: "28px 32px" }}>
           {view === "dashboard" ? (
             <Dashboard onNavigate={setView} />
           ) : view === "content" ? (

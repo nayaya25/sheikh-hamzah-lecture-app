@@ -8,14 +8,16 @@ export const brand = {
   green: "#0B4634",
   greenMid: "#12634E",
   greenDeepest: "#08382A",
-  gold: "#E4C77B",
-  goldDk: "#C79A3B",
+  greenBright: "#17795E",
+  gold: "#E4C77B", // gold on dark / on green
+  goldDk: "#C79A3B", // gold on light surfaces (AA text)
+  goldWash: "#FBF1DA",
 } as const;
 
 export const font = {
-  heading: "var(--font-sora)",
-  ui: "var(--font-instrument)",
-  arabic: "var(--font-amiri)",
+  heading: "var(--font-sora), system-ui, sans-serif",
+  ui: "var(--font-instrument), system-ui, sans-serif",
+  arabic: "var(--font-amiri), 'Amiri', Georgia, serif",
 } as const;
 
 // Year options for lecture/series editors: Gregorian 2026 → 1990, each labelled
