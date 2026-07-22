@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { typography } from "@althaqalayn/theme";
 import type { CollectionKind } from "@althaqalayn/types";
+import { CollectionCard } from "@/components/CollectionCard";
 import { LectureListRow } from "@/components/LectureListRow";
 import { SearchField } from "@/components/SearchField";
-import { SeriesListRow } from "@/components/SeriesListRow";
 import { AppText } from "@/components/ui/AppText";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -28,8 +28,12 @@ import { useTheme } from "@/lib/theme";
 type Segment = CollectionKind | "saved";
 const KIND_SEGMENTS: CollectionKind[] = ["occasion", "series", "topic"];
 
+// 2-column cover-card grid metrics (matches the prototype's .cgrid: 20px gutters, 14px gap).
+const GRID_GAP = 14;
+
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
+  const { width: winW } = useWindowDimensions();
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string }>();
   const t = useTheme();
@@ -107,6 +111,7 @@ export default function LibraryScreen() {
   // Background refetch failed but we still have cached data — keep the lists
   // on screen with a small inline banner instead of a full-screen EmptyState.
   const showInlineError = Boolean(error) && hasData;
+  const cardWidth = (winW - t.space.screen * 2 - GRID_GAP) / 2;
 
   const emptyTitle = (isCollections: boolean) =>
     q ? msgs.library.noMatches : isCollections ? msgs.library.nothingHereYet : msgs.library.noLecturesYet;
@@ -171,7 +176,7 @@ export default function LibraryScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         {header}
         {showSkeleton ? (
-          isSaved ? <LectureRowSkeleton /> : <CollectionRowSkeleton />
+          isSaved ? <LectureRowSkeleton /> : <CollectionGridSkeleton cardWidth={cardWidth} />
         ) : isSaved ? (
           savedLectures.length === 0 ? (
             <EmptyState
@@ -186,15 +191,27 @@ export default function LibraryScreen() {
             </View>
           )
         ) : (
-          <View style={styles.collectionsWrap}>
-            {collectionRows.length === 0 ? (
+          collectionRows.length === 0 ? (
+            <View style={styles.collectionsWrap}>
               <EmptyState icon="folder" title={emptyTitle(true)} />
-            ) : (
-              collectionRows.map((c: CollectionVM) => (
-                <SeriesListRow key={c.id} series={c} onPress={() => router.push(`/collection/${c.id}`)} />
-              ))
-            )}
-          </View>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {collectionRows.map((c: CollectionVM) => (
+                <CollectionCard
+                  key={c.id}
+                  title={c.title}
+                  kind={c.kind}
+                  gradient={c.cover.gradient}
+                  arabic={c.cover.arabic}
+                  meta={`${c.count} ${msgs.library.parts} · ${c.language.toUpperCase()}`}
+                  width={cardWidth}
+                  style={{ marginBottom: GRID_GAP }}
+                  onPress={() => router.push(`/collection/${c.id}`)}
+                />
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
     </View>
@@ -220,18 +237,21 @@ function LectureRowSkeleton() {
   );
 }
 
-/** Loading placeholders shaped like the collection card row, used by the Occasions/Series/Topics segments. */
-function CollectionRowSkeleton() {
+/** Loading placeholders shaped like the 2-column cover-card grid, used by the Occasions/Series/Topics segments. */
+function CollectionGridSkeleton({ cardWidth }: { cardWidth: number }) {
   const t = useTheme();
   return (
-    <View style={styles.collectionsWrap}>
+    <View style={styles.grid}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <View key={i} style={[styles.collectionSkeletonRow, { borderColor: t.c.borderSubtle }]}>
-          <Skeleton width={70} height={70} radius={t.radii.lg} />
-          <View style={{ flex: 1, gap: t.space.xs }}>
-            <Skeleton width="25%" height={9} />
-            <Skeleton width="80%" height={14} />
-            <Skeleton width="55%" height={11} />
+        <View
+          key={i}
+          style={[styles.collectionSkeletonCard, { width: cardWidth, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}
+        >
+          <Skeleton width={cardWidth} height={96} radius={0} />
+          <View style={{ paddingHorizontal: 13, paddingTop: 12, paddingBottom: 14, gap: t.space.xs }}>
+            <Skeleton width="35%" height={9} />
+            <Skeleton width="85%" height={14} />
+            <Skeleton width="60%" height={11} />
           </View>
         </View>
       ))}
@@ -248,6 +268,13 @@ const styles = StyleSheet.create({
   searchToggle: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   searchWrap: { paddingHorizontal: 16, paddingTop: 8 },
   collectionsWrap: { paddingHorizontal: 16, paddingTop: 8 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
   lectureSkeletonRow: { flexDirection: "row", alignItems: "center", gap: 13, paddingHorizontal: 16, paddingVertical: 11 },
-  collectionSkeletonRow: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1, borderRadius: 18, padding: 12, marginBottom: 12 },
+  collectionSkeletonCard: { overflow: "hidden", borderWidth: 1, marginBottom: 14 },
 });
