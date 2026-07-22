@@ -95,7 +95,7 @@ export default function PlayerScreen() {
             <AppText color="rgba(255,255,255,0.6)" style={styles.nowPlaying}>
               {msgs.player.nowPlaying.toUpperCase()}
             </AppText>
-            <AppText color="rgba(255,255,255,0.85)" style={styles.nowSeries}>
+            <AppText color="rgba(255,255,255,0.85)" style={styles.nowCollectionTitle}>
               {current.collectionTitle}
             </AppText>
           </View>
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     lineHeight: typePresets.caption.lineHeight,
     letterSpacing: 1.2,
   },
-  nowSeries: {
+  nowCollectionTitle: {
     fontFamily: font.sans.regular,
     fontSize: typePresets.meta.fontSize,
     lineHeight: typePresets.meta.lineHeight,

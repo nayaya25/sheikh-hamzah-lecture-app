@@ -3,21 +3,6 @@
 
 export type Gradient = readonly [from: string, to: string];
 
-export interface HomeCategory {
-  ar: string;
-  label: string;
-  meta: string;
-}
-
-export interface HomeSeries {
-  id: string;
-  kind: string;
-  title: string;
-  ar: string;
-  metaShort: string;
-  gradient: Gradient;
-}
-
 export interface HomeLecture {
   id: string;
   title: string;
