@@ -15,6 +15,7 @@ import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
 import { Scrubber } from "@/components/player/Scrubber";
 import { ValueSheet } from "@/components/player/ValueSheet";
+import { useBookmarks } from "@/lib/bookmarks";
 import { formatTime, gradientForLecture } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
@@ -53,12 +54,15 @@ export default function PlayerScreen() {
 
   const speedSheetRef = useRef<BottomSheetModal>(null);
   const sleepSheetRef = useRef<BottomSheetModal>(null);
+  const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
   if (!current) {
     router.back();
     return null;
   }
+
+  const bookmarked = isBookmarked(current.id);
 
   const gradient = gradientForLecture(current);
   const durSec = current.durSec;
@@ -172,8 +176,42 @@ export default function PlayerScreen() {
           </Touchable>
         </View>
 
-        {/* Secondary controls */}
+        {/* Action row — Download / Save / Sleep / Speed */}
         <View style={styles.secondary}>
+          <View style={styles.secItem}>
+            <DownloadButton
+              lecture={current}
+              size={20}
+              showLabel
+              tint="onBrand"
+              activeTint="accentText"
+            />
+          </View>
+          <Touchable
+            style={styles.secItem}
+            onPress={() => toggleBookmark(current.id)}
+            accessibilityLabel={bookmarked ? msgs.reader.removeBookmark : msgs.reader.bookmark}
+            accessibilityState={{ selected: bookmarked }}
+          >
+            <Icon name="bookmark" size={20} color={bookmarked ? "accentText" : "onBrand"} />
+            <AppText
+              color={bookmarked ? "accentText" : "rgba(255,255,255,0.6)"}
+              style={styles.secLabel}
+            >
+              {bookmarked ? msgs.library.saved : msgs.reader.bookmark}
+            </AppText>
+          </Touchable>
+          <Touchable
+            style={styles.secItem}
+            onPress={cycleSleep}
+            onLongPress={() => sleepSheetRef.current?.present()}
+            accessibilityLabel="Sleep timer"
+          >
+            <Icon name="clock" size={20} color={sleep ? "accentText" : "onBrand"} />
+            <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
+              {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
+            </AppText>
+          </Touchable>
           <Touchable
             style={styles.secItem}
             onPress={cycleSpeed}
@@ -185,30 +223,6 @@ export default function PlayerScreen() {
             </AppText>
             <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
               {msgs.player.speed}
-            </AppText>
-          </Touchable>
-          <Touchable
-            style={styles.secItem}
-            onPress={cycleSleep}
-            onLongPress={() => sleepSheetRef.current?.present()}
-            accessibilityLabel="Sleep timer"
-          >
-            <Icon name="clock" size={19} color={sleep ? "accentText" : "onBrand"} />
-            <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
-              {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
-            </AppText>
-          </Touchable>
-          <DownloadButton
-            lecture={current}
-            size={19}
-            showLabel
-            tint="onBrand"
-            activeTint="accentText"
-          />
-          <Touchable style={styles.secItem} onPress={onShare} accessibilityLabel="Share">
-            <Icon name="share-2" size={19} color="onBrand" />
-            <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
-              {msgs.player.share}
             </AppText>
           </Touchable>
         </View>
@@ -299,9 +313,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  secondary: { marginTop: 26, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 },
-  secItem: { alignItems: "center", gap: 4 },
-  speedLabel: { fontFamily: font.serif.semibold, fontSize: typePresets.cardTitle.fontSize, lineHeight: typePresets.cardTitle.lineHeight },
+  secondary: {
+    marginTop: 26,
+    paddingTop: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.12)",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  secItem: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: 6 },
+  speedLabel: { fontFamily: font.serif.semibold, fontSize: 18, lineHeight: 20 },
   secLabel: {
     fontFamily: font.sans.regular,
     fontSize: typePresets.caption.fontSize,
