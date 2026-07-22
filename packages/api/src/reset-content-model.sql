@@ -93,7 +93,9 @@ create policy write_lectures   on lectures    for all    using (is_editor()) wit
 create policy read_transcripts on transcripts for select using (is_admin());
 create policy write_transcripts on transcripts for all   using (is_editor()) with check (is_editor());
 
-create policy public_read_collections on collections for select using (true);
+create policy public_read_collections on collections for select
+  using (exists (select 1 from lectures l
+                 where l.collection_id = collections.id and l.status = 'published'));
 
 create policy public_read_published_lectures on lectures for select
   using (status = 'published');

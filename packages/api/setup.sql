@@ -151,7 +151,9 @@ create policy manage_admins on admin_users for all    using (is_owner()) with ch
 
 -- Public read of published content. Lectures gate on status; children gate on
 -- their parent being publicly visible.
-create policy public_read_collections on collections for select using (true);
+create policy public_read_collections on collections for select
+  using (exists (select 1 from lectures l
+                 where l.collection_id = collections.id and l.status = 'published'));
 
 create policy public_read_published_lectures on lectures for select
   using (status = 'published');
