@@ -3,15 +3,14 @@
 import { useRef, useState, type CSSProperties } from "react";
 import { admin } from "@althaqalayn/api";
 import type { MediaType } from "@althaqalayn/types";
-import { SelectField } from "@/components/fields";
-import { fieldInput } from "@/components/fields";
+import { SelectField, fieldInput } from "@/components/fields";
 import { MediaZone } from "@/components/MediaZone";
 import { SectionedForm, type FormSection } from "@/components/SectionedForm";
 import { getClient } from "@/lib/supabase";
 import { brand } from "@/lib/ui";
 import { uploadMedia } from "@/lib/upload";
 import { EditorFooter } from "./EditorFooter";
-import type { SeriesNode } from "@/lib/useContentTree";
+import type { CollectionNode } from "@/lib/useContentTree";
 
 type UploadStatus = "idle" | "uploading" | "done" | "error";
 
@@ -19,7 +18,7 @@ interface Row {
   key: number;
   titleEn: string;
   titleHa: string;
-  episode: number;
+  sort: number;
   mediaUrl: string;
   file?: File;
   uploadStatus?: UploadStatus;
@@ -44,20 +43,23 @@ function titleFromFilename(name: string): string {
   return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const emptyRow = (key: number, episode: number): Row => ({ key, titleEn: "", titleHa: "", episode, mediaUrl: "" });
+const emptyRow = (key: number, sort: number): Row => ({ key, titleEn: "", titleHa: "", sort, mediaUrl: "" });
 
 export function BatchEpisodesForm({
-  series,
+  collection,
   onCancel,
   onSaved,
 }: {
-  series: SeriesNode;
+  collection: CollectionNode;
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const startNum = (series.episodes.reduce((m, e) => Math.max(m, e.episode ?? 0), 0)) + 1;
+  const startSort = collection.lectures.length ? Math.max(...collection.lectures.map((l) => l.sort)) + 1 : 0;
+  // series shows a flat sort-ordered list — group_label is meaningless there.
+  const groupable = collection.kind !== "series";
   const [type, setType] = useState<MediaType>("audio");
-  const [rows, setRows] = useState<Row[]>([emptyRow(0, startNum)]);
+  const [groupLabel, setGroupLabel] = useState("");
+  const [rows, setRows] = useState<Row[]>([emptyRow(0, startSort)]);
   const [busy, setBusy] = useState(false);
   const [busyRows, setBusyRows] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +74,13 @@ export function BatchEpisodesForm({
   const mediaBusy = busyRows.size > 0;
 
   const patch = (key: number, p: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...p } : r)));
-  const add = () => setRows((rs) => [...rs, emptyRow((rs.at(-1)?.key ?? 0) + 1, (rs.at(-1)?.episode ?? startNum) + 1)]);
+  const add = () => setRows((rs) => [...rs, emptyRow((rs.at(-1)?.key ?? 0) + 1, (rs.at(-1)?.sort ?? startSort) + 1)]);
   const remove = (key: number) => {
     setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.key !== key) : rs));
     setRowBusy(key, false);
   };
   const clearAll = () => {
-    setRows([emptyRow(0, startNum)]);
+    setRows([emptyRow(0, startSort)]);
     setBusyRows(new Set());
     setError(null);
   };
@@ -108,13 +110,13 @@ export function BatchEpisodesForm({
     const files = Array.from(fileList);
     const isUntouched = rows.length === 1 && !rows[0].titleEn.trim() && !rows[0].titleHa.trim() && !rows[0].mediaUrl && !rows[0].file;
     const base = isUntouched ? [] : rows;
-    const maxEpisode = base.length ? base.reduce((m, r) => Math.max(m, r.episode), 0) : startNum - 1;
+    const maxSort = base.length ? base.reduce((m, r) => Math.max(m, r.sort), 0) : startSort - 1;
     const startKey = (base.at(-1)?.key ?? -1) + 1;
     const newRows: Row[] = files.map((file, idx) => ({
       key: startKey + idx,
       titleEn: titleFromFilename(file.name),
       titleHa: "",
-      episode: maxEpisode + 1 + idx,
+      sort: maxSort + 1 + idx,
       mediaUrl: "",
       file,
       uploadStatus: "uploading",
@@ -125,7 +127,7 @@ export function BatchEpisodesForm({
 
   const save = async () => {
     const valid = rows.filter((r) => r.titleEn.trim());
-    if (!valid.length) { setError("Add at least one episode with a title."); return; }
+    if (!valid.length) { setError("Add at least one lecture with a title."); return; }
     setBusy(true); setError(null);
     let succeeded = 0;
     const failures: string[] = [];
@@ -133,25 +135,23 @@ export function BatchEpisodesForm({
       await runPool(valid, 6, async (r) => {
         try {
           await admin.upsertLecture(getClient(), {
-            scope: "series",
+            collectionId: collection.id,
             title: { en: r.titleEn.trim(), ...(r.titleHa.trim() ? { ha: r.titleHa.trim() } : {}) },
             type,
-            language: series.language,
+            language: collection.language,
             date: new Date().toISOString().slice(0, 10),
             status: "published",
-            ...(series.year ? { year: series.year } : {}),
-            seriesId: series.id,
-            ...(series.programId ? { programId: series.programId } : {}),
-            episode: r.episode,
+            ...(groupable && groupLabel.trim() ? { groupLabel: groupLabel.trim() } : {}),
+            sort: r.sort,
             ...(type !== "text" && r.mediaUrl ? { mediaUrl: r.mediaUrl } : {}),
           });
           succeeded += 1;
         } catch (e) {
-          failures.push(`Episode ${r.episode} (${r.titleEn.trim()}): ${e instanceof Error ? e.message : "failed"}`);
+          failures.push(`“${r.titleEn.trim()}”: ${e instanceof Error ? e.message : "failed"}`);
         }
       });
       if (failures.length) {
-        setError(`Saved ${succeeded} of ${valid.length} episode(s). ${failures.length} failed: ${failures.slice(0, 3).join("; ")}${failures.length > 3 ? "…" : ""}`);
+        setError(`Saved ${succeeded} of ${valid.length} lecture(s). ${failures.length} failed: ${failures.slice(0, 3).join("; ")}${failures.length > 3 ? "…" : ""}`);
       } else {
         onSaved();
       }
@@ -165,10 +165,25 @@ export function BatchEpisodesForm({
   const sections: FormSection[] = [
     {
       key: "shared",
-      title: `Add episodes to ${series.title.en}`,
+      title: `Add lectures to ${collection.title.en}`,
       render: () => (
         <>
-          <SelectField label="MEDIA TYPE (ALL)" value={type} onChange={(v) => setType(v as MediaType)} options={[{ value: "audio", label: "Audio" }, { value: "video", label: "Video" }, { value: "text", label: "Text" }]} />
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <SelectField
+                label="MEDIA TYPE (ALL)"
+                value={type}
+                onChange={(v) => setType(v as MediaType)}
+                options={[{ value: "audio", label: "Audio" }, { value: "video", label: "Video" }, { value: "text", label: "Text" }]}
+              />
+            </div>
+            {groupable ? (
+              <div style={{ flex: 1 }}>
+                <div style={groupLabelHeading}>GROUP (ALL, OPTIONAL)</div>
+                <input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)} placeholder="e.g. 1445 AH" style={fieldInput} />
+              </div>
+            ) : null}
+          </div>
 
           {type !== "text" ? (
             <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -195,7 +210,7 @@ export function BatchEpisodesForm({
 
           <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)" }}>
-              {readyCount} episode{readyCount === 1 ? "" : "s"} ready
+              {readyCount} lecture{readyCount === 1 ? "" : "s"} ready
             </span>
             <button type="button" onClick={clearAll} style={clearAllBtn}>Clear all</button>
           </div>
@@ -204,12 +219,12 @@ export function BatchEpisodesForm({
             {rows.map((r) => (
               <div key={r.key} style={rowCard}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700 }}>Episode {r.episode}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>Sort {r.sort}</span>
                   {rows.length > 1 ? <button type="button" onClick={() => remove(r.key)} style={{ background: "transparent", border: "none", color: "#a23e3e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Remove</button> : null}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input value={r.titleEn} onChange={(e) => patch(r.key, { titleEn: e.target.value })} placeholder="Title (English)" style={{ ...fieldInput, flex: 1 }} />
-                  <input value={String(r.episode)} onChange={(e) => patch(r.key, { episode: Number(e.target.value) || r.episode })} inputMode="numeric" style={{ ...fieldInput, width: 64 }} />
+                  <input value={String(r.sort)} onChange={(e) => patch(r.key, { sort: Number(e.target.value) || r.sort })} inputMode="numeric" style={{ ...fieldInput, width: 64 }} />
                 </div>
                 <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Title (Hausa)" style={{ ...fieldInput, marginTop: 8 }} />
                 {type !== "text" ? (
@@ -231,7 +246,7 @@ export function BatchEpisodesForm({
                 ) : null}
               </div>
             ))}
-            <button type="button" onClick={add} style={addRow}>+ Add another episode</button>
+            <button type="button" onClick={add} style={addRow}>+ Add another lecture</button>
           </div>
         </>
       ),
@@ -240,11 +255,12 @@ export function BatchEpisodesForm({
 
   return (
     <div style={{ padding: 28 }}>
-      <SectionedForm sections={sections} error={error} footer={<EditorFooter busy={busy} disabled={mediaBusy} saveLabel={`Publish ${readyCount || ""} episode(s)`.replace("  ", " ")} onCancel={onCancel} onSave={() => void save()} />} />
+      <SectionedForm sections={sections} error={error} footer={<EditorFooter busy={busy} disabled={mediaBusy} saveLabel={`Publish ${readyCount || ""} lecture(s)`.replace("  ", " ")} onCancel={onCancel} onSave={() => void save()} />} />
     </div>
   );
 }
 
+const groupLabelHeading: CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: ".5px", color: "var(--faint)", marginBottom: 7, marginTop: 16 };
 const rowCard: CSSProperties = { border: "1px solid var(--line)", borderRadius: 12, padding: 14, marginBottom: 12, background: "var(--bg)" };
 const addRow: CSSProperties = { width: "100%", padding: 12, border: "1.5px dashed var(--line)", borderRadius: 10, background: "transparent", color: brand.greenMid, fontSize: 13, fontWeight: 700, cursor: "pointer" };
 const selectFilesBtn: CSSProperties = { padding: "10px 16px", borderRadius: 10, border: "none", background: brand.greenMid, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" };

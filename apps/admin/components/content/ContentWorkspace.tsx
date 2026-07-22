@@ -44,9 +44,14 @@ export function ContentWorkspace() {
     setSelected(null);
   };
 
-  const collectionOptions = tree.collections.map((c) => ({ value: c.id, label: c.title.en }));
-
-  /** Quick "+ New collection" from within the lecture editor's parent picker — a minimal series collection, renamed via its own editor afterwards. */
+  /**
+   * Quick "+ New collection" from within the lecture editor's `ParentPicker` —
+   * that control's shared `onCreate: (name) => Promise<string>` shape (also used
+   * by TranscriptEditor) only carries a name, so this can't ask which `kind` the
+   * admin wants. Defaults to "series" (the most common case for ad-hoc lecture
+   * intake); the admin can reopen the new collection's own editor to correct the
+   * kind, cover, etc.
+   */
   const createCollection = async (name: string): Promise<string> => {
     const c = await admin.upsertCollection(getClient(), {
       title: { en: name },
@@ -158,7 +163,7 @@ export function ContentWorkspace() {
             lecture={null}
             collectionId={draftNew.collectionId}
             groupLabel={draftNew.groupLabel}
-            collections={collectionOptions}
+            collections={tree.collections}
             onCancel={() => setMode("read")}
             onSaved={afterSave}
             onCreateCollection={createCollection}
@@ -166,7 +171,7 @@ export function ContentWorkspace() {
         ) : mode === "edit" && selected?.kind === "lecture" ? (
           <LectureForm
             lecture={findLecture(selected.id)}
-            collections={collectionOptions}
+            collections={tree.collections}
             onCancel={() => setMode("read")}
             onSaved={afterSave}
             onCreateCollection={createCollection}
