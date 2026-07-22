@@ -124,7 +124,7 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100dvh",
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    background: "var(--paper)",
+    background: "var(--bg)",
   },
 
   // ── Brand panel ──────────────────────────────────────────────
@@ -198,7 +198,7 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     padding: "clamp(32px, 4vw, 64px)",
-    background: "var(--paper)",
+    background: "var(--bg)",
   },
   formBlock: { width: "100%", maxWidth: 384 },
   eyebrow: {

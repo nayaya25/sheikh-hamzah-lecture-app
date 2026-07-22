@@ -1,17 +1,19 @@
-// Shared UI constants for the admin console. The deep green + gold are brand
-// constants (the sidebar stays green in both themes); surface colors come from
-// the CSS vars in globals.css.
+// Shared UI constants for the admin console. Brand green/gold, matching the
+// modern rebuild prototype (docs/superpowers/prototypes/admin-modern.html)
+// hex-for-hex — greenDeepest is an extra deep ramp (Login's brand panel,
+// pre-modern gradients) with no direct prototype var. Surface colors come
+// from the CSS vars in globals.css.
 
 import type { MediaType, PublishStatus } from "@althaqalayn/types";
 
 export const brand = {
-  green: "#0B4634",
-  greenMid: "#12634E",
+  green: "#0B4634", // --green
+  greenMid: "#12634E", // --green-2
   greenDeepest: "#08382A",
-  greenBright: "#17795E",
-  gold: "#E4C77B", // gold on dark / on green
-  goldDk: "#C79A3B", // gold on light surfaces (AA text)
-  goldWash: "#FBF1DA",
+  greenBright: "#17795E", // --green-bright
+  gold: "#E4C77B", // gold on dark / on green (--gold, dark theme)
+  goldDk: "#C79A3B", // gold on light surfaces, AA text (--gold, light theme)
+  goldWash: "#FBF1DA", // --gold-wash
 } as const;
 
 export const font = {

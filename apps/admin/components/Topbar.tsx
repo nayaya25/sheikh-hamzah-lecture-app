@@ -1,38 +1,27 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { brand, font } from "@/lib/ui";
-import { motion, radii } from "@/lib/tokens";
-import { VIEW_TITLES, type View } from "@/lib/views";
+import { radii } from "@/lib/tokens";
 import { Icon } from "@/components/Icon";
 
-// Contextual primary action per view (hidden where there's nothing to create).
-const PRIMARY: Partial<Record<View, string>> = {
-  dashboard: "New lecture",
-  gallery: "New album",
-  media: "Upload media",
-};
-
-export function Topbar({
-  view,
-  query,
-  onQuery,
-  onPrimary,
-}: {
-  view: View;
-  query: string;
-  onQuery: (q: string) => void;
-  onPrimary?: () => void;
-}) {
+// Deliberately no primary "New …" button here — creation happens from page
+// headers / collection detail / empty states via modals (see ModalProvider).
+export function Topbar({ query, onQuery }: { query: string; onQuery: (q: string) => void }) {
+  const { profile, signOut } = useAuth();
   const { dark, toggle } = useTheme();
   const [searchFocus, setSearchFocus] = useState(false);
-  const primary = PRIMARY[view];
+  const [userMenu, setUserMenu] = useState(false);
+  const name = profile?.name ?? "Admin";
+  const first = name.split(" ")[0];
 
   return (
     <div style={styles.root}>
-      <div style={styles.title}>{VIEW_TITLES[view]}</div>
-      <div style={{ flex: 1 }} />
+      <button style={styles.burger} title="Toggle sidebar" aria-label="Toggle sidebar">
+        <Icon name="menu" size={18} strokeWidth={1.9} />
+      </button>
 
       <div
         style={{
@@ -47,10 +36,13 @@ export function Topbar({
           onChange={(e) => onQuery(e.target.value)}
           onFocus={() => setSearchFocus(true)}
           onBlur={() => setSearchFocus(false)}
-          placeholder="Search everything…"
+          placeholder="Search or type a command…"
           style={styles.searchInput}
         />
+        <span style={styles.kbd}>⌘K</span>
       </div>
+
+      <div style={{ flex: 1 }} />
 
       <button
         onClick={toggle}
@@ -61,53 +53,93 @@ export function Topbar({
         <Icon name={dark ? "sun" : "moon"} size={17} color="var(--muted)" strokeWidth={1.9} />
       </button>
 
-      {primary ? (
-        <button
-          onClick={onPrimary}
-          style={styles.primary}
-          onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.97)")}
-          onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          <span>{primary}</span>
-          <span style={styles.primaryIcon}>
-            <Icon name="plus" size={14} color={brand.green} strokeWidth={2.4} />
-          </span>
+      <button style={styles.iconBtn} title="Notifications" aria-label="Notifications">
+        <span style={styles.dot} />
+        <Icon name="bell" size={17} color="var(--muted)" strokeWidth={1.9} />
+      </button>
+
+      <div style={{ position: "relative" }}>
+        <button onClick={() => setUserMenu((o) => !o)} style={styles.who}>
+          <span style={styles.avatar}>{name.slice(0, 2).toUpperCase()}</span>
+          <span style={styles.whoName}>{first}</span>
+          <Icon name="chevron-down" size={14} color="var(--faint)" strokeWidth={2} />
         </button>
-      ) : null}
+        {userMenu ? (
+          <>
+            <div style={styles.menuScrim} onClick={() => setUserMenu(false)} />
+            <div style={styles.menu}>
+              <button
+                onClick={() => {
+                  setUserMenu(false);
+                  void signOut();
+                }}
+                style={styles.menuItem}
+              >
+                Sign out
+              </button>
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
   root: {
-    height: 72,
+    height: 70,
     flexShrink: 0,
     background: "var(--card)",
     borderBottom: "1px solid var(--line)",
     display: "flex",
     alignItems: "center",
     gap: 14,
-    padding: "0 28px",
-    boxShadow: "0 1px 0 rgba(20,35,25,.02)",
+    padding: "0 26px",
   },
-  title: { fontFamily: font.heading, fontSize: 21, fontWeight: 600, letterSpacing: "-0.02em" },
+  burger: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    border: "1px solid var(--line)",
+    background: "transparent",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "var(--muted)",
+    cursor: "pointer",
+    flexShrink: 0,
+  },
   search: {
     display: "flex",
     alignItems: "center",
-    gap: 9,
+    gap: 10,
     background: "var(--field)",
     border: "1px solid var(--line)",
-    borderRadius: radii.pill,
-    padding: "10px 16px",
-    width: 280,
-    transition: `border-color ${motion.fast} ${motion.standard}, box-shadow ${motion.fast} ${motion.standard}`,
+    borderRadius: radii.md,
+    padding: "0 12px",
+    height: 42,
+    width: 420,
+    color: "var(--faint)",
+    fontSize: 14,
+    transition: "border-color 140ms, box-shadow 140ms",
   },
-  searchInput: { border: "none", background: "transparent", fontSize: 13.5, flex: 1, outline: "none" },
+  searchInput: { border: "none", background: "transparent", fontSize: 14, flex: 1, outline: "none", color: "var(--ink)" },
+  kbd: {
+    marginLeft: "auto",
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--muted)",
+    background: "var(--card)",
+    border: "1px solid var(--line)",
+    borderRadius: 6,
+    padding: "3px 7px",
+    flexShrink: 0,
+  },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
+    position: "relative",
+    width: 42,
+    height: 42,
+    borderRadius: radii.pill,
     border: "1px solid var(--line)",
     background: "var(--card)",
     display: "flex",
@@ -115,35 +147,66 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "center",
     cursor: "pointer",
     flexShrink: 0,
-    boxShadow: "var(--sh-1)",
-    transition: `background ${motion.fast} ${motion.standard}`,
   },
-  primary: {
-    flexShrink: 0,
+  dot: {
+    position: "absolute",
+    top: 9,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "var(--down)",
+    border: "2px solid var(--card)",
+  },
+  who: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    background: brand.green,
-    color: "#fff",
-    border: "none",
+    padding: "4px 10px 4px 4px",
     borderRadius: radii.pill,
-    padding: "6px 6px 6px 18px",
-    height: 44,
-    fontSize: 13.5,
-    fontWeight: 600,
-    fontFamily: font.ui,
+    border: "1px solid var(--line)",
+    background: "var(--card)",
     cursor: "pointer",
-    boxShadow: "0 1px 0 rgba(255,255,255,.12) inset, 0 4px 12px rgba(11,70,52,.24)",
-    transition: `transform ${motion.fast} ${motion.out}`,
   },
-  primaryIcon: {
-    width: 32,
-    height: 32,
+  whoName: { fontSize: 13.5, fontWeight: 600, color: "var(--ink)", fontFamily: font.ui },
+  avatar: {
+    width: 30,
+    height: 30,
     borderRadius: radii.pill,
-    background: brand.gold,
+    background: `linear-gradient(140deg, ${brand.gold}, ${brand.goldDk})`,
+    color: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    fontWeight: 700,
+    fontSize: 11,
     flexShrink: 0,
+  },
+  menuScrim: { position: "fixed", inset: 0, zIndex: 60 },
+  menu: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    zIndex: 61,
+    minWidth: 150,
+    background: "var(--card)",
+    border: "1px solid var(--line)",
+    borderRadius: radii.md,
+    boxShadow: "var(--sh-2)",
+    padding: 6,
+    display: "flex",
+    flexDirection: "column",
+  },
+  menuItem: {
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: radii.sm,
+    padding: "9px 12px",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--ink)",
+    cursor: "pointer",
+    fontFamily: font.ui,
   },
 };

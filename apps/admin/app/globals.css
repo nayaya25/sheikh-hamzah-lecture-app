@@ -1,90 +1,98 @@
-/* Admin console — Editorial Scholarly Luxury design tokens.
-   The deep-green sidebar/brand stays constant across themes; surfaces, ink,
-   lines, elevation and motion all flow from the custom properties below.
-   Existing var names (--bg/--card/--line/--ink/--muted/--faint/--input/--chip)
-   are preserved so un-migrated views keep working; new tokens elevate the craft
-   layer (surfaces, radii, shadows, motion). Typed mirror: lib/tokens.ts. */
+/* Althaqalayn Admin — modern design tokens (TailAdmin-inspired light rebuild).
+   Source of truth: docs/superpowers/prototypes/admin-modern.html — copy its
+   :root custom properties + dark-theme block here whenever the prototype
+   changes. White cards, subtle hairlines, soft shadows, green/gold brand
+   accent. Typed mirror: lib/tokens.ts (+ brand in lib/ui.ts).
+
+   A handful of legacy var names/aliases are kept below so views not yet
+   migrated to the modern shell (Dashboard, Gallery, Settings, form/, content/)
+   keep rendering sanely; they get their own modern pass in later tasks — see
+   docs/superpowers/plans/2026-07-22-admin-modern-rebuild.md. Drop an alias
+   once nothing references it any more. */
 :root {
-  /* Surfaces (warm, green-biased parchment) */
-  --bg: #f6f1e6; /* alias: --paper (app ground) */
-  --paper: #f6f1e6;
-  --paper-2: #efe8d8; /* recessed ground: rails, wells */
-  --card: #fffdf9; /* warm white surface (not cold #fff) */
-  --card-raised: #ffffff; /* top elevation */
+  /* Surfaces */
+  --bg: #f4f5f3;
+  --card: #ffffff;
+  --ink: #16211c;
+  --muted: #67736c;
+  --faint: #98a29b;
+  --line: #e9ebe6;
+  --line-2: #dfe2db;
+  --field: #f7f8f5;
 
-  /* Ink */
-  --ink: #15221d;
-  --muted: #5e6a62;
-  --faint: #97a199;
-
-  /* Lines */
-  --line: #e6dcc7; /* warm hairline */
-  --line-strong: #d8cbb0;
-
-  /* Fields + chips */
-  --input: #fbf7ee; /* alias: --field */
-  --field: #fbf7ee;
-  --chip: #e9f1ec;
-
-  /* Brand (constant across themes) */
+  /* Brand */
   --green: #0b4634;
-  --green-mid: #12634e;
-  --green-deepest: #08382a;
+  --green-2: #12634e;
   --green-bright: #17795e;
-  --gold: #c79a3b; /* on light surfaces */
-  --gold-soft: #e4c77b; /* on dark / on green */
+  --green-soft: rgba(11, 70, 52, 0.07);
+  --green-soft-2: rgba(11, 70, 52, 0.12);
+  --gold: #c79a3b;
   --gold-wash: #fbf1da;
 
-  /* Radii — concentric discipline (inner = outer − padding) */
-  --r-xs: 8px;
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 18px;
-  --r-xl: 24px;
+  /* Semantic status */
+  --up: #16a34a;
+  --up-bg: #e7f6ec;
+  --down: #e5484d;
+  --down-bg: #fdecec;
+  --draft: #8b8b7e;
+  --draft-bg: #eeeeea;
+  --sched: #9a7420;
+  --sched-bg: #fbf1da;
+
+  /* Radii */
+  --r-sm: 9px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
   --r-pill: 999px;
 
-  /* Elevation — layered warm shadows over borders */
-  --sh-1: 0 1px 2px rgba(20, 35, 25, 0.05), 0 1px 1px rgba(20, 35, 25, 0.03);
-  --sh-2: 0 2px 6px rgba(20, 35, 25, 0.06), 0 8px 20px rgba(20, 35, 25, 0.06);
-  --sh-3: 0 12px 32px rgba(20, 35, 25, 0.12), 0 3px 8px rgba(20, 35, 25, 0.06);
-  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7); /* top inner highlight on light cards */
+  /* Elevation */
+  --sh-1: 0 1px 2px rgba(16, 30, 24, 0.04);
+  --sh-2: 0 1px 3px rgba(16, 30, 24, 0.06), 0 6px 16px rgba(16, 30, 24, 0.05);
+  --sh-3: 0 20px 48px rgba(16, 30, 24, 0.18), 0 6px 16px rgba(16, 30, 24, 0.08);
 
   /* Motion */
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-standard: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ── Back-compat aliases (remove once every consumer is migrated) ── */
+  --input: var(--field);
+  --chip: var(--green-soft-2);
+  --paper: var(--bg);
+  --paper-2: var(--field);
+  --card-raised: var(--card);
+  --line-strong: var(--line-2);
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --dur-fast: 140ms;
   --dur-base: 220ms;
   --dur-slow: 380ms;
-
-  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--gold);
+  --ease-out: var(--ease);
+  --ease-standard: cubic-bezier(0.65, 0, 0.35, 1);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--gold);
 }
 
 :root.dark {
-  --bg: #0e1512;
-  --paper: #0e1512;
-  --paper-2: #0a0f0d;
-  --card: #16201b;
-  --card-raised: #1b2620;
-
-  --ink: #f1ecdd;
+  --bg: #0d1310;
+  --card: #151d18;
+  --ink: #eef1ea;
   --muted: #9aa69e;
   --faint: #6a766e;
+  --line: #232d27;
+  --line-2: #2c3831;
+  --field: #1a231d;
 
-  --line: #243029;
-  --line-strong: #2e3b33;
+  --green-soft: rgba(23, 121, 94, 0.14);
+  --green-soft-2: rgba(23, 121, 94, 0.22);
+  --gold: #e4c77b;
+  --gold-wash: rgba(228, 199, 123, 0.12);
+  --up-bg: rgba(22, 163, 74, 0.18);
+  --down-bg: rgba(229, 72, 77, 0.18);
+  --draft-bg: rgba(139, 139, 126, 0.2);
+  --sched-bg: rgba(228, 199, 123, 0.14);
 
-  --input: #1b2620;
-  --field: #1b2620;
-  --chip: #17332a;
-
-  --gold: #e4c77b; /* gold reads brighter on dark ground */
-
-  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.3);
-  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.45);
-  --sh-3: 0 12px 32px rgba(0, 0, 0, 0.6), 0 3px 8px rgba(0, 0, 0, 0.45);
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-2: 0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.4);
+  --sh-3: 0 20px 48px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.4);
   --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-
-  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--gold);
 }
 
 * {
@@ -99,9 +107,9 @@ body {
 }
 
 body {
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-family: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background var(--dur-base) var(--ease-standard), color var(--dur-base) var(--ease-standard);
@@ -123,17 +131,31 @@ input::placeholder,
 textarea::placeholder {
   color: var(--faint);
 }
+button {
+  cursor: pointer;
+}
 
 /* Numeric alignment for stats / counts / dates */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
 
+/* Thin, theme-aware scrollbars everywhere (matches the prototype) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 999px;
+  border: 3px solid var(--bg);
+}
+
 /* Visible keyboard focus on interactive elements (gold ring) */
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-sm);
 }
 
 /* Form controls get a calmer green focus ring (higher specificity wins over the
@@ -179,7 +201,7 @@ select:focus {
   }
 }
 
-/* Staggered content entrance (used by redesigned views) */
+/* Staggered content entrance (used across views + the modal panes) */
 @keyframes riseIn {
   from {
     opacity: 0;
@@ -191,7 +213,27 @@ select:focus {
   }
 }
 .rise {
-  animation: riseIn var(--dur-slow) var(--ease-out) both;
+  animation: riseIn var(--dur-slow) var(--ease) both;
+}
+
+/* Modal + scrim motion (Modal.tsx) */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

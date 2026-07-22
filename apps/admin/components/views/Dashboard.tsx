@@ -39,10 +39,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
   const drafts = all.filter((l) => l.status === "draft");
 
   const stats = [
-    { key: "total", label: "Total lectures", value: all.length, dot: brand.greenBright, delta: `${published.length} published`, view: "content" as View },
-    { key: "collections", label: "Collections", value: collections.length, dot: brand.goldDk, delta: "Across the archive", view: "content" as View },
-    { key: "drafts", label: "Drafts", value: drafts.length, dot: "#8b8b7e", delta: "Awaiting review", view: "content" as View },
-    { key: "scheduled", label: "Scheduled", value: scheduled.length, dot: "#9a7420", delta: "Auto-publishing", view: "content" as View },
+    { key: "total", label: "Total lectures", value: all.length, dot: brand.greenBright, delta: `${published.length} published`, view: "collections" as View },
+    { key: "collections", label: "Collections", value: collections.length, dot: brand.goldDk, delta: "Across the archive", view: "collections" as View },
+    { key: "drafts", label: "Drafts", value: drafts.length, dot: "#8b8b7e", delta: "Awaiting review", view: "collections" as View },
+    { key: "scheduled", label: "Scheduled", value: scheduled.length, dot: "#9a7420", delta: "Auto-publishing", view: "collections" as View },
   ];
 
   const recent = all.slice(0, 6);
@@ -100,7 +100,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
         <div style={styles.card}>
           <div style={styles.rowBetween}>
             <div style={styles.h2}>Recent uploads</div>
-            <button onClick={() => onNavigate("content")} style={styles.link}>
+            <button onClick={() => onNavigate("collections")} style={styles.link}>
               View all →
             </button>
           </div>
@@ -154,7 +154,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
             )}
           </div>
           <button
-            onClick={() => onNavigate("content")}
+            onClick={() => onNavigate("collections")}
             style={styles.scheduledBtn}
             onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
             onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}

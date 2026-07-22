@@ -1,48 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
-import { ContentWorkspace } from "@/components/content/ContentWorkspace";
+import { ModalProvider } from "@/components/ModalProvider";
 import { Dashboard } from "@/components/views/Dashboard";
-import { Featured } from "@/components/views/Featured";
 import { Gallery } from "@/components/views/Gallery";
-import { MediaLibrary } from "@/components/views/MediaLibrary";
 import { Settings } from "@/components/views/Settings";
-import { Transcripts } from "@/components/views/Transcripts";
 import type { View } from "@/lib/views";
+
+// Stand-in for the Collections-first views landing in T2–T4 (see
+// docs/superpowers/plans/2026-07-22-admin-modern-rebuild.md). Deliberately
+// does not import ContentWorkspace/Featured/Transcripts/MediaLibrary — those
+// surfaces are retired in T7.
+function ScreenPlaceholder({ label }: { label: string }) {
+  return (
+    <div style={placeholderStyle}>
+      <div style={{ fontSize: 14, fontWeight: 500 }}>{label}…</div>
+    </div>
+  );
+}
+
+const placeholderStyle: CSSProperties = {
+  minHeight: 360,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "var(--faint)",
+  background: "var(--card)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--r-lg)",
+};
 
 export function Console() {
   const [view, setView] = useState<View>("dashboard");
   const [query, setQuery] = useState("");
 
-  const onPrimary = () => {
-    if (view === "dashboard") setView("content");
-  };
-
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      <Sidebar view={view} onNavigate={setView} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--bg)" }}>
-        <Topbar view={view} query={query} onQuery={setQuery} onPrimary={onPrimary} />
-        <div className="noscroll" style={{ flex: 1, overflowY: "auto", padding: "28px 32px" }}>
-          {view === "dashboard" ? (
-            <Dashboard onNavigate={setView} />
-          ) : view === "content" ? (
-            <ContentWorkspace />
-          ) : view === "featured" ? (
-            <Featured />
-          ) : view === "gallery" ? (
-            <Gallery query={query} />
-          ) : view === "transcripts" ? (
-            <Transcripts query={query} />
-          ) : view === "media" ? (
-            <MediaLibrary query={query} />
-          ) : (
-            <Settings />
-          )}
+    <ModalProvider>
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--bg)" }}>
+        <Sidebar view={view} onNavigate={setView} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <Topbar query={query} onQuery={setQuery} />
+          <div style={{ flex: 1, overflowY: "auto", padding: "26px 28px" }}>
+            <div key={view} className="rise" style={{ maxWidth: 1200, margin: "0 auto" }}>
+              {view === "dashboard" ? (
+                <Dashboard onNavigate={setView} />
+              ) : view === "collections" ? (
+                <ScreenPlaceholder label="Collections" />
+              ) : view === "collection" ? (
+                <ScreenPlaceholder label="Collection" />
+              ) : view === "gallery" ? (
+                <Gallery query={query} />
+              ) : (
+                <Settings />
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </ModalProvider>
   );
 }

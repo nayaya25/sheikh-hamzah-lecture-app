@@ -1,31 +1,29 @@
-// Typed design tokens for inline-style components. Values mirror the CSS custom
-// properties in app/globals.css. Prefer var(--token) references so a single
-// source (globals.css) drives both themes; literal scales (radii/space) are
-// provided as numbers for arithmetic (e.g. concentric radius math).
+// Typed design tokens for inline-style components — modern light rebuild.
+// Values mirror the CSS custom properties in app/globals.css (single source of
+// truth for both themes); prefer var(--token) references so components stay
+// theme-aware for free. Radii are exported as plain numbers for arithmetic.
+// Source: docs/superpowers/prototypes/admin-modern.html.
 
 /** Surface + ink + line tokens, as CSS var references (theme-aware). */
 export const c = {
-  paper: "var(--paper)",
-  paper2: "var(--paper-2)",
+  bg: "var(--bg)",
   card: "var(--card)",
-  cardRaised: "var(--card-raised)",
   ink: "var(--ink)",
   muted: "var(--muted)",
   faint: "var(--faint)",
   line: "var(--line)",
-  lineStrong: "var(--line-strong)",
+  line2: "var(--line-2)",
   field: "var(--field)",
   chip: "var(--chip)",
   gold: "var(--gold)",
 } as const;
 
-/** Border radii (px). Concentric rule: inner = outer − padding. */
+/** Border radii (px). */
 export const radii = {
-  xs: 8,
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
+  sm: 9,
+  md: 12,
+  lg: 16,
+  xl: 20,
   pill: 999,
 } as const;
 

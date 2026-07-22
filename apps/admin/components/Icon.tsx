@@ -20,6 +20,14 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   featured: <path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z" />,
+  collections: (
+    <>
+      <rect x="3" y="4" width="7" height="7" rx="1.5" />
+      <rect x="14" y="4" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="6" rx="1.5" />
+      <rect x="14" y="14" width="7" height="6" rx="1.5" />
+    </>
+  ),
   gallery: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -54,6 +62,14 @@ const PATHS: Record<string, ReactNode> = {
   moon: <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   logout: <path d="M15 4h3a1 1 0 011 1v14a1 1 0 01-1 1h-3M10 8l-4 4 4 4M6 12h9" />,
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  bell: (
+    <>
+      <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 01-3.4 0" />
+    </>
+  ),
+  "chevron-down": <path d="M6 9l6 6 6-6" />,
   dots: (
     <>
       <circle cx="12" cy="5" r="1.4" />
