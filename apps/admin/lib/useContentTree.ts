@@ -1,9 +1,4 @@
-"use client";
-
-import { useCallback, useEffect, useState } from "react";
-import { admin } from "@althaqalayn/api";
 import type { Collection, Lecture } from "@althaqalayn/types";
-import { getClient } from "@/lib/supabase";
 
 export interface CollectionNode extends Collection {
   /** This collection's lectures, ordered by `sort` ascending. */
@@ -69,32 +64,4 @@ export function groupLectures(collection: CollectionNode): Lecture[] | LectureGr
   const groups: LectureGroup[] = order.map((label) => ({ label, lectures: byLabel.get(label)! }));
   if (ungrouped.length) groups.push({ label: "Ungrouped", lectures: ungrouped });
   return groups;
-}
-
-export function useContentTree() {
-  const [tree, setTree] = useState<ContentTree | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    const client = getClient();
-    try {
-      const [collections, lectures] = await Promise.all([
-        admin.listAllCollections(client),
-        admin.listAllLectures(client),
-      ]);
-      setTree(shapeTree(collections, lectures));
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load content");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  return { tree, loading, error, reload };
 }

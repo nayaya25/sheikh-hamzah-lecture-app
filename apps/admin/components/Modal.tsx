@@ -49,8 +49,19 @@ export function Modal({
         const focusables = cardRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
         );
-        if (focusables.length === 0) return;
-        const list = Array.from(focusables);
+        // Skip elements that can't actually receive focus: disabled controls,
+        // and anything hidden via display:none (offsetParent === null),
+        // visibility:hidden/collapse, or the `hidden` attribute. Otherwise the
+        // first/last wrap could land on e.g. a hidden Back button.
+        const list = Array.from(focusables).filter((el) => {
+          if ((el as HTMLButtonElement).disabled) return false;
+          if (el.hidden) return false;
+          if (el.offsetParent === null && getComputedStyle(el).position !== "fixed") return false;
+          const vis = getComputedStyle(el).visibility;
+          if (vis === "hidden" || vis === "collapse") return false;
+          return true;
+        });
+        if (list.length === 0) return;
         const first = list[0];
         const last = list[list.length - 1];
         if (e.shiftKey && document.activeElement === first) {

@@ -423,7 +423,7 @@ const styles: Record<string, CSSProperties> = {
   statCard: {
     textAlign: "left",
     background: "var(--card)",
-    border: "none",
+    border: "1px solid var(--line)",
     borderRadius: radii.lg,
     padding: 20,
     cursor: "pointer",
@@ -449,6 +449,7 @@ const styles: Record<string, CSSProperties> = {
   dash3: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 },
   card: {
     background: "var(--card)",
+    border: "1px solid var(--line)",
     borderRadius: radii.lg,
     padding: 22,
     boxShadow: "var(--sh-1), var(--highlight)",
