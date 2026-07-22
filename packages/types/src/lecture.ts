@@ -34,7 +34,6 @@ export interface Lecture {
   date: ISODate;
   /** Optional display/filter label, e.g. "1445 AH · 2024". */
   year?: string;
-  description?: LocalizedText;
   /** Streamed source for audio/video. */
   mediaUrl?: string;
   /** Reader body copy for `type: "text"` lectures (localized). */
