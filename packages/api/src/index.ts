@@ -6,10 +6,8 @@ export type { AlthaqalaynClient, ClientConfig } from "./client";
 export * from "./content";
 export * as admin from "./admin";
 export type {
+  CollectionInput,
   LectureInput,
-  SeriesInput,
-  ProgramInput,
-  CategoryInput,
   AlbumInput,
   PhotoInput,
   TranscriptInput,

@@ -1,36 +1,53 @@
 // Public content reads for the mobile app. Every query is further constrained by
 // RLS to published content, so these are safe even with the anon key.
 
-import type {
-  Album,
-  Category,
-  Lecture,
-  Language,
-  MediaType,
-  Program,
-  Series,
-  Transcript,
-} from "@althaqalayn/types";
+import type { Album, Collection, Language, Lecture, MediaType, Transcript } from "@althaqalayn/types";
 import type { AlthaqalaynClient } from "./client";
 import { unwrap } from "./client";
-import type {
-  AlbumRow,
-  CategoryRow,
-  LectureRow,
-  PhotoRow,
-  ProgramRow,
-  SeriesRow,
-  TranscriptRow,
-} from "./database.types";
-import {
-  mapAlbum,
-  mapCategory,
-  mapLecture,
-  mapPhoto,
-  mapProgram,
-  mapSeries,
-  mapTranscript,
-} from "./mappers";
+import type { AlbumRow, CollectionRow, LectureRow, PhotoRow, TranscriptRow } from "./database.types";
+import { mapAlbum, mapCollection, mapLecture, mapPhoto, mapTranscript } from "./mappers";
+
+// ── Collections ──────────────────────────────────────────────────────────────
+export async function listCollections(client: AlthaqalaynClient): Promise<Collection[]> {
+  const rows = unwrap<CollectionRow[]>(
+    await client.from("collections").select("*").order("position"),
+  );
+  return rows.map(mapCollection);
+}
+
+export async function collectionById(
+  client: AlthaqalaynClient,
+  id: string,
+): Promise<Collection | null> {
+  const row = unwrap<CollectionRow | null>(
+    await client.from("collections").select("*").eq("id", id).maybeSingle(),
+  );
+  return row ? mapCollection(row) : null;
+}
+
+/** Home "Featured" shelf. */
+export async function listFeaturedCollections(client: AlthaqalaynClient): Promise<Collection[]> {
+  const rows = unwrap<CollectionRow[]>(
+    await client.from("collections").select("*").eq("featured", true).order("position"),
+  );
+  return rows.map(mapCollection);
+}
+
+// ── Lectures ─────────────────────────────────────────────────────────────────
+/** A collection's lectures, published and ordered by `sort` (Collection detail screen). */
+export async function lecturesForCollection(
+  client: AlthaqalaynClient,
+  collectionId: string,
+): Promise<Lecture[]> {
+  const rows = unwrap<LectureRow[]>(
+    await client
+      .from("lectures")
+      .select("*")
+      .eq("collection_id", collectionId)
+      .order("sort", { ascending: true }),
+  );
+  return rows.map(mapLecture);
+}
 
 /** Newest published lectures for the Home "Latest lectures" list. */
 export async function listLatestLectures(
@@ -78,59 +95,7 @@ export async function searchLectures(
   return rows.map(mapLecture);
 }
 
-export async function listFeaturedSeries(client: AlthaqalaynClient): Promise<Series[]> {
-  const rows = unwrap<SeriesRow[]>(
-    await client.from("series").select("*").eq("featured", true).order("position"),
-  );
-  return rows.map((r) => mapSeries(r));
-}
-
-/** A series plus its ordered episodes (Series detail screen). */
-export async function getSeriesWithEpisodes(
-  client: AlthaqalaynClient,
-  id: string,
-): Promise<{ series: Series; episodes: Lecture[] } | null> {
-  const seriesRow = unwrap<SeriesRow | null>(
-    await client.from("series").select("*").eq("id", id).maybeSingle(),
-  );
-  if (!seriesRow) return null;
-
-  const episodeRows = unwrap<LectureRow[]>(
-    await client
-      .from("lectures")
-      .select("*")
-      .eq("series_id", id)
-      .order("episode", { ascending: true, nullsFirst: false }),
-  );
-  const episodes = episodeRows.map(mapLecture);
-  return { series: mapSeries(seriesRow, episodes.map((e) => e.id)), episodes };
-}
-
-/** A program plus its per-year series, ordered (Program screen). */
-export async function getProgramWithSeries(
-  client: AlthaqalaynClient,
-  id: string,
-): Promise<{ program: Program; series: Series[] } | null> {
-  const programRow = unwrap<ProgramRow | null>(
-    await client.from("programs").select("*").eq("id", id).maybeSingle(),
-  );
-  if (!programRow) return null;
-
-  const seriesRows = unwrap<SeriesRow[]>(
-    await client.from("series").select("*").eq("program_id", id).order("position"),
-  );
-  const series = seriesRows.map((r) => mapSeries(r));
-  return { program: mapProgram(programRow, series.map((s) => s.id)), series };
-}
-
-/** Explore categories shown on Home (active, non-archived — also RLS-gated). */
-export async function listCategories(client: AlthaqalaynClient): Promise<Category[]> {
-  const rows = unwrap<CategoryRow[]>(
-    await client.from("categories").select("*").order("position"),
-  );
-  return rows.map(mapCategory);
-}
-
+// ── Gallery ──────────────────────────────────────────────────────────────────
 export async function listAlbums(client: AlthaqalaynClient): Promise<Album[]> {
   const rows = unwrap<AlbumRow[]>(
     await client.from("albums").select("*").order("date", { ascending: false }),

@@ -1,25 +1,22 @@
 import { describe, expect, it } from "vitest";
-import type { LectureRow, SeriesRow } from "./database.types";
-import { mapLecture, mapSeries } from "./mappers";
+import type { CollectionRow, LectureRow } from "./database.types";
+import { mapCollection, mapLecture } from "./mappers";
 
 const baseLectureRow: LectureRow = {
   id: "lec-1",
+  collection_id: "col-1",
   title_en: "Night 1 · Juz 1",
   title_ha: "Dare 1 · Juz'i 1",
   type: "audio",
-  scope: "series",
   language: "ha",
-  duration: 2460,
-  date: "2024-03-11",
-  year: "1445 AH · 2024",
-  description_en: null,
-  description_ha: null,
+  group_label: "1445 AH",
+  sort: 1,
   media_url: "https://cdn/1.mp3",
   body_en: null,
   body_ha: null,
-  program_id: "prog-1",
-  series_id: "ser-1",
-  episode: 1,
+  duration: 2460,
+  date: "2024-03-11",
+  year: "1445 AH · 2024",
   status: "published",
   scheduled_for: null,
   featured: false,
@@ -48,22 +45,24 @@ describe("mapLecture", () => {
     expect("featured" in l).toBe(false);
   });
 
-  it("keeps duration and episode when present", () => {
+  it("keeps duration, sort, and groupLabel when present", () => {
     const l = mapLecture(baseLectureRow);
     expect(l.duration).toBe(2460);
-    expect(l.episode).toBe(1);
+    expect(l.sort).toBe(1);
+    expect(l.groupLabel).toBe("1445 AH");
+  });
+
+  it("maps collection_id to collectionId", () => {
+    expect(mapLecture(baseLectureRow).collectionId).toBe("col-1");
   });
 });
 
-describe("mapSeries", () => {
-  const seriesRow: SeriesRow = {
-    id: "ser-1",
-    program_id: "prog-1",
+describe("mapCollection", () => {
+  const collectionRow: CollectionRow = {
+    id: "col-1",
     title_en: "Ramadan Tafsīr 1445",
     title_ha: null,
     kind: "occasion",
-    year: "1445 AH · 2024",
-    occasion: null,
     language: "ha",
     cover_from: "#7A5A12",
     cover_to: "#C0932F",
@@ -75,17 +74,18 @@ describe("mapSeries", () => {
   };
 
   it("assembles the cover gradient tuple", () => {
-    expect(mapSeries(seriesRow).cover.gradient).toEqual(["#7A5A12", "#C0932F"]);
+    expect(mapCollection(collectionRow).cover.gradient).toEqual(["#7A5A12", "#C0932F"]);
   });
 
-  it("uses the ordered episode ids passed in, not the row", () => {
-    const s = mapSeries(seriesRow, ["lec-1", "lec-2"]);
-    expect(s.lectureIds).toEqual(["lec-1", "lec-2"]);
+  it("keeps featured:true and cover.arabic", () => {
+    const c = mapCollection(collectionRow);
+    expect(c.featured).toBe(true);
+    expect(c.cover.arabic).toBe("١٤٤٥");
   });
 
-  it("keeps featured:true but keeps cover.arabic", () => {
-    const s = mapSeries(seriesRow);
-    expect(s.featured).toBe(true);
-    expect(s.cover.arabic).toBe("١٤٤٥");
+  it("omits featured when false and keeps position:0", () => {
+    const c = mapCollection({ ...collectionRow, featured: false });
+    expect("featured" in c).toBe(false);
+    expect(c.position).toBe(0);
   });
 });

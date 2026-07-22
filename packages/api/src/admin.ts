@@ -2,45 +2,22 @@
 // session; RLS rejects them otherwise. Reads here are unfiltered (all statuses),
 // unlike the public content.ts queries.
 
-import type {
-  Album,
-  Category,
-  Lecture,
-  LocalizedText,
-  Photo,
-  Program,
-  Series,
-  Transcript,
-  User,
-} from "@althaqalayn/types";
+import type { Album, Collection, Lecture, LocalizedText, Photo, Transcript, User } from "@althaqalayn/types";
 import type { AlthaqalaynClient } from "./client";
 import { unwrap } from "./client";
 import type {
   AdminUserRow,
   AlbumRow,
-  CategoryRow,
+  CollectionRow,
   LectureRow,
   PhotoRow,
-  ProgramRow,
-  SeriesRow,
   TranscriptRow,
 } from "./database.types";
-import {
-  mapAlbum,
-  mapCategory,
-  mapLecture,
-  mapPhoto,
-  mapProgram,
-  mapSeries,
-  mapTranscript,
-  mapUser,
-} from "./mappers";
+import { mapAlbum, mapCollection, mapLecture, mapPhoto, mapTranscript, mapUser } from "./mappers";
 
 // Write payloads: the domain object without server-managed ids/children.
+export type CollectionInput = Omit<Collection, "id">;
 export type LectureInput = Omit<Lecture, "id">;
-export type SeriesInput = Omit<Series, "id" | "lectureIds">;
-export type ProgramInput = Omit<Program, "id" | "seriesIds">;
-export type CategoryInput = Omit<Category, "id">;
 export type AlbumInput = Omit<Album, "id" | "photos">;
 export type PhotoInput = Omit<Photo, "id">;
 export type TranscriptInput = Omit<Transcript, "id">;
@@ -75,6 +52,63 @@ export async function listAdminUsers(client: AlthaqalaynClient): Promise<User[]>
   return rows.map(mapUser);
 }
 
+// ── Collections ──────────────────────────────────────────────────────────────
+export async function listAllCollections(client: AlthaqalaynClient): Promise<Collection[]> {
+  const rows = unwrap<CollectionRow[]>(
+    await client.from("collections").select("*").order("position"),
+  );
+  return rows.map(mapCollection);
+}
+
+export async function upsertCollection(
+  client: AlthaqalaynClient,
+  input: CollectionInput,
+  id?: string,
+): Promise<Collection> {
+  const row = {
+    ...(id ? { id } : {}),
+    title_en: input.title.en,
+    title_ha: ha(input.title),
+    kind: input.kind,
+    language: input.language,
+    cover_from: input.cover.gradient[0],
+    cover_to: input.cover.gradient[1],
+    cover_arabic: input.cover.arabic ?? null,
+    description_en: en(input.description),
+    description_ha: ha(input.description),
+    featured: input.featured ?? false,
+    position: input.position ?? 0,
+  };
+  const saved = unwrap<CollectionRow>(
+    await client.from("collections").upsert(row).select("*").single(),
+  );
+  return mapCollection(saved);
+}
+
+/** Cascade to the collection's lectures is handled by the FK's `on delete cascade`. */
+export async function deleteCollection(client: AlthaqalaynClient, id: string): Promise<void> {
+  const { error } = await client.from("collections").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Persist a new collection display order (writes the `position` column). */
+export async function setCollectionPositions(
+  client: AlthaqalaynClient,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client
+        .from("collections")
+        .update({ position: index })
+        .eq("id", id)
+        .then((r) => {
+          if (r.error) throw new Error(r.error.message);
+        }),
+    ),
+  );
+}
+
 // ── Lectures ─────────────────────────────────────────────────────────────────
 export async function listAllLectures(client: AlthaqalaynClient): Promise<Lecture[]> {
   const rows = unwrap<LectureRow[]>(
@@ -90,22 +124,19 @@ export async function upsertLecture(
 ): Promise<Lecture> {
   const row = {
     ...(id ? { id } : {}),
+    collection_id: input.collectionId,
     title_en: input.title.en,
     title_ha: ha(input.title),
     type: input.type,
-    scope: input.scope,
     language: input.language,
+    group_label: input.groupLabel ?? null,
+    sort: input.sort,
     duration: input.duration ?? null,
     date: input.date,
     year: input.year ?? null,
-    description_en: en(input.description),
-    description_ha: ha(input.description),
     media_url: input.mediaUrl ?? null,
     body_en: en(input.body),
     body_ha: ha(input.body),
-    program_id: input.programId ?? null,
-    series_id: input.seriesId ?? null,
-    episode: input.episode ?? null,
     status: input.status,
     scheduled_for: input.scheduledFor ?? null,
     featured: input.featured ?? false,
@@ -121,8 +152,8 @@ export async function deleteLecture(client: AlthaqalaynClient, id: string): Prom
   if (error) throw new Error(error.message);
 }
 
-/** Persist a new episode order within a series (writes the `episode` column). */
-export async function setEpisodeNumbers(
+/** Persist a new lecture order within a collection (writes the `sort` column). */
+export async function setLectureSort(
   client: AlthaqalaynClient,
   orderedIds: string[],
 ): Promise<void> {
@@ -130,127 +161,11 @@ export async function setEpisodeNumbers(
     orderedIds.map((id, index) =>
       client
         .from("lectures")
-        .update({ episode: index + 1 })
+        .update({ sort: index })
         .eq("id", id)
         .then((r) => {
           if (r.error) throw new Error(r.error.message);
         }),
-    ),
-  );
-}
-
-// ── Series ───────────────────────────────────────────────────────────────────
-export async function upsertSeries(
-  client: AlthaqalaynClient,
-  input: SeriesInput,
-  id?: string,
-): Promise<Series> {
-  const row = {
-    ...(id ? { id } : {}),
-    program_id: input.programId ?? null,
-    title_en: input.title.en,
-    title_ha: ha(input.title),
-    kind: input.kind,
-    year: input.year ?? null,
-    occasion: input.occasion ?? null,
-    language: input.language,
-    cover_from: input.cover.gradient[0],
-    cover_to: input.cover.gradient[1],
-    cover_arabic: input.cover.arabic ?? null,
-    description_en: en(input.description),
-    description_ha: ha(input.description),
-    featured: input.featured ?? false,
-  };
-  const saved = unwrap<SeriesRow>(await client.from("series").upsert(row).select("*").single());
-  return mapSeries(saved);
-}
-
-export async function deleteSeries(client: AlthaqalaynClient, id: string): Promise<void> {
-  const { error } = await client.from("series").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-/** Persist a new series display order (writes the `position` column). */
-export async function setSeriesPositions(
-  client: AlthaqalaynClient,
-  orderedIds: string[],
-): Promise<void> {
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      client
-        .from("series")
-        .update({ position: index })
-        .eq("id", id)
-        .then((r) => {
-          if (r.error) throw new Error(r.error.message);
-        }),
-    ),
-  );
-}
-
-// ── Programs ─────────────────────────────────────────────────────────────────
-export async function upsertProgram(
-  client: AlthaqalaynClient,
-  input: ProgramInput,
-  id?: string,
-): Promise<Program> {
-  const row = {
-    ...(id ? { id } : {}),
-    title_en: input.title.en,
-    title_ha: ha(input.title),
-    arabic: input.arabic ?? null,
-    description_en: en(input.description),
-    description_ha: ha(input.description),
-  };
-  const saved = unwrap<ProgramRow>(await client.from("programs").upsert(row).select("*").single());
-  return mapProgram(saved);
-}
-
-export async function deleteProgram(client: AlthaqalaynClient, id: string): Promise<void> {
-  const { error } = await client.from("programs").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-// ── Categories ───────────────────────────────────────────────────────────────
-export async function listAllCategories(client: AlthaqalaynClient): Promise<Category[]> {
-  const rows = unwrap<CategoryRow[]>(await client.from("categories").select("*").order("position"));
-  return rows.map(mapCategory);
-}
-
-export async function upsertCategory(
-  client: AlthaqalaynClient,
-  input: CategoryInput,
-  id?: string,
-): Promise<Category> {
-  const row = {
-    ...(id ? { id } : {}),
-    label: input.label,
-    ar: input.ar,
-    meta: input.meta ?? null,
-    active: input.active,
-    archived: input.archived,
-  };
-  const saved = unwrap<CategoryRow>(
-    await client.from("categories").upsert(row).select("*").single(),
-  );
-  return mapCategory(saved);
-}
-
-export async function deleteCategory(client: AlthaqalaynClient, id: string): Promise<void> {
-  const { error } = await client.from("categories").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-/** Persist a new category display order (writes the `position` column). */
-export async function setCategoryPositions(
-  client: AlthaqalaynClient,
-  orderedIds: string[],
-): Promise<void> {
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      client.from("categories").update({ position: index }).eq("id", id).then((r) => {
-        if (r.error) throw new Error(r.error.message);
-      }),
     ),
   );
 }

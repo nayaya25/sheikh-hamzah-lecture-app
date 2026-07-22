@@ -3,27 +3,13 @@
 // LocalizedText object and omit-when-absent optionals. These are the seam, so
 // they're the part worth unit-testing.
 
-import type {
-  Album,
-  Category,
-  Lecture,
-  LectureId,
-  LocalizedText,
-  Photo,
-  Program,
-  Series,
-  SeriesId,
-  Transcript,
-  User,
-} from "@althaqalayn/types";
+import type { Album, Collection, Lecture, LocalizedText, Photo, Transcript, User } from "@althaqalayn/types";
 import type {
   AdminUserRow,
   AlbumRow,
-  CategoryRow,
+  CollectionRow,
   LectureRow,
   PhotoRow,
-  ProgramRow,
-  SeriesRow,
   TranscriptRow,
 } from "./database.types";
 
@@ -45,56 +31,39 @@ function compact<T extends object>(obj: T): T {
   ) as T;
 }
 
-export function mapLecture(row: LectureRow): Lecture {
-  return compact<Lecture>({
+export function mapCollection(row: CollectionRow): Collection {
+  return compact<Collection>({
     id: row.id,
-    title: locRequired(row.title_en, row.title_ha),
-    type: row.type,
-    scope: row.scope,
-    language: row.language,
-    duration: row.duration ?? undefined,
-    date: row.date,
-    year: row.year ?? undefined,
-    description: loc(row.description_en, row.description_ha),
-    mediaUrl: row.media_url ?? undefined,
-    body: loc(row.body_en, row.body_ha),
-    programId: row.program_id ?? undefined,
-    seriesId: row.series_id ?? undefined,
-    episode: row.episode ?? undefined,
-    status: row.status,
-    scheduledFor: row.scheduled_for ?? undefined,
-    featured: row.featured || undefined,
-  });
-}
-
-/** Series episodes come from a separate ordered query, passed in as ids. */
-export function mapSeries(row: SeriesRow, lectureIds: LectureId[] = []): Series {
-  return compact<Series>({
-    id: row.id,
-    programId: row.program_id ?? undefined,
     title: locRequired(row.title_en, row.title_ha),
     kind: row.kind,
-    year: row.year ?? undefined,
-    occasion: row.occasion ?? undefined,
     language: row.language,
     cover: compact({
-      gradient: [row.cover_from, row.cover_to] as const,
+      gradient: [row.cover_from ?? "", row.cover_to ?? ""] as const,
       arabic: row.cover_arabic ?? undefined,
     }),
     description: loc(row.description_en, row.description_ha),
-    lectureIds,
     featured: row.featured || undefined,
+    position: row.position,
   });
 }
 
-/** Program's per-year series come from a separate ordered query. */
-export function mapProgram(row: ProgramRow, seriesIds: SeriesId[] = []): Program {
-  return compact<Program>({
+export function mapLecture(row: LectureRow): Lecture {
+  return compact<Lecture>({
     id: row.id,
+    collectionId: row.collection_id,
     title: locRequired(row.title_en, row.title_ha),
-    arabic: row.arabic ?? undefined,
-    description: loc(row.description_en, row.description_ha),
-    seriesIds,
+    type: row.type,
+    language: row.language,
+    groupLabel: row.group_label ?? undefined,
+    sort: row.sort,
+    duration: row.duration ?? undefined,
+    date: row.date,
+    year: row.year ?? undefined,
+    mediaUrl: row.media_url ?? undefined,
+    body: loc(row.body_en, row.body_ha),
+    status: row.status,
+    scheduledFor: row.scheduled_for ?? undefined,
+    featured: row.featured || undefined,
   });
 }
 
@@ -105,17 +74,6 @@ export function mapTranscript(row: TranscriptRow): Transcript {
     language: row.language,
     status: row.status,
     body: loc(row.body_en, row.body_ha),
-  });
-}
-
-export function mapCategory(row: CategoryRow): Category {
-  return compact<Category>({
-    id: row.id,
-    label: row.label,
-    ar: row.ar,
-    meta: row.meta ?? undefined,
-    active: row.active,
-    archived: row.archived,
   });
 }
 
