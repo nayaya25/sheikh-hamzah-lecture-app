@@ -224,7 +224,7 @@ export function BatchEpisodesForm({
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input value={r.titleEn} onChange={(e) => patch(r.key, { titleEn: e.target.value })} placeholder="Title (English)" style={{ ...fieldInput, flex: 1 }} />
-                  <input value={String(r.sort)} onChange={(e) => patch(r.key, { sort: Number(e.target.value) || r.sort })} inputMode="numeric" style={{ ...fieldInput, width: 64 }} />
+                  <input value={String(r.sort)} onChange={(e) => { const n = Number(e.target.value); patch(r.key, { sort: e.target.value.trim() === "" || Number.isNaN(n) ? r.sort : n }); }} inputMode="numeric" style={{ ...fieldInput, width: 64 }} />
                 </div>
                 <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Title (Hausa)" style={{ ...fieldInput, marginTop: 8 }} />
                 {type !== "text" ? (
