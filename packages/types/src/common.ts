@@ -11,23 +11,16 @@ export type MediaType = (typeof MEDIA_TYPES)[number];
 export const LANGUAGES = ["en", "ha"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-/**
- * Whether a lecture belongs to a per-year series (with an episode number) or
- * stands alone. Supersedes the earlier flat series-only model.
- */
-export const LECTURE_SCOPES = ["series", "single"] as const;
-export type LectureScope = (typeof LECTURE_SCOPES)[number];
-
 /** Admin publish lifecycle. `scheduled` carries a future `scheduledFor` datetime. */
 export const PUBLISH_STATUSES = ["published", "draft", "scheduled"] as const;
 export type PublishStatus = (typeof PUBLISH_STATUSES)[number];
 
 /**
- * How a series is surfaced. `recency` = latest lectures on Home;
- * `occasion` = Maulud/Ashura etc; `topic` = ethics/society; `book` = a text series.
+ * How a collection is surfaced/laid out. `occasion`/`topic` group their lectures
+ * by `Lecture.groupLabel`; `series` shows a flat ordered list.
  */
-export const SERIES_KINDS = ["recency", "occasion", "topic", "book"] as const;
-export type SeriesKind = (typeof SERIES_KINDS)[number];
+export const COLLECTION_KINDS = ["occasion", "series", "topic"] as const;
+export type CollectionKind = (typeof COLLECTION_KINDS)[number];
 
 /** Transcript coverage, mirrored by the admin Transcripts summary counts. */
 export const TRANSCRIPT_STATUSES = ["complete", "auto-needs-review", "missing"] as const;
@@ -57,9 +50,7 @@ export type ISODateTime = string;
 // Entity id aliases — documented intent without the friction of branded types,
 // so raw API strings flow in without casts.
 export type LectureId = string;
-export type SeriesId = string;
-export type ProgramId = string;
-export type CategoryId = string;
+export type CollectionId = string;
 export type AlbumId = string;
 export type PhotoId = string;
 export type TranscriptId = string;

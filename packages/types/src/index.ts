@@ -3,9 +3,7 @@
 
 export * from "./common";
 export type { Lecture } from "./lecture";
-export type { Series, SeriesCover } from "./series";
-export type { Program } from "./program";
-export type { Category } from "./category";
+export type { Collection, CollectionCover } from "./collection";
 export type { Album, Photo } from "./gallery";
 export type { Transcript } from "./transcript";
 export type { User } from "./user";

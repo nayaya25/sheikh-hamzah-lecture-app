@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  COLLECTION_KINDS,
   LANGUAGES,
-  LECTURE_SCOPES,
   MEDIA_TYPES,
   PUBLISH_STATUSES,
-  SERIES_KINDS,
   TRANSCRIPT_STATUSES,
   USER_ROLES,
   type Album,
+  type Collection,
   type Lecture,
-  type Program,
-  type Series,
 } from "./index";
 
 describe("enumerable unions", () => {
@@ -22,16 +20,13 @@ describe("enumerable unions", () => {
     expect(LANGUAGES).toEqual(["en", "ha"]);
   });
 
-  it("declares the lecture scope discriminator", () => {
-    expect(LECTURE_SCOPES).toEqual(["series", "single"]);
-  });
-
   it("declares the admin publish lifecycle", () => {
     expect(PUBLISH_STATUSES).toEqual(["published", "draft", "scheduled"]);
   });
 
-  it("declares how series are surfaced", () => {
-    expect(SERIES_KINDS).toEqual(["recency", "occasion", "topic", "book"]);
+  it("declares the three collection layout kinds", () => {
+    expect(COLLECTION_KINDS).toEqual(["occasion", "series", "topic"]);
+    expect(COLLECTION_KINDS).toHaveLength(3);
   });
 
   it("declares transcript coverage states", () => {
@@ -44,61 +39,53 @@ describe("enumerable unions", () => {
 });
 
 describe("content model shape", () => {
-  it("models Program → per-year Series → Episode", () => {
-    const program: Program = {
-      id: "prog-tafsir",
-      title: { en: "Ramadan Tafsīr", ha: "Tafsirin Ramadan" },
-      arabic: "تفسير",
-      seriesIds: ["ser-tafsir-1445"],
-    };
-
-    const series: Series = {
-      id: "ser-tafsir-1445",
-      programId: program.id,
-      title: { en: "Ramadan Tafsīr 1445" },
+  it("models a Collection → Lecture two-level hierarchy", () => {
+    const collection: Collection = {
+      id: "col-tafsir-1445",
+      title: { en: "Ramadan Tafsīr 1445", ha: "Tafsirin Ramadan 1445" },
       kind: "occasion",
-      year: "1445 AH · 2024",
       language: "ha",
       cover: { gradient: ["#7A5A12", "#C0932F"], arabic: "١٤٤٥" },
-      lectureIds: ["lec-tafsir-1445-n1"],
       featured: true,
+      position: 1,
     };
 
-    const episode: Lecture = {
+    const lecture: Lecture = {
       id: "lec-tafsir-1445-n1",
+      collectionId: collection.id,
       title: { en: "Night 1 · Juz 1", ha: "Dare 1 · Juz'i 1" },
       type: "audio",
-      scope: "series",
       language: "ha",
+      groupLabel: "1445 AH",
+      sort: 1,
       duration: 2460,
       date: "2024-03-11",
       year: "1445 AH · 2024",
-      programId: program.id,
-      seriesId: series.id,
-      episode: 1,
       status: "scheduled",
       scheduledFor: "2024-03-11T19:30:00Z",
     };
 
-    expect(episode.seriesId).toBe(series.id);
-    expect(series.programId).toBe(program.id);
-    expect(program.seriesIds).toContain(series.id);
+    expect(lecture.collectionId).toBe(collection.id);
+    expect(collection.kind).toBe("occasion");
+    expect(COLLECTION_KINDS).toContain(collection.kind);
   });
 
-  it("models a standalone single lecture without an episode number", () => {
-    const single: Lecture = {
+  it("models a flat series-kind collection lecture with sort order and no groupLabel", () => {
+    const lecture: Lecture = {
       id: "lec-single-1",
+      collectionId: "col-sincerity",
       title: { en: "On Sincerity" },
       type: "text",
-      scope: "single",
       language: "ha",
+      sort: 1,
       date: "2023-09-01",
       body: { en: "In the name of God…", ha: "Da sunan Allah…" },
       status: "published",
     };
 
-    expect(single.episode).toBeUndefined();
-    expect(single.scope).toBe("single");
+    expect(lecture.groupLabel).toBeUndefined();
+    expect(lecture.sort).toBe(1);
+    expect(lecture.status).toBe("published");
   });
 
   it("models a gallery album", () => {
