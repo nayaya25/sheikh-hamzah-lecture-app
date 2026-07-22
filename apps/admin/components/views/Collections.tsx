@@ -8,7 +8,7 @@ import { useModal } from "@/components/ModalProvider";
 import type { CollectionNode } from "@/lib/useContentTree";
 import { shapeTree } from "@/lib/useContentTree";
 import { getClient } from "@/lib/supabase";
-import { brand, coverGradient, font } from "@/lib/ui";
+import { brand, collectionVocab, coverGradient, font } from "@/lib/ui";
 
 const pick = (t: { en: string; ha?: string }) => t.en;
 
@@ -22,15 +22,16 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: "topic", label: "Topics" },
 ];
 
-/** Per-kind lecture count sublabel, matching the prototype:
- *  series → "N episodes", topic → "N talks", occasion → "N lectures" plus
- *  "· M years" when its lectures span more than one distinct group/year. */
+/** Per-kind item count sublabel, routed through the shared {@link collectionVocab}
+ *  so index + detail agree: series → "N episodes", topic → "N talks",
+ *  occasion → "N sittings" plus "· M years" when its items span more than one
+ *  distinct group/year. */
 function sublabel(node: CollectionNode): string {
   const n = node.lectures.length;
-  if (node.kind === "series") return `${n} episode${n === 1 ? "" : "s"}`;
-  if (node.kind === "topic") return `${n} talk${n === 1 ? "" : "s"}`;
+  const vocab = collectionVocab(node.kind);
+  const base = `${n} ${n === 1 ? vocab.one : vocab.many}`;
+  if (node.kind !== "occasion") return base;
   const years = new Set(node.lectures.map((l) => l.groupLabel ?? l.year).filter(Boolean)).size;
-  const base = `${n} lecture${n === 1 ? "" : "s"}`;
   return years > 1 ? `${base} · ${years} years` : base;
 }
 

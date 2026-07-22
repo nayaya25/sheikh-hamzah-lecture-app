@@ -25,7 +25,7 @@ import { MediaPreview } from "@/components/MediaPreview";
 import { Modal } from "@/components/Modal";
 import { Stepper, StepperFooter, useStepper } from "@/components/Stepper";
 import { getClient } from "@/lib/supabase";
-import { YEARS, brand } from "@/lib/ui";
+import { YEARS, brand, collectionVocab } from "@/lib/ui";
 import type { CollectionNode } from "@/lib/useContentTree";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
@@ -96,6 +96,11 @@ export function LectureModal({
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const titleRef = useRef<HTMLDivElement>(null);
+
+  // Kind-driven item vocabulary; falls back to "lecture" when the parent kind
+  // is unknown (no collection node passed).
+  const { one } = collection ? collectionVocab(collection.kind) : { one: "lecture" };
+  const One = one.charAt(0).toUpperCase() + one.slice(1);
 
   // series shows a flat sort-ordered list — group_label/year are meaningless there.
   const groupable = collection ? collection.kind !== "series" : true;
@@ -185,7 +190,7 @@ export function LectureModal({
 
   return (
     <Modal
-      title={lecture ? "Edit lecture" : "New lecture"}
+      title={lecture ? `Edit ${one}` : `New ${one}`}
       subtitle={subtitle}
       onClose={onClose}
       width={640}
@@ -196,7 +201,7 @@ export function LectureModal({
           total={STEPS.length}
           onBack={back}
           onNext={() => (isLast ? void save() : next())}
-          finalLabel="Save lecture"
+          finalLabel={`Save ${one}`}
           nextDisabled={(step === 1 && !titleEn.trim()) || mediaBusy}
           busy={busy}
         />
@@ -215,7 +220,7 @@ export function LectureModal({
                 setTitleError(null);
               }}
               onHa={setTitleHa}
-              placeholder="Lecture title"
+              placeholder={`${One} title`}
               errorEn={titleError}
             />
           </div>
@@ -225,7 +230,7 @@ export function LectureModal({
                 label="GROUP (OPTIONAL)"
                 hint={
                   collection
-                    ? `Sub-heading lectures are grouped under in “${collection.title.en}” (e.g. “1445 AH”).`
+                    ? `Sub-heading ${collectionVocab(collection.kind).many} are grouped under in “${collection.title.en}” (e.g. “1445 AH”).`
                     : "Sub-heading lectures are grouped under within the collection."
                 }
               >
@@ -269,7 +274,7 @@ export function LectureModal({
       {/* Step 2 — Media */}
       {step === 2 ? (
         <div style={styles.pane}>
-          <FieldShell label="LECTURE TYPE">
+          <FieldShell label={`${One.toUpperCase()} TYPE`}>
             <div style={styles.radioRow}>
               {MEDIA_TYPES.map((t) => {
                 const on = t === type;
@@ -332,7 +337,7 @@ export function LectureModal({
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} style={{ flexShrink: 0 }}>
               <path d="M4 12.5l5 5 11-11" />
             </svg>
-            Transcripts live with the lecture — no separate page to hunt through.
+            Transcripts live with the {one} — no separate page to hunt through.
           </div>
         </div>
       ) : null}

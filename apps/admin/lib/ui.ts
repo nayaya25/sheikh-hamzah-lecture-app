@@ -4,7 +4,7 @@
 // pre-modern gradients) with no direct prototype var. Surface colors come
 // from the CSS vars in globals.css.
 
-import type { MediaType, PublishStatus } from "@althaqalayn/types";
+import type { CollectionKind, MediaType, PublishStatus } from "@althaqalayn/types";
 
 export const brand = {
   green: "#0B4634", // --green
@@ -48,6 +48,24 @@ const MEDIA_COLORS: Record<MediaType, { bg: string; fg: string }> = {
 
 export function mediaBadge(type: MediaType) {
   return MEDIA_COLORS[type];
+}
+
+/**
+ * The item vocabulary for a collection, driven by its kind — so a collection and
+ * its items share one consistent noun (episodes/sittings/talks/lectures) instead
+ * of the old lecture-vs-episode duality. Capitalize at call sites as needed.
+ */
+export function collectionVocab(kind: CollectionKind): { one: string; many: string } {
+  switch (kind) {
+    case "series":
+      return { one: "episode", many: "episodes" };
+    case "occasion":
+      return { one: "sitting", many: "sittings" };
+    case "topic":
+      return { one: "talk", many: "talks" };
+    default:
+      return { one: "lecture", many: "lectures" };
+  }
 }
 
 /** A cover gradient for a series/lecture tile, given its [from,to] colors. */

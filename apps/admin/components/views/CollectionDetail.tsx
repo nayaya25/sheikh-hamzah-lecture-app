@@ -16,7 +16,7 @@ import { LectureModal } from "@/components/content/LectureModal";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { useModal } from "@/components/ModalProvider";
 import { getClient } from "@/lib/supabase";
-import { brand, coverGradient, font, statusPill } from "@/lib/ui";
+import { brand, collectionVocab, coverGradient, font, statusPill } from "@/lib/ui";
 import { groupLectures, shapeTree, type CollectionNode, type LectureGroup } from "@/lib/useContentTree";
 
 const pick = (t: { en: string; ha?: string }) => t.en;
@@ -25,13 +25,6 @@ const KIND_LABEL: Record<CollectionNode["kind"], string> = {
   occasion: "Occasion",
   series: "Series",
   topic: "Topic",
-};
-
-// Per-kind noun used in group-header counts + the hero meta line.
-const GROUP_NOUN: Record<CollectionNode["kind"], string> = {
-  occasion: "sitting",
-  series: "episode",
-  topic: "talk",
 };
 
 /** mm:ss (or h:mm:ss) from a duration in seconds. */
@@ -64,12 +57,12 @@ function lectureSub(l: Lecture): string {
   return parts.join(" · ");
 }
 
-/** Hero meta line: count + how the app lays the lectures out. */
+/** Hero meta line: count + how the app lays the items out. */
 function heroMeta(node: CollectionNode): string {
   const n = node.lectures.length;
-  if (node.kind === "series") return `${n} episode${n === 1 ? "" : "s"}`;
-  const noun = node.kind === "topic" ? "talk" : "lecture";
-  const base = `${n} ${noun}${n === 1 ? "" : "s"}`;
+  const { one, many } = collectionVocab(node.kind);
+  const base = `${n} ${n === 1 ? one : many}`;
+  if (node.kind === "series") return base;
   const groups = new Set(node.lectures.map((l) => l.groupLabel).filter(Boolean)).size;
   if (groups > 1) return `${base} · grouped by ${node.kind === "topic" ? "topic" : "year"}`;
   return base;
@@ -223,10 +216,11 @@ export function CollectionDetail({
   };
 
   const deleteLecture = async (l: Lecture) => {
+    const one = node ? collectionVocab(node.kind).one : "lecture";
     const ok = await confirm({
       title: `Delete “${pick(l.title)}”?`,
-      body: "This lecture will be permanently removed from the archive. This can’t be undone.",
-      confirmLabel: "Delete lecture",
+      body: `This ${one} will be permanently removed from the archive. This can’t be undone.`,
+      confirmLabel: `Delete ${one}`,
       danger: true,
     });
     if (!ok) return;
@@ -240,11 +234,12 @@ export function CollectionDetail({
   const deleteCollection = async () => {
     if (!node) return;
     const n = node.lectures.length;
+    const { one, many } = collectionVocab(node.kind);
     const ok = await confirm({
       title: `Delete “${pick(node.title)}”?`,
       body:
         n > 0
-          ? `This collection and all ${n} of its lecture${n === 1 ? "" : "s"} will be permanently deleted (the lectures are deleted too). This can’t be undone.`
+          ? `This collection and all ${n} of its ${n === 1 ? one : many} will be permanently deleted (the ${many} are deleted too). This can’t be undone.`
           : "This collection will be permanently deleted. This can’t be undone.",
       confirmLabel: "Delete collection",
       danger: true,
@@ -303,6 +298,7 @@ export function CollectionDetail({
 
   const grouped = groupLectures(node);
   const isFlat = Array.isArray(grouped) && (grouped.length === 0 || !isGroupArray(grouped));
+  const vocab = collectionVocab(node.kind);
 
   const renderRow = (l: Lecture, index: number) => {
     const pill = statusPill(l.status);
@@ -453,7 +449,7 @@ export function CollectionDetail({
 
       {/* Lectures — flat (series) or grouped (occasion/topic) */}
       {node.lectures.length === 0 ? (
-        <div style={styles.empty}>No lectures yet. Add the first one below.</div>
+        <div style={styles.empty}>No {vocab.many} yet — add the first.</div>
       ) : isFlat ? (
         (grouped as Lecture[]).map((l, i) => renderRow(l, i))
       ) : (
@@ -463,8 +459,7 @@ export function CollectionDetail({
               <span style={styles.grpLbl}>{g.label}</span>
               <span style={styles.grpLn} />
               <span style={styles.grpCt} className="tnum">
-                {g.lectures.length} {GROUP_NOUN[node.kind]}
-                {g.lectures.length === 1 ? "" : "s"}
+                {g.lectures.length} {g.lectures.length === 1 ? vocab.one : vocab.many}
               </span>
               <button
                 type="button"
@@ -479,20 +474,20 @@ export function CollectionDetail({
         ))
       )}
 
-      {/* Action row */}
+      {/* Action row — one vs. several of the SAME item (kind-driven vocabulary) */}
       <div style={styles.addRow}>
         <button type="button" onClick={() => openLecture()} style={styles.btnPrimary}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" width={16} height={16}>
             <path d="M12 5v14M5 12h14" />
           </svg>
-          Add lecture
+          Add {vocab.one}
         </button>
         <button type="button" onClick={openBulk} style={styles.btnGhost}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
             <path d="M12 16V4M7 9l5-5 5 5" />
             <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
           </svg>
-          Bulk add episodes
+          Add several
         </button>
       </div>
     </div>

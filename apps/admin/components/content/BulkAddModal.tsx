@@ -8,7 +8,7 @@ import { Icon } from "@/components/Icon";
 import { MediaZone } from "@/components/MediaZone";
 import { Modal } from "@/components/Modal";
 import { getClient } from "@/lib/supabase";
-import { brand, font } from "@/lib/ui";
+import { brand, collectionVocab, font } from "@/lib/ui";
 import { uploadMedia } from "@/lib/upload";
 import type { CollectionNode } from "@/lib/useContentTree";
 
@@ -61,6 +61,8 @@ export function BulkAddModal({
   onSaved: () => void;
 }) {
   const startSort = collection.lectures.length ? Math.max(...collection.lectures.map((l) => l.sort)) + 1 : 0;
+  // Kind-driven item vocabulary — one consistent noun across the flow.
+  const { one, many } = collectionVocab(collection.kind);
   // series shows a flat sort-ordered list — group_label is meaningless there.
   const groupable = collection.kind !== "series";
   const [type, setType] = useState<MediaType>("audio");
@@ -141,7 +143,7 @@ export function BulkAddModal({
 
   const save = async () => {
     const valid = rows.filter((r) => r.titleEn.trim());
-    if (!valid.length) { setError("Add at least one lecture with a title."); return; }
+    if (!valid.length) { setError(`Add at least one ${one} with a title.`); return; }
     setBusy(true); setError(null);
     let succeeded = 0;
     const failures: string[] = [];
@@ -165,7 +167,7 @@ export function BulkAddModal({
         }
       });
       if (failures.length) {
-        setError(`Saved ${succeeded} of ${valid.length} lecture(s). ${failures.length} failed: ${failures.slice(0, 3).join("; ")}${failures.length > 3 ? "…" : ""}`);
+        setError(`Saved ${succeeded} of ${valid.length} ${many}. ${failures.length} failed: ${failures.slice(0, 3).join("; ")}${failures.length > 3 ? "…" : ""}`);
       } else {
         onSaved();
       }
@@ -179,14 +181,14 @@ export function BulkAddModal({
 
   return (
     <Modal
-      title="Bulk add episodes"
+      title={`Add several ${many}`}
       subtitle={`${collection.title.en} · continues from #${startSort}`}
       onClose={onClose}
       width={560}
       footer={
         <>
           <span style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }} className="tnum">
-            {readyCount} episode{readyCount === 1 ? "" : "s"} ready
+            {readyCount} {readyCount === 1 ? one : many} ready
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button type="button" onClick={onClose} style={btnGhost}>Cancel</button>
@@ -196,7 +198,7 @@ export function BulkAddModal({
               disabled={saveDisabled}
               style={{ ...btnPrimary, opacity: saveDisabled ? 0.6 : 1, cursor: saveDisabled ? "not-allowed" : "pointer" }}
             >
-              {busy ? "Adding…" : `Add ${readyCount || ""} episode(s)`.replace("  ", " ")}
+              {busy ? "Adding…" : `Add ${readyCount || ""} ${many}`.replace("  ", " ")}
             </button>
           </div>
         </>
@@ -237,7 +239,7 @@ export function BulkAddModal({
               <Icon name="upload" size={24} strokeWidth={1.7} />
             </div>
             <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 8, color: "var(--ink)" }}>
-              {dragOver ? "Drop to add episodes" : "Drop many files, or click to browse"}
+              {dragOver ? `Drop to add ${many}` : "Drop many files, or click to browse"}
             </div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>Titles from filenames · order continues automatically</div>
           </div>
@@ -263,12 +265,12 @@ export function BulkAddModal({
             <path d="M12 8v5M12 16h.01" />
           </svg>
         </span>
-        Each file becomes an episode; you can tidy titles before saving. Uploads run pooled in the background.
+        Each file becomes one {one}; you can tidy titles before saving. Uploads run pooled in the background.
       </div>
 
       <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)" }}>
-          {readyCount} lecture{readyCount === 1 ? "" : "s"} ready
+          {readyCount} {readyCount === 1 ? one : many} ready
         </span>
         <button type="button" onClick={clearAll} style={clearAllBtn}>Clear all</button>
       </div>
@@ -304,7 +306,7 @@ export function BulkAddModal({
             ) : null}
           </div>
         ))}
-        <button type="button" onClick={add} style={addRow}>+ Add another lecture</button>
+        <button type="button" onClick={add} style={addRow}>+ Add another {one}</button>
       </div>
 
       {error ? <div style={errorText}>{error}</div> : null}
