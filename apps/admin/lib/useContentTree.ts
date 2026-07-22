@@ -1,69 +1,74 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  mapLecture,
-  mapProgram,
-  mapSeries,
-  unwrap,
-  type LectureRow,
-  type ProgramRow,
-  type SeriesRow,
-} from "@althaqalayn/api";
-import type { Lecture, Program, Series } from "@althaqalayn/types";
+import { admin } from "@althaqalayn/api";
+import type { Collection, Lecture } from "@althaqalayn/types";
 import { getClient } from "@/lib/supabase";
 
-export interface SeriesNode extends Series {
-  episodes: Lecture[];
-}
-export interface ProgramNode extends Program {
-  seriesNodes: SeriesNode[];
+export interface CollectionNode extends Collection {
+  /** This collection's lectures, ordered by `sort` ascending. */
+  lectures: Lecture[];
 }
 export interface ContentTree {
-  programs: ProgramNode[];
-  orphanSeries: SeriesNode[];
-  standalone: Lecture[];
+  collections: CollectionNode[];
 }
 
-/** Pure: fold flat rows into the Program → Series → Episode hierarchy. */
-export function shapeTree(programs: Program[], series: Series[], lectures: Lecture[]): ContentTree {
-  const episodesBySeries = new Map<string, Lecture[]>();
-  const standalone: Lecture[] = [];
+/** One `group_label` bucket within an occasion/topic collection. */
+export interface LectureGroup {
+  label: string;
+  lectures: Lecture[];
+}
+
+/** Pure: fold flat collection + lecture rows into the Collection → Lecture tree,
+ *  each collection's lectures ordered by `sort` ascending. */
+export function shapeTree(collections: Collection[], lectures: Lecture[]): ContentTree {
+  const byCollection = new Map<string, Lecture[]>();
   for (const l of lectures) {
-    if (l.seriesId) {
-      const arr = episodesBySeries.get(l.seriesId) ?? [];
-      arr.push(l);
-      episodesBySeries.set(l.seriesId, arr);
-    } else {
-      standalone.push(l);
-    }
+    const arr = byCollection.get(l.collectionId) ?? [];
+    arr.push(l);
+    byCollection.set(l.collectionId, arr);
   }
-  for (const arr of episodesBySeries.values()) {
-    arr.sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0));
+  for (const arr of byCollection.values()) {
+    arr.sort((a, b) => a.sort - b.sort);
   }
 
-  const seriesNodes: SeriesNode[] = series.map((s) => ({
-    ...s,
-    episodes: episodesBySeries.get(s.id) ?? [],
-  }));
-  const byProgram = new Map<string, SeriesNode[]>();
-  const orphanSeries: SeriesNode[] = [];
-  for (const sn of seriesNodes) {
-    if (sn.programId) {
-      const arr = byProgram.get(sn.programId) ?? [];
-      arr.push(sn);
-      byProgram.set(sn.programId, arr);
-    } else {
-      orphanSeries.push(sn);
-    }
-  }
-
-  const programNodes: ProgramNode[] = programs.map((p) => ({
-    ...p,
-    seriesNodes: byProgram.get(p.id) ?? [],
+  const nodes: CollectionNode[] = collections.map((c) => ({
+    ...c,
+    lectures: byCollection.get(c.id) ?? [],
   }));
 
-  return { programs: programNodes, orphanSeries, standalone };
+  return { collections: nodes };
+}
+
+/**
+ * Pure: implements the shared rendering rule for a collection's lectures —
+ * `series` renders as one flat `sort`-ordered list (ignoring `groupLabel`);
+ * `occasion`/`topic` group lectures by `groupLabel` (label-less lectures fall
+ * into a trailing "Ungrouped" bucket), groups appear in first-appearance order
+ * (i.e. by the minimum `sort` of their members, since `collection.lectures` is
+ * already `sort`-ordered), and lectures within a group stay `sort`-ordered.
+ */
+export function groupLectures(collection: CollectionNode): Lecture[] | LectureGroup[] {
+  if (collection.kind === "series") return collection.lectures;
+
+  const order: string[] = [];
+  const byLabel = new Map<string, Lecture[]>();
+  const ungrouped: Lecture[] = [];
+  for (const l of collection.lectures) {
+    if (!l.groupLabel) {
+      ungrouped.push(l);
+      continue;
+    }
+    if (!byLabel.has(l.groupLabel)) {
+      byLabel.set(l.groupLabel, []);
+      order.push(l.groupLabel);
+    }
+    byLabel.get(l.groupLabel)!.push(l);
+  }
+
+  const groups: LectureGroup[] = order.map((label) => ({ label, lectures: byLabel.get(label)! }));
+  if (ungrouped.length) groups.push({ label: "Ungrouped", lectures: ungrouped });
+  return groups;
 }
 
 export function useContentTree() {
@@ -74,12 +79,11 @@ export function useContentTree() {
   const reload = useCallback(async () => {
     const client = getClient();
     try {
-      const [progs, sers, lecs] = await Promise.all([
-        client.from("programs").select("*").order("created_at").then((r) => unwrap<ProgramRow[]>(r).map((row) => mapProgram(row))),
-        client.from("series").select("*").order("position").then((r) => unwrap<SeriesRow[]>(r).map((row) => mapSeries(row))),
-        client.from("lectures").select("*").order("date", { ascending: false }).then((r) => unwrap<LectureRow[]>(r).map((row) => mapLecture(row))),
+      const [collections, lectures] = await Promise.all([
+        admin.listAllCollections(client),
+        admin.listAllLectures(client),
       ]);
-      setTree(shapeTree(progs, sers, lecs));
+      setTree(shapeTree(collections, lectures));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load content");

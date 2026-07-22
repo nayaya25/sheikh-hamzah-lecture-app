@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { coverGradient, font, mediaBadge, statusPill } from "@/lib/ui";
 import { MediaPreview } from "@/components/MediaPreview";
-import type { ContentTree, SeriesNode } from "@/lib/useContentTree";
+import type { ContentTree } from "@/lib/useContentTree";
 import type { NodeRef } from "./ContentTree";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
@@ -21,40 +21,31 @@ export function NodeDetail({
 }) {
   if (!selected) return <Overview tree={tree} />;
 
-  if (selected.kind === "program") {
-    const p = tree.programs.find((x) => x.id === selected.id);
-    if (!p) return <Missing />;
+  if (selected.kind === "collection") {
+    const c = tree.collections.find((x) => x.id === selected.id);
+    if (!c) return <Missing />;
     return (
-      <Frame title={pick(p.title)} sub="Program" onEdit={onEdit} onDelete={onDelete}>
-        <Meta label="Series" value={String(p.seriesNodes.length)} />
-        {p.description?.en ? <Meta label="Description" value={p.description.en} /> : null}
-      </Frame>
-    );
-  }
-
-  if (selected.kind === "series") {
-    const s = findSeries(tree, selected.id);
-    if (!s) return <Missing />;
-    return (
-      <Frame title={pick(s.title)} sub="Series" onEdit={onEdit} onDelete={onDelete}>
-        <div style={{ ...cover, background: coverGradient(s.cover.gradient[0], s.cover.gradient[1]) }}>
-          {s.cover.arabic ? <span style={motif}>{s.cover.arabic}</span> : null}
+      <Frame title={pick(c.title)} sub="Collection" onEdit={onEdit} onDelete={onDelete}>
+        <div style={{ ...cover, background: coverGradient(c.cover.gradient[0], c.cover.gradient[1]) }}>
+          {c.cover.arabic ? <span style={motif}>{c.cover.arabic}</span> : null}
         </div>
-        <Meta label="Kind" value={s.occasion ?? s.kind} />
-        {s.year ? <Meta label="Year" value={s.year} /> : null}
-        <Meta label="Language" value={s.language === "ha" ? "Hausa" : "English"} />
-        <Meta label="Episodes" value={String(s.episodes.length)} />
+        <Meta label="Kind" value={c.kind} />
+        <Meta label="Language" value={c.language === "ha" ? "Hausa" : "English"} />
+        <Meta label="Lectures" value={String(c.lectures.length)} />
+        <Meta label="Featured" value={c.featured ? "Yes" : "No"} />
+        {c.description?.en ? <Meta label="Description" value={c.description.en} /> : null}
       </Frame>
     );
   }
 
-  // episode or standalone → a lecture
-  const l = selected.kind === "episode" ? findEpisode(tree, selected.id) : tree.standalone.find((x) => x.id === selected.id);
+  // lecture
+  const l = findLecture(tree, selected.id);
   if (!l) return <Missing />;
+  const parent = tree.collections.find((c) => c.id === l.collectionId);
   const badge = mediaBadge(l.type);
   const pill = statusPill(l.status);
   return (
-    <Frame title={pick(l.title)} sub={selected.kind === "episode" ? "Episode" : "Standalone lecture"} onEdit={onEdit} onDelete={onDelete}>
+    <Frame title={pick(l.title)} sub="Lecture" onEdit={onEdit} onDelete={onDelete}>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <span style={{ ...chip, background: badge.bg, color: badge.fg }}>{l.type.toUpperCase()}</span>
         <span style={{ ...chip, background: pill.bg, color: pill.fg }}>{pill.label}</span>
@@ -64,40 +55,32 @@ export function NodeDetail({
       ) : (
         <MediaPreview type={l.type} url={l.mediaUrl} />
       )}
-      {l.episode != null ? <Meta label="Episode" value={`Part ${l.episode}`} /> : null}
+      <Meta label="Collection" value={parent ? pick(parent.title) : "—"} />
+      {l.groupLabel ? <Meta label="Group" value={l.groupLabel} /> : null}
+      <Meta label="Sort" value={String(l.sort)} />
       {l.year ? <Meta label="Year" value={l.year} /> : null}
       <Meta label="Language" value={l.language === "ha" ? "Hausa" : "English"} />
       {l.duration ? <Meta label="Length" value={`${Math.round(l.duration / 60)} min`} /> : null}
       <Meta label="Date" value={l.date} />
-      {l.description?.en ? <Meta label="Description" value={l.description.en} /> : null}
     </Frame>
   );
 }
 
-function findSeries(tree: ContentTree, id: string): SeriesNode | undefined {
-  for (const p of tree.programs) {
-    const hit = p.seriesNodes.find((s) => s.id === id);
-    if (hit) return hit;
+function findLecture(tree: ContentTree, id: string) {
+  for (const c of tree.collections) {
+    const l = c.lectures.find((x) => x.id === id);
+    if (l) return l;
   }
-  return tree.orphanSeries.find((s) => s.id === id);
-}
-function findEpisode(tree: ContentTree, id: string) {
-  for (const p of tree.programs) for (const s of p.seriesNodes) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
-  for (const s of tree.orphanSeries) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
   return undefined;
 }
 
 function Overview({ tree }: { tree: ContentTree }) {
-  const seriesCount = tree.programs.reduce((n, p) => n + p.seriesNodes.length, 0) + tree.orphanSeries.length;
-  const epCount =
-    tree.programs.reduce((n, p) => n + p.seriesNodes.reduce((m, s) => m + s.episodes.length, 0), 0) +
-    tree.orphanSeries.reduce((m, s) => m + s.episodes.length, 0) +
-    tree.standalone.length;
+  const lectureCount = tree.collections.reduce((n, c) => n + c.lectures.length, 0);
   return (
     <div style={{ padding: 40, color: "var(--muted)" }}>
       <div style={{ fontFamily: font.heading, fontSize: 20, color: "var(--ink)", marginBottom: 8 }}>Content</div>
       <div style={{ fontSize: 13.5 }}>
-        {tree.programs.length} programs · {seriesCount} series · {epCount} lectures.
+        {tree.collections.length} collections · {lectureCount} lectures.
       </div>
       <div style={{ fontSize: 13, marginTop: 12 }}>Select an item on the left, or use <b>+ New</b> to add content.</div>
     </div>

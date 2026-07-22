@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import type { Lecture } from "@althaqalayn/types";
 import { brand, font } from "@/lib/ui";
-import type { ContentTree as Tree, ProgramNode, SeriesNode } from "@/lib/useContentTree";
+import { groupLectures, type CollectionNode, type ContentTree as Tree, type LectureGroup } from "@/lib/useContentTree";
 
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 
-export type NodeRef = { kind: "program" | "series" | "episode" | "standalone"; id: string };
+export type NodeRef = { kind: "collection" | "lecture"; id: string };
 export type NewKind =
-  | { kind: "program" }
-  | { kind: "series"; programId?: string }
-  | { kind: "episode"; seriesId: string }
-  | { kind: "episodesBatch"; seriesId: string }
-  | { kind: "standalone" };
+  | { kind: "collection" }
+  | { kind: "lecture"; collectionId: string; groupLabel?: string }
+  // Not part of the tree's own required shape (see brief), but the natural
+  // superset for the per-collection "+ Multiple" bulk-add entry point below —
+  // Task 5's bulk-add editor is wired against this variant.
+  | { kind: "lecturesBatch"; collectionId: string };
 
 export function ContentTree({
   tree,
@@ -21,6 +23,8 @@ export function ContentTree({
   onNew,
   query,
   onQuery,
+  onReorderCollection,
+  onReorderLecture,
 }: {
   tree: Tree;
   selected: NodeRef | null;
@@ -28,6 +32,10 @@ export function ContentTree({
   onNew: (k: NewKind) => void;
   query: string;
   onQuery: (q: string) => void;
+  /** Swap a collection with its adjacent neighbour; caller rewrites the full `position` order. */
+  onReorderCollection: (id: string, dir: -1 | 1) => void;
+  /** Swap a lecture with its adjacent neighbour within one collection; caller rewrites the full `sort` order. */
+  onReorderLecture: (collectionId: string, lectureId: string, dir: -1 | 1) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [newOpen, setNewOpen] = useState(false);
@@ -37,50 +45,69 @@ export function ContentTree({
 
   const isSel = (ref: NodeRef) => selected?.kind === ref.kind && selected?.id === ref.id;
 
-  const renderSeries = (sn: SeriesNode) => {
-    const open = expanded[sn.id] || !!q;
-    const eps = sn.episodes.filter((e) => match(e.title));
-    if (q && !match(sn.title) && eps.length === 0) return null;
+  // The collection to pre-fill for the bottom "+ New ▾ → Lecture" shortcut: the
+  // selected collection itself, or the selected lecture's parent.
+  const currentCollectionId: string | undefined =
+    selected?.kind === "collection"
+      ? selected.id
+      : selected?.kind === "lecture"
+        ? tree.collections.find((c) => c.lectures.some((l) => l.id === selected.id))?.id
+        : undefined;
+
+  const renderLectureRow = (cn: CollectionNode, l: Lecture) => {
+    const idx = cn.lectures.findIndex((x) => x.id === l.id);
     return (
-      <div key={sn.id}>
-        <div style={{ ...row(isSel({ kind: "series", id: sn.id })), paddingLeft: 26 }}>
-          <button style={caret} onClick={() => toggle(sn.id)} aria-label="Expand">{open ? "▾" : "▸"}</button>
-          <button style={rowLabel} onClick={() => onSelect({ kind: "series", id: sn.id })}>{pick(sn.title)}</button>
-          <span style={count}>{sn.episodes.length}</span>
+      <div key={l.id} style={{ display: "flex", alignItems: "center", paddingLeft: 48 }}>
+        <button
+          onClick={() => onSelect({ kind: "lecture", id: l.id })}
+          style={{ ...row(isSel({ kind: "lecture", id: l.id })), flex: 1, border: "none" }}
+        >
+          <span style={rowLabelText}>{pick(l.title)}</span>
+        </button>
+        <div style={reorderCol}>
+          <button style={reorderBtn} disabled={idx <= 0} onClick={() => onReorderLecture(cn.id, l.id, -1)} aria-label="Move up">▲</button>
+          <button style={reorderBtn} disabled={idx < 0 || idx >= cn.lectures.length - 1} onClick={() => onReorderLecture(cn.id, l.id, 1)} aria-label="Move down">▼</button>
         </div>
-        {open
-          ? eps.map((e) => (
-              <button
-                key={e.id}
-                onClick={() => onSelect({ kind: "episode", id: e.id })}
-                style={{ ...row(isSel({ kind: "episode", id: e.id })), paddingLeft: 48, border: "none", width: "100%" }}
-              >
-                <span style={epNum}>{e.episode ?? "•"}</span>
-                <span style={rowLabelText}>{pick(e.title)}</span>
-              </button>
-            ))
-          : null}
-        {open ? (
-          <button style={addChild} onClick={() => onNew({ kind: "episode", seriesId: sn.id })}>+ Episode</button>
-        ) : null}
       </div>
     );
   };
 
-  const renderProgram = (pn: ProgramNode) => {
-    const open = expanded[pn.id] || !!q;
-    const kids = pn.seriesNodes.filter((sn) => match(sn.title) || sn.episodes.some((e) => match(e.title)));
-    if (q && !match(pn.title) && kids.length === 0) return null;
+  const renderGroup = (cn: CollectionNode, group: LectureGroup) =>
+    group.lectures.length ? (
+      <div key={group.label}>
+        <div style={groupHeading}>{group.label.toUpperCase()}</div>
+        {group.lectures.map((l) => renderLectureRow(cn, l))}
+      </div>
+    ) : null;
+
+  const renderCollection = (cn: CollectionNode, idx: number, total: number) => {
+    const open = expanded[cn.id] || !!q;
+    const filteredLectures = cn.lectures.filter((l) => match(l.title));
+    if (q && !match(cn.title) && filteredLectures.length === 0) return null;
+
     return (
-      <div key={pn.id}>
-        <div style={row(isSel({ kind: "program", id: pn.id }))}>
-          <button style={caret} onClick={() => toggle(pn.id)} aria-label="Expand">{open ? "▾" : "▸"}</button>
-          <button style={rowLabel} onClick={() => onSelect({ kind: "program", id: pn.id })}>{pick(pn.title)}</button>
-          <span style={count}>{pn.seriesNodes.length}</span>
+      <div key={cn.id}>
+        <div style={row(isSel({ kind: "collection", id: cn.id }))}>
+          <button style={caret} onClick={() => toggle(cn.id)} aria-label="Expand">{open ? "▾" : "▸"}</button>
+          <button style={rowLabel} onClick={() => onSelect({ kind: "collection", id: cn.id })}>{pick(cn.title)}</button>
+          <span style={countBadge}>{cn.lectures.length}</span>
+          <div style={reorderCol}>
+            <button style={reorderBtn} disabled={idx === 0} onClick={() => onReorderCollection(cn.id, -1)} aria-label="Move up">▲</button>
+            <button style={reorderBtn} disabled={idx === total - 1} onClick={() => onReorderCollection(cn.id, 1)} aria-label="Move down">▼</button>
+          </div>
         </div>
-        {open ? kids.map(renderSeries) : null}
         {open ? (
-          <button style={addChild} onClick={() => onNew({ kind: "series", programId: pn.id })}>+ Series</button>
+          cn.kind === "series" ? (
+            filteredLectures.map((l) => renderLectureRow(cn, l))
+          ) : (
+            (groupLectures({ ...cn, lectures: filteredLectures }) as LectureGroup[]).map((g) => renderGroup(cn, g))
+          )
+        ) : null}
+        {open ? (
+          <div style={addRow}>
+            <button style={addChild} onClick={() => onNew({ kind: "lecture", collectionId: cn.id })}>+ Lecture</button>
+            <button style={addChild} onClick={() => onNew({ kind: "lecturesBatch", collectionId: cn.id })}>+ Multiple</button>
+          </div>
         ) : null}
       </div>
     );
@@ -91,19 +118,7 @@ export function ContentTree({
       <input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Search content…" style={search} />
 
       <div className="noscroll" style={scroll}>
-        {tree.programs.map(renderProgram)}
-        {tree.orphanSeries.length ? <div style={groupLabel}>SERIES (NO PROGRAM)</div> : null}
-        {tree.orphanSeries.filter((sn) => match(sn.title) || sn.episodes.some((e) => match(e.title))).map(renderSeries)}
-        {tree.standalone.length ? <div style={groupLabel}>STANDALONE</div> : null}
-        {tree.standalone.filter((l) => match(l.title)).map((l) => (
-          <button
-            key={l.id}
-            onClick={() => onSelect({ kind: "standalone", id: l.id })}
-            style={{ ...row(isSel({ kind: "standalone", id: l.id })), paddingLeft: 26, border: "none", width: "100%" }}
-          >
-            <span style={rowLabelText}>{pick(l.title)}</span>
-          </button>
-        ))}
+        {tree.collections.map((cn, idx) => renderCollection(cn, idx, tree.collections.length))}
       </div>
 
       <div style={{ position: "relative", padding: 12, borderTop: "1px solid var(--line)" }}>
@@ -112,15 +127,17 @@ export function ContentTree({
           <>
             <div style={scrim} onClick={() => setNewOpen(false)} />
             <div style={menu}>
-              {[
-                { label: "Program", k: { kind: "program" } as NewKind },
-                { label: "Series", k: { kind: "series" } as NewKind },
-                { label: "Standalone lecture", k: { kind: "standalone" } as NewKind },
-              ].map((it) => (
-                <button key={it.label} style={menuItem} onClick={() => { setNewOpen(false); onNew(it.k); }}>
-                  {it.label}
+              <button style={menuItem} onClick={() => { setNewOpen(false); onNew({ kind: "collection" }); }}>
+                Collection
+              </button>
+              {currentCollectionId ? (
+                <button
+                  style={menuItem}
+                  onClick={() => { setNewOpen(false); onNew({ kind: "lecture", collectionId: currentCollectionId }); }}
+                >
+                  Lecture
                 </button>
-              ))}
+              ) : null}
             </div>
           </>
         ) : null}
@@ -138,11 +155,13 @@ const row = (sel: boolean): CSSProperties => ({
 const caret: CSSProperties = { background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", width: 16, fontSize: 11, flexShrink: 0 };
 const rowLabel: CSSProperties = { flex: 1, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: font.ui };
 const rowLabelText: CSSProperties = { flex: 1, textAlign: "left", fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
-const count: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "var(--faint)", background: "var(--chip)", borderRadius: 20, padding: "1px 8px", flexShrink: 0 };
-const epNum: CSSProperties = { width: 20, fontSize: 10.5, fontWeight: 800, color: brand.greenMid, flexShrink: 0 };
-const groupLabel: CSSProperties = { fontSize: 10, fontWeight: 800, letterSpacing: ".8px", color: "var(--faint)", padding: "14px 10px 6px" };
-const addChild: CSSProperties = { marginLeft: 26, marginTop: 2, marginBottom: 4, background: "transparent", border: "none", color: brand.greenMid, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: font.ui };
+const countBadge: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "var(--faint)", background: "var(--chip)", borderRadius: 20, padding: "1px 8px", flexShrink: 0 };
+const groupHeading: CSSProperties = { fontSize: 10, fontWeight: 800, letterSpacing: ".8px", color: "var(--faint)", padding: "10px 10px 4px 48px" };
+const addRow: CSSProperties = { display: "flex", gap: 12, marginLeft: 26, marginTop: 2, marginBottom: 4 };
+const addChild: CSSProperties = { background: "transparent", border: "none", color: brand.greenMid, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: font.ui, padding: 0 };
 const newBtn: CSSProperties = { width: "100%", background: brand.green, color: "#fff", border: "none", borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font.ui };
 const scrim: CSSProperties = { position: "fixed", inset: 0, zIndex: 40 };
 const menu: CSSProperties = { position: "absolute", bottom: 56, left: 12, right: 12, zIndex: 41, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 10px 30px rgba(0,0,0,.18)", padding: 6 };
 const menuItem: CSSProperties = { display: "block", width: "100%", textAlign: "left", background: "transparent", border: "none", borderRadius: 7, padding: "9px 12px", fontSize: 13, fontWeight: 600, color: "var(--ink)", cursor: "pointer", fontFamily: font.ui };
+const reorderCol: CSSProperties = { display: "flex", flexDirection: "column", flexShrink: 0, gap: 1 };
+const reorderBtn: CSSProperties = { background: "transparent", border: "none", color: "var(--faint)", cursor: "pointer", fontSize: 8, lineHeight: 1, padding: "1px 4px" };

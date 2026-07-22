@@ -1,17 +1,16 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
-import { admin, unwrap } from "@althaqalayn/api";
+import { useState, type CSSProperties } from "react";
+import { admin } from "@althaqalayn/api";
 import { getClient } from "@/lib/supabase";
 import { useContentTree } from "@/lib/useContentTree";
 import { brand, font } from "@/lib/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { BatchEpisodesForm } from "./BatchEpisodesForm";
+import { CollectionForm } from "./CollectionForm";
 import { ContentTree, type NewKind, type NodeRef } from "./ContentTree";
 import { LectureForm } from "./LectureForm";
 import { NodeDetail } from "./NodeDetail";
-import { ProgramForm } from "./ProgramForm";
-import { SeriesForm } from "./SeriesForm";
 
 export function ContentWorkspace() {
   const { confirm, alert } = useConfirm();
@@ -20,7 +19,6 @@ export function ContentWorkspace() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"read" | "edit" | "new">("read");
   const [draftNew, setDraftNew] = useState<NewKind | null>(null);
-  const reorderingRef = useRef(false);
 
   if (loading) return <div style={pad}>Loading…</div>;
   if (error || !tree) {
@@ -43,30 +41,51 @@ export function ContentWorkspace() {
     setSelected(null);
   };
 
-  const programOptions = tree.programs.map((p) => ({ value: p.id, label: p.title.en }));
+  const collectionOptions = tree.collections.map((c) => ({ value: c.id, label: c.title.en }));
 
-  const createProgram = async (name: string): Promise<string> => {
-    const p = await admin.upsertProgram(getClient(), { title: { en: name } });
+  /** Quick "+ New collection" from within the lecture editor's parent picker — a minimal series collection, renamed via its own editor afterwards. */
+  const createCollection = async (name: string): Promise<string> => {
+    const c = await admin.upsertCollection(getClient(), {
+      title: { en: name },
+      kind: "series",
+      language: "ha",
+      cover: { gradient: [brand.green, brand.greenMid] },
+    });
     await reload();
-    return p.id;
+    return c.id;
   };
 
   const afterSave = async () => { await reload(); setMode("read"); setDraftNew(null); };
+
+  const findCollection = (id: string) => tree.collections.find((c) => c.id === id) ?? null;
+  const findLecture = (id: string) => {
+    for (const c of tree.collections) {
+      const l = c.lectures.find((x) => x.id === id);
+      if (l) return l;
+    }
+    return null;
+  };
 
   const onDeleteSelected = async () => {
     if (!selected) return;
     const client = getClient();
     try {
-      if (selected.kind === "program") {
-        const p = findProgram(selected.id);
-        if (!(await confirm({ title: `Delete program “${p ? p.title.en : ""}”?`, body: "Its series are kept but unlinked.", danger: true, confirmLabel: "Delete" }))) return;
-        await admin.deleteProgram(client, selected.id);
-      } else if (selected.kind === "series") {
-        const s = findSeriesNode(selected.id);
-        if (!(await confirm({ title: `Delete series “${s ? s.title.en : ""}”?`, body: "Its episodes are kept but unlinked.", danger: true, confirmLabel: "Delete" }))) return;
-        await admin.deleteSeries(client, selected.id);
+      if (selected.kind === "collection") {
+        const c = findCollection(selected.id);
+        if (!c) return;
+        const n = c.lectures.length;
+        if (
+          !(await confirm({
+            title: `Delete collection “${c.title.en}”?`,
+            body: `Its ${n} lecture${n === 1 ? "" : "s"} are deleted too.`,
+            danger: true,
+            confirmLabel: "Delete",
+          }))
+        )
+          return;
+        await admin.deleteCollection(client, selected.id);
       } else {
-        const l = findLecture(selected.kind, selected.id);
+        const l = findLecture(selected.id);
         if (!(await confirm({ title: `Delete “${l ? l.title.en : ""}”?`, body: "This cannot be undone.", danger: true, confirmLabel: "Delete" }))) return;
         await admin.deleteLecture(client, selected.id);
       }
@@ -78,42 +97,28 @@ export function ContentWorkspace() {
     }
   };
 
-  const findProgram = (id: string) => tree.programs.find((p) => p.id === id) ?? null;
-  const findSeriesNode = (id: string) => {
-    for (const p of tree.programs) { const s = p.seriesNodes.find((x) => x.id === id); if (s) return s; }
-    return tree.orphanSeries.find((x) => x.id === id) ?? null;
-  };
-  const findLecture = (kind: "episode" | "standalone", id: string) => {
-    if (kind === "standalone") return tree.standalone.find((l) => l.id === id) ?? null;
-    for (const p of tree.programs) for (const s of p.seriesNodes) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
-    for (const s of tree.orphanSeries) { const e = s.episodes.find((x) => x.id === id); if (e) return e; }
-    return null;
+  /** Swap a collection with its adjacent neighbour, rewriting the full ordered id list (`position = index`). Tree order already reflects `position`, so no re-fetch is needed. */
+  const onReorderCollection = async (id: string, dir: -1 | 1) => {
+    const ids = tree.collections.map((c) => c.id);
+    const a = ids.indexOf(id);
+    const b = a + dir;
+    if (a < 0 || b < 0 || b >= ids.length) return;
+    [ids[a], ids[b]] = [ids[b], ids[a]];
+    await admin.setCollectionPositions(getClient(), ids);
+    await reload();
   };
 
-  /** Swap a program-series with its in-program neighbour, touching only those two rows' `position` in the true DB order. */
-  const reorderProgramSeries = async (programId: string, movedId: string, dir: -1 | 1) => {
-    const prog = tree.programs.find((p) => p.id === programId);
-    if (!prog) return;
-    const inProg = prog.seriesNodes; // display (position) order within program
-    const idx = inProg.findIndex((s) => s.id === movedId);
-    const neighbour = inProg[idx + dir];
-    if (!neighbour) return;
-    if (reorderingRef.current) return;
-    reorderingRef.current = true;
-    try {
-      const client = getClient();
-      // True flat position order, fetched fresh from the DB (not the in-memory tree, which is
-      // grouped by program-created_at with orphans appended — not the real `position` order).
-      const flat = unwrap<{ id: string }[]>(await client.from("series").select("id").order("position")).map((r) => r.id);
-      const a = flat.indexOf(movedId);
-      const b = flat.indexOf(neighbour.id);
-      if (a < 0 || b < 0) return;
-      [flat[a], flat[b]] = [flat[b], flat[a]];
-      await admin.setSeriesPositions(client, flat);
-      await reload();
-    } finally {
-      reorderingRef.current = false;
-    }
+  /** Swap a lecture with its adjacent neighbour within one collection, rewriting that collection's full ordered id list (`sort = index`). */
+  const onReorderLecture = async (collectionId: string, lectureId: string, dir: -1 | 1) => {
+    const cn = findCollection(collectionId);
+    if (!cn) return;
+    const ids = cn.lectures.map((l) => l.id);
+    const a = ids.indexOf(lectureId);
+    const b = a + dir;
+    if (a < 0 || b < 0 || b >= ids.length) return;
+    [ids[a], ids[b]] = [ids[b], ids[a]];
+    await admin.setLectureSort(getClient(), ids);
+    await reload();
   };
 
   return (
@@ -125,54 +130,34 @@ export function ContentWorkspace() {
         onNew={onNew}
         query={query}
         onQuery={setQuery}
+        onReorderCollection={onReorderCollection}
+        onReorderLecture={onReorderLecture}
       />
       <div className="noscroll" style={detail}>
-        {mode === "new" && draftNew?.kind === "program" ? (
-          <ProgramForm program={null} onCancel={() => setMode("read")} onSaved={afterSave} />
-        ) : mode === "new" && draftNew?.kind === "series" ? (
-          <SeriesForm
-            series={null}
-            programId={draftNew.programId}
-            programs={programOptions}
+        {mode === "new" && draftNew?.kind === "collection" ? (
+          <CollectionForm collection={null} onCancel={() => setMode("read")} onSaved={afterSave} />
+        ) : mode === "edit" && selected?.kind === "collection" ? (
+          <CollectionForm collection={findCollection(selected.id)} onCancel={() => setMode("read")} onSaved={afterSave} />
+        ) : mode === "new" && draftNew?.kind === "lecture" ? (
+          <LectureForm
+            lecture={null}
+            collectionId={draftNew.collectionId}
+            groupLabel={draftNew.groupLabel}
+            collections={collectionOptions}
             onCancel={() => setMode("read")}
             onSaved={afterSave}
-            onCreateProgram={createProgram}
-            onEditEpisode={(id) => { setSelected({ kind: "episode", id }); setMode("edit"); }}
-            onAddEpisode={(seriesId) => { setDraftNew({ kind: "episode", seriesId }); setMode("new"); setSelected(null); }}
-            onAddMultiple={(seriesId) => { setDraftNew({ kind: "episodesBatch", seriesId }); setMode("new"); setSelected(null); }}
-            onEpisodesChanged={() => void reload()}
+            onCreateCollection={createCollection}
           />
-        ) : mode === "edit" && selected?.kind === "program" ? (
-          <ProgramForm
-            program={findProgram(selected.id)}
+        ) : mode === "edit" && selected?.kind === "lecture" ? (
+          <LectureForm
+            lecture={findLecture(selected.id)}
+            collections={collectionOptions}
             onCancel={() => setMode("read")}
             onSaved={afterSave}
-            seriesInProgram={findProgram(selected.id)?.seriesNodes ?? []}
-            onReorderProgramSeries={(movedId, dir) => reorderProgramSeries(selected.id, movedId, dir)}
-            onEditSeries={(id) => { setSelected({ kind: "series", id }); setMode("edit"); }}
+            onCreateCollection={createCollection}
           />
-        ) : mode === "edit" && selected?.kind === "series" ? (
-          <SeriesForm
-            series={findSeriesNode(selected.id)}
-            programs={programOptions}
-            onCancel={() => setMode("read")}
-            onSaved={afterSave}
-            onCreateProgram={createProgram}
-            onEditEpisode={(id) => { setSelected({ kind: "episode", id }); setMode("edit"); }}
-            onAddEpisode={(seriesId) => { setDraftNew({ kind: "episode", seriesId }); setMode("new"); setSelected(null); }}
-            onAddMultiple={(seriesId) => { setDraftNew({ kind: "episodesBatch", seriesId }); setMode("new"); setSelected(null); }}
-            onEpisodesChanged={() => void reload()}
-          />
-        ) : mode === "new" && draftNew?.kind === "episode" ? (
-          <LectureForm lecture={null} scope="series" seriesId={draftNew.seriesId} programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
-        ) : mode === "new" && draftNew?.kind === "standalone" ? (
-          <LectureForm lecture={null} scope="single" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
-        ) : mode === "edit" && selected?.kind === "episode" ? (
-          <LectureForm lecture={findLecture("episode", selected.id)} scope="series" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
-        ) : mode === "edit" && selected?.kind === "standalone" ? (
-          <LectureForm lecture={findLecture("standalone", selected.id)} scope="single" programs={programOptions} onCancel={() => setMode("read")} onSaved={afterSave} onCreateProgram={createProgram} />
-        ) : mode === "new" && draftNew?.kind === "episodesBatch" && findSeriesNode(draftNew.seriesId) ? (
-          <BatchEpisodesForm series={findSeriesNode(draftNew.seriesId)!} onCancel={() => setMode("read")} onSaved={afterSave} />
+        ) : mode === "new" && draftNew?.kind === "lecturesBatch" && findCollection(draftNew.collectionId) ? (
+          <BatchEpisodesForm collection={findCollection(draftNew.collectionId)!} onCancel={() => setMode("read")} onSaved={afterSave} />
         ) : (
           <NodeDetail tree={tree} selected={selected} onEdit={() => setMode("edit")} onDelete={() => void onDeleteSelected()} />
         )}
