@@ -21,7 +21,8 @@ Symptoms of the over-modelling: `year` duplicated on both `series` and `lectures
 | Levels | **Two:** Collection → Lecture (the middle "Series/year" becomes a field, not a table) |
 | Grouping | A grouping like "Ashura 1445" is **just a label** (`group_label` on the lecture), not its own entity |
 | Categories | **Dropped** — browsing is by collection + kind |
-| One-off lectures | **Every lecture belongs to a collection**; one-offs go in a seeded default "General talks" collection (no null parents) |
+| One-off lectures | **Every lecture belongs to a collection** (no null parents); one-offs go in a collection the user creates for that purpose (e.g. a "General talks" topic collection) — **not** auto-seeded |
+| Seeds | **No seed data** — the content tables start empty; the user creates all collections/lectures in the admin |
 | Existing data | **Fresh start** — drop old content tables, create the new schema clean, re-enter the (small) current content in the new admin. No data-migration script. |
 | Kinds | `occasion` \| `series` \| `topic` (drop `recency`/`book`) |
 
@@ -70,7 +71,7 @@ Ashura-by-year and Milal-as-one-sequence come from the **same two tables** — g
 **Unchanged:** `albums`, `photos`, `transcripts` (still FK to `lectures`), `admin_users`.
 **Dropped:** `programs`, `series`, `categories`.
 
-**Seed:** one default collection — `{ title_en: "General talks", kind: "topic" }` — as the home for one-off lectures. Plus the existing admin user seed.
+**No seed data.** The `collections`/`lectures` tables start **empty**; the user creates all content in the admin (including any "General talks" collection they want for one-offs). `admin_users` is **not** dropped or re-seeded by the reset — the existing admin account row is preserved.
 
 **RLS + grants:** mirror the current policies for the two new tables — anon reads `published` lectures + all collections; authenticated admins full CRUD via `is_admin()`/`is_editor()`/`is_owner()`. `GRANT SELECT` to anon, DML to authenticated. Drop the removed tables' policies.
 
@@ -105,7 +106,7 @@ Ashura-by-year and Milal-as-one-sequence come from the **same two tables** — g
 ## Rollout (dependency order; each layer builds green)
 1. **types** — new `Collection`/`CollectionKind`, updated `Lecture`, drop old; update the types test.
 2. **api + schema** — rewrite schema.sql/seed/grants/RLS for the two tables; admin/content/mappers/database.types; api typecheck + vitest.
-3. **Apply the new schema in Supabase** (user runs the reset SQL via the SQL Editor — direct PG is blocked from this machine). This drops old content tables + creates the new ones + seeds. (Done once, by the user, when ready.)
+3. **Apply the new schema in Supabase** (user runs the reset SQL via the SQL Editor — direct PG is blocked from this machine). This drops old content tables (`programs`/`series`/`categories`) + creates the two new ones + RLS/grants. **No seed data**; `admin_users` preserved. (Done once, by the user, when ready.)
 4. **admin** — Content Workspace + editors on the two-level model; remove Categories; keep bulk-add/delete/confirm-modal; typecheck + build.
 5. **mobile** — catalog + Home/Library/collection screen/player queue; remove category grid; typecheck + build + jest.
 6. QA pass; then the user re-enters content in the new admin and rebuilds the APK.
