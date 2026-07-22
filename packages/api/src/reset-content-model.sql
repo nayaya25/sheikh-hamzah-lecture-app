@@ -1,6 +1,12 @@
 -- Run in Supabase SQL Editor. DESTRUCTIVE to programs/series/categories/
 -- lectures/transcripts; preserves admin_users/albums/photos. No seed data.
 --
+-- RUN ONCE. This is intentionally NOT re-runnable: it does not drop the new
+-- `collections` table, so a second run fails on `create table collections`
+-- and — because everything is wrapped in begin/commit — rolls back with no
+-- effect. That is a safety guard: it means a stray re-run can never wipe the
+-- collections/lectures you have entered since the first run.
+--
 -- One-time migration from the old Program → Series → Episode model to the
 -- new two-level Collection → Lecture model. `transcripts` references
 -- `lectures`, so it is dropped and recreated empty (its rows can't be
