@@ -31,6 +31,7 @@ export const ha: Messages = {
     minutesLeft: "min. sun rage",
     explore: "Ganowa",
     featuredSeries: "Zaɓaɓɓun jeri",
+    featuredLectures: "Zaɓaɓɓun laccoci",
     latestLectures: "Sababbin laccoci",
     eventsPhotos: "Al'amura da hotuna",
   },

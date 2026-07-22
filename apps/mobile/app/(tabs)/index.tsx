@@ -26,7 +26,7 @@ import { InlineErrorBanner } from "@/components/ui/InlineErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Touchable } from "@/components/ui/Touchable";
 import { logos } from "@/lib/assets";
-import { durationLabel, gradientForLecture } from "@/lib/catalog";
+import { durationLabel, gradientForLecture, type Playable } from "@/lib/catalog";
 import { useCatalog } from "@/lib/catalogProvider";
 import { useI18n } from "@/lib/i18n";
 import { MINI_PLAYER_GAP, MINI_PLAYER_HEIGHT, TAB_BAR_HEIGHT } from "@/lib/layout";
@@ -56,7 +56,7 @@ export default function HomeScreen() {
   const isDark = t.scheme === "dark";
   const { t: msgs, lang, arabic } = useI18n();
   const { play, progressFor } = usePlayer();
-  const { loading, error, refetch, collections, albums, featuredCollections, latestLectures, lectureById } = useCatalog();
+  const { loading, error, refetch, collections, albums, featuredCollections, latestLectures, featuredLectures, lectureById } = useCatalog();
 
   // Collection counts per kind, driving the "Browse by kind" tiles.
   const kindCounts = useMemo(() => {
@@ -294,6 +294,18 @@ export default function HomeScreen() {
               </>
             ) : null}
 
+            {/* ── Featured lectures ───────────────────────────────────── */}
+            {featuredLectures.length ? (
+              <>
+                <SectionHeader title={msgs.home.featuredLectures} />
+                <View>
+                  {featuredLectures.map((l) => (
+                    <LectureRow key={l.id} lecture={l} onPress={() => openById(l.id)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
+
             {/* ── Events & photos ────────────────────────────────────── */}
             {albums.length ? (
               <>
@@ -332,28 +344,7 @@ export default function HomeScreen() {
                 <SectionHeader title={msgs.home.latestLectures} arabic="جديد" />
                 <View>
                   {latestLectures.map((l) => (
-                    <Touchable key={l.id} haptic="light" onPress={() => openById(l.id)} style={styles.lectureRow}>
-                      <View style={styles.lectureCoverWrap}>
-                        <CoverArt gradient={[gradientForLecture(l)[0], gradientForLecture(l)[1]]} glyph={l.ar} size={60} radius={t.radii.md} />
-                        <View style={styles.coverPlayOverlay} pointerEvents="none">
-                          <Icon name="play" size={16} color="onBrand" />
-                        </View>
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <View style={styles.lectureMetaRow}>
-                          <MediaBadge type={l.type} />
-                          <AppText variant="caption" color="textFaint">
-                            {durationLabel(l)}
-                          </AppText>
-                        </View>
-                        <AppText variant="cardTitle" style={{ fontSize: 14.5, marginTop: 3 }} numberOfLines={1}>
-                          {l.title}
-                        </AppText>
-                        <AppText variant="meta" color="textMuted" style={{ marginTop: 3 }} numberOfLines={1}>
-                          {l.sub}
-                        </AppText>
-                      </View>
-                    </Touchable>
+                    <LectureRow key={l.id} lecture={l} onPress={() => openById(l.id)} />
                   ))}
                 </View>
               </>
@@ -405,6 +396,35 @@ function SectionHeader({ title, arabic, action, onAction }: { title: string; ara
         </AppText>
       ) : null}
     </View>
+  );
+}
+
+/** A single lecture row — shared by the "Featured lectures" and "Latest lectures" sections. */
+function LectureRow({ lecture, onPress }: { lecture: Playable; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Touchable haptic="light" onPress={onPress} style={styles.lectureRow}>
+      <View style={styles.lectureCoverWrap}>
+        <CoverArt gradient={[gradientForLecture(lecture)[0], gradientForLecture(lecture)[1]]} glyph={lecture.ar} size={60} radius={t.radii.md} />
+        <View style={styles.coverPlayOverlay} pointerEvents="none">
+          <Icon name="play" size={16} color="onBrand" />
+        </View>
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={styles.lectureMetaRow}>
+          <MediaBadge type={lecture.type} />
+          <AppText variant="caption" color="textFaint">
+            {durationLabel(lecture)}
+          </AppText>
+        </View>
+        <AppText variant="cardTitle" style={{ fontSize: 14.5, marginTop: 3 }} numberOfLines={1}>
+          {lecture.title}
+        </AppText>
+        <AppText variant="meta" color="textMuted" style={{ marginTop: 3 }} numberOfLines={1}>
+          {lecture.sub}
+        </AppText>
+      </View>
+    </Touchable>
   );
 }
 

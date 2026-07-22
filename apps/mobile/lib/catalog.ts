@@ -38,6 +38,7 @@ export interface Playable {
   mediaUrl?: string;
   gradient?: Gradient;
   collectionTitle?: string;
+  featured?: boolean;
 }
 
 /** One `groupLabel` bucket within an occasion/topic collection's lecture list. */

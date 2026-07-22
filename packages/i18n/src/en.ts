@@ -28,6 +28,7 @@ export const en = {
     minutesLeft: "min left",
     explore: "Explore",
     featuredSeries: "Featured series",
+    featuredLectures: "Featured lectures",
     latestLectures: "Latest lectures",
     eventsPhotos: "Events & photos",
   },

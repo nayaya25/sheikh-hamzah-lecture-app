@@ -36,6 +36,8 @@ interface CatalogValue {
   featuredCollections: CollectionVM[];
   /** Home "Latest lectures" list. */
   latestLectures: Playable[];
+  /** Home "Featured lectures" shelf — published lectures with `featured: true`, newest first. */
+  featuredLectures: Playable[];
   collectionById: (id: string) => CollectionVM | undefined;
   lectureById: (id: string) => Playable | undefined;
   /** A collection's lectures — flat and `sort`-ordered for `series`, grouped
@@ -75,6 +77,7 @@ function toPlayable(l: Lecture, collection?: Collection): Playable {
     mediaUrl: l.mediaUrl,
     gradient: collection?.cover.gradient,
     collectionTitle: collection ? pick(collection.title) : undefined,
+    featured: l.featured,
   };
 }
 
@@ -177,6 +180,8 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       albums,
       featuredCollections: collections.filter((c) => c.featured),
       latestLectures: lectures.slice(0, 6),
+      // `lectures` is already date-desc ordered from the query, same as `latestLectures`.
+      featuredLectures: lectures.filter((l) => l.featured).slice(0, 10),
       collectionById: (id) => collectionMap.get(id),
       lectureById: (id) => lectureMap.get(id),
       lecturesForCollection: (id) => {
