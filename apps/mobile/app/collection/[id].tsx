@@ -95,6 +95,11 @@ export default function CollectionDetailScreen() {
 
   const gradient = collection.cover.gradient;
 
+  // A premium sitting/episode row. The play surface (number + title + meta) is a
+  // single Touchable, but the download control is kept a SIBLING of that
+  // Touchable — never nested inside it — so tapping download can't be swallowed
+  // by the row's play gesture (a real prior bug). `i` is the flattened
+  // play-queue index, which is also the number shown on the chip.
   const renderRow = (l: Playable, i: number) => {
     const isCurrent = current?.id === l.id;
     const progress = progressFor(l.id);
@@ -107,20 +112,31 @@ export default function CollectionDetailScreen() {
         style={[
           styles.lectureRow,
           { borderTopColor: t.c.borderSubtle },
-          isCurrent ? { backgroundColor: "rgba(199,154,59,0.12)" } : null,
+          isCurrent ? { backgroundColor: t.scheme === "dark" ? "rgba(199,154,59,0.14)" : "rgba(199,154,59,0.1)" } : null,
         ]}
       >
         <Touchable onPress={() => openLectureAt(i)} style={styles.lectureMain}>
-          <View style={[styles.numChip, { backgroundColor: t.c.surfaceAlt }]}>
-            <AppText style={styles.numChipText} color={t.c.accent}>
-              {i + 1}
-            </AppText>
+          <View
+            style={[
+              styles.numChip,
+              isCurrent
+                ? { backgroundColor: colors.greenDeep }
+                : { backgroundColor: t.c.surfaceAlt },
+            ]}
+          >
+            {isCurrent ? (
+              <EqBars playing={isPlaying} />
+            ) : (
+              <AppText style={styles.numChipText} color={t.c.accent}>
+                {i + 1}
+              </AppText>
+            )}
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <AppText
               style={styles.lectureTitle}
               color={isCurrent ? "accent" : "textPrimary"}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {l.title}
             </AppText>
@@ -134,8 +150,8 @@ export default function CollectionDetailScreen() {
                   </AppText>
                 </View>
               ) : (
-                <AppText style={styles.lectureDur} color="textMuted">
-                  {durationLabel(l)}
+                <AppText style={styles.lectureDur} color={isCurrent ? "accent" : "textMuted"}>
+                  {isCurrent ? msgs.player.nowPlaying : durationLabel(l)}
                 </AppText>
               )}
             </View>
@@ -151,10 +167,16 @@ export default function CollectionDetailScreen() {
             ) : null}
           </View>
         </Touchable>
-        <View style={styles.trailing}>
-          {isCurrent ? <EqBars playing={isPlaying} /> : null}
-          {l.type !== "text" ? <DownloadButton lecture={l} size={18} /> : null}
-        </View>
+        {/* Sibling of the play-Touchable — must NOT be nested inside it. */}
+        {l.type !== "text" ? (
+          <View style={styles.trailing}>
+            <DownloadButton lecture={l} size={18} />
+          </View>
+        ) : (
+          <View style={styles.trailing}>
+            <Icon name="chevron-right" size={16} color="textFaint" />
+          </View>
+        )}
       </View>
     );
   };
@@ -168,13 +190,28 @@ export default function CollectionDetailScreen() {
           paddingBottom: insets.bottom + TAB_BAR_HEIGHT + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg,
         }}
       >
-        {/* Colored hero */}
+        {/* ── Cover hero ── */}
         <View style={[styles.hero, { paddingTop: insets.top + t.space.md }]}>
           <LinearGradient
             colors={[gradient[0], gradient[1]]}
-            start={{ x: 0.15, y: 0 }}
-            end={{ x: 0.85, y: 1 }}
+            start={{ x: 0.12, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
             style={StyleSheet.absoluteFill}
+          />
+          {/* Soft top-left lift + bottom vignette, matching GradientCover's "lit" look. */}
+          <LinearGradient
+            colors={["rgba(255,255,255,0.16)", "transparent"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.7, y: 0.7 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.28)"]}
+            start={{ x: 0.3, y: 0.35 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
           />
           <AppText allowFontScaling={false} style={styles.heroWatermark}>
             {collection.cover.arabic ?? ""}
@@ -183,6 +220,12 @@ export default function CollectionDetailScreen() {
           <Touchable onPress={() => router.back()} accessibilityLabel={msgs.common.goBack} style={styles.backBtn}>
             <Icon name="chevron-left" size={20} color="onBrand" />
           </Touchable>
+
+          {collection.cover.arabic ? (
+            <AppText allowFontScaling={false} color={colors.goldLight} style={styles.heroArabic}>
+              {collection.cover.arabic}
+            </AppText>
+          ) : null}
 
           <View style={styles.kindChip}>
             <AppText color="onBrand" style={styles.kindChipText}>
@@ -218,6 +261,7 @@ export default function CollectionDetailScreen() {
           <View style={styles.actions}>
             <Touchable
               onPress={() => lectures.length > 0 && openLectureAt(0)}
+              disabled={lectures.length === 0}
               haptic="light"
               accessibilityLabel={msgs.common.playAll}
               style={styles.playAll}
@@ -242,7 +286,7 @@ export default function CollectionDetailScreen() {
           </View>
         </View>
 
-        {/* Lectures */}
+        {/* ── Sittings ── */}
         <View style={styles.listHeader}>
           <AppText color="textPrimary" style={styles.listCount}>
             {msgs.series.allPrefix} {collection.count} {msgs.library.parts}
@@ -263,8 +307,12 @@ export default function CollectionDetailScreen() {
           : groups.map((g) => (
               <View key={g.label}>
                 <View style={styles.groupHeader}>
-                  <AppText variant="meta" color="textFaint" style={styles.groupHeaderText}>
+                  <AppText color="textPrimary" style={styles.groupHeaderText}>
                     {g.label}
+                  </AppText>
+                  <View style={[styles.groupRule, { backgroundColor: t.c.borderSubtle }]} />
+                  <AppText color="textFaint" style={styles.groupCount}>
+                    {g.lectures.length} {msgs.library.parts}
                   </AppText>
                 </View>
                 {g.lectures.map((l) => renderRow(l, indexById.get(l.id) ?? 0))}
@@ -280,11 +328,11 @@ const styles = StyleSheet.create({
   missing: { flex: 1, alignItems: "center", justifyContent: "center" },
   missingText: { fontFamily: font.sans.medium, fontSize: typePresets.body.fontSize },
 
-  hero: { paddingHorizontal: 18, paddingBottom: 22, overflow: "hidden" },
+  hero: { paddingHorizontal: 20, paddingBottom: 24, overflow: "hidden" },
   heroWatermark: {
     position: "absolute",
     right: -24,
-    top: 6,
+    top: 4,
     fontFamily: font.arabic.regular,
     fontSize: 150,
     color: "rgba(255,255,255,0.1)",
@@ -299,9 +347,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  heroArabic: {
+    fontFamily: font.arabic.regular,
+    fontSize: 46,
+    lineHeight: 60,
+    marginTop: 18,
+  },
   kindChip: {
     alignSelf: "flex-start",
-    marginTop: 20,
+    marginTop: 4,
     backgroundColor: "rgba(0,0,0,0.22)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
@@ -319,9 +373,14 @@ const styles = StyleSheet.create({
     fontFamily: font.serif.semibold,
     fontSize: typePresets.screen.fontSize,
     lineHeight: typePresets.screen.lineHeight,
-    marginTop: 12,
+    marginTop: 10,
   },
-  heroMeta: { fontFamily: font.sans.regular, fontSize: typePresets.meta.fontSize, marginTop: 8 },
+  heroMeta: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.meta.fontSize,
+    marginTop: 8,
+    fontVariant: ["tabular-nums"],
+  },
   heroDesc: {
     fontFamily: font.sans.regular,
     fontSize: typePresets.body.fontSize,
@@ -346,12 +405,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingHorizontal: 18,
+    backgroundColor: colors.goldLight,
+    borderRadius: 999,
+    paddingHorizontal: 20,
     paddingVertical: 11,
   },
-  playAllText: { fontFamily: font.sans.bold, fontSize: typePresets.meta.fontSize + 1 },
+  playAllText: { fontFamily: font.sans.extrabold, fontSize: typePresets.meta.fontSize + 1 },
   downloadAll: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,7 +418,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
-    borderRadius: 12,
+    borderRadius: 999,
     paddingHorizontal: 18,
     paddingVertical: 11,
   },
@@ -369,7 +428,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
   },
@@ -382,15 +441,24 @@ const styles = StyleSheet.create({
   },
   newestFirst: { fontFamily: font.sans.bold, fontSize: typePresets.caption.fontSize },
 
-  groupHeader: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 4 },
-  groupHeaderText: { fontWeight: "700", letterSpacing: 0.4 },
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 8,
+  },
+  groupHeaderText: { fontFamily: font.serif.semibold, fontSize: typePresets.body.fontSize + 1 },
+  groupRule: { flex: 1, height: 1 },
+  groupCount: { fontFamily: font.sans.medium, fontSize: typePresets.caption.fontSize },
 
   lectureRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 13,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderTopWidth: 1,
   },
   lectureMain: {
@@ -407,11 +475,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  numChipText: { fontFamily: font.sans.extrabold, fontSize: typePresets.meta.fontSize },
-  trailing: { flexDirection: "row", alignItems: "center", gap: 10 },
-  lectureTitle: { fontFamily: font.serif.semibold, fontSize: typePresets.body.fontSize },
-  lectureMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
-  lectureDur: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize },
+  numChipText: {
+    fontFamily: font.sans.extrabold,
+    fontSize: typePresets.meta.fontSize,
+    fontVariant: ["tabular-nums"],
+  },
+  trailing: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 10, minWidth: 32 },
+  lectureTitle: {
+    fontFamily: font.serif.semibold,
+    fontSize: typePresets.body.fontSize,
+    lineHeight: typePresets.body.lineHeight,
+  },
+  lectureMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  lectureDur: { fontFamily: font.sans.regular, fontSize: typePresets.caption.fontSize, fontVariant: ["tabular-nums"] },
   playedMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   progressTrack: { height: 3, borderRadius: 2, overflow: "hidden", marginTop: 6 },
   progressFill: { height: "100%", borderRadius: 2 },

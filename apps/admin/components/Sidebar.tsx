@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useAuth } from "@/lib/auth";
 import { brand, font } from "@/lib/ui";
+import { radii } from "@/lib/tokens";
 import { NAV, type View } from "@/lib/views";
 import { Icon } from "@/components/Icon";
 
@@ -11,132 +12,159 @@ export function Sidebar({ view, onNavigate }: { view: View; onNavigate: (v: View
   const name = profile?.name ?? "Admin";
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
-  const groups: NonNullable<(typeof NAV)[number]["group"]>[] = ["MANAGE", "SYSTEM"];
+  const groups: NonNullable<(typeof NAV)[number]["group"]>[] = ["MENU", "SYSTEM"];
 
   return (
-    <div style={styles.root}>
-      <div style={styles.brandRow}>
+    <aside style={styles.root}>
+      <div style={styles.logoRow}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo/althaqalayn_icon.svg" alt="" width={38} height={38} style={{ flexShrink: 0 }} />
+        <img
+          src="/logo/althaqalayn_icon.svg"
+          alt=""
+          width={38}
+          height={38}
+          style={{ borderRadius: radii.md, flexShrink: 0, boxShadow: "var(--sh-1)" }}
+        />
         <div>
-          <div style={styles.brandName}>Althaqalayn</div>
-          <div style={styles.brandKicker}>ADMIN CONSOLE</div>
+          <div style={styles.logoTitle}>Althaqalayn</div>
+          <div style={styles.logoKicker}>Archive Admin</div>
         </div>
       </div>
 
-      <div className="noscroll" style={styles.nav}>
+      <nav className="noscroll" style={styles.nav}>
         {groups.map((group) => (
           <div key={group}>
             <div style={styles.groupLabel}>{group}</div>
             {NAV.filter((n) => n.group === group).map((item) => {
-              const active = item.key === view;
+              // Collection detail isn't a nav destination, but Collections
+              // should stay highlighted while a collection is open.
+              const active = item.key === view || (item.key === "collections" && view === "collection");
               return (
                 <button
                   key={item.key}
                   onClick={() => onNavigate(item.key)}
                   style={{ ...styles.navItem, ...(active ? styles.navItemActive : null) }}
+                  onMouseEnter={(e) => {
+                    if (!active) e.currentTarget.style.background = "var(--field)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) e.currentTarget.style.background = "transparent";
+                  }}
                 >
-                  <Icon name={item.icon} size={18} />
+                  <Icon name={item.icon} size={19} strokeWidth={active ? 2.1 : 1.8} />
                   {item.label}
                 </button>
               );
             })}
           </div>
         ))}
-      </div>
+        <div style={styles.note}>
+          Featuring, transcripts &amp; media now live <b style={styles.noteB}>inside a lecture</b> — created &amp;
+          edited in a step-by-step dialog, not on separate pages.
+        </div>
+      </nav>
 
       <div style={styles.footer}>
         <div style={styles.avatar}>{initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={styles.footerName}>{name}</div>
           <div style={styles.footerRole} title={email ?? undefined}>
-            {profile?.role ?? "Foundation staff"}
+            {profile?.role ?? "Owner"}
           </div>
         </div>
-        <button onClick={() => void signOut()} style={styles.logout} title="Sign out">
-          <Icon name="logout" size={18} color="rgba(255,255,255,.6)" />
+        <button onClick={() => void signOut()} style={styles.logout} title="Sign out" aria-label="Sign out">
+          <Icon name="logout" size={16} color="var(--faint)" strokeWidth={1.8} />
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
   root: {
-    width: 246,
+    width: 264,
     flexShrink: 0,
-    background: `linear-gradient(180deg, ${brand.green}, ${brand.greenDeepest})`,
+    height: "100vh",
+    background: "var(--card)",
+    borderRight: "1px solid var(--line)",
     display: "flex",
     flexDirection: "column",
-    padding: "20px 0",
-    height: "100vh",
+    padding: "20px 0 14px",
   },
-  brandRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 11,
-    padding: "0 20px 20px",
-    borderBottom: "1px solid rgba(255,255,255,.09)",
-  },
-  emblem: {
-    width: 38,
-    height: 38,
-    borderRadius: "50%",
-    border: "1.5px solid rgba(228,199,123,.6)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    fontFamily: font.arabic,
-    fontSize: 20,
-    color: brand.gold,
-  },
-  brandName: { fontFamily: font.heading, fontSize: 15, fontWeight: 600, color: "#fff", lineHeight: 1.1 },
-  brandKicker: { fontSize: 10.5, letterSpacing: 1, color: brand.gold },
-  nav: { padding: "14px 0", flex: 1, overflowY: "auto" },
-  groupLabel: { fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,.35)", padding: "6px 22px" },
+  logoRow: { display: "flex", alignItems: "center", gap: 11, padding: "0 22px 20px" },
+  logoTitle: { fontFamily: font.heading, fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--ink)" },
+  logoKicker: { fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--faint)", marginTop: 2 },
+  nav: { flex: 1, padding: "8px 14px", overflowY: "auto" },
+  groupLabel: { fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", color: "var(--faint)", padding: "14px 12px 8px" },
   navItem: {
     width: "100%",
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "10px 22px",
+    padding: "10px 12px",
+    marginBottom: 3,
+    borderRadius: radii.md,
+    color: "var(--muted)",
+    fontSize: 14,
+    fontWeight: 500,
+    fontFamily: font.ui,
+    textAlign: "left",
     background: "transparent",
     border: "none",
-    borderLeft: "3px solid transparent",
-    color: "rgba(255,255,255,.72)",
-    fontSize: 13.5,
-    fontFamily: font.ui,
     cursor: "pointer",
-    textAlign: "left",
+    transition: "background 140ms, color 140ms",
   },
-  navItemActive: {
-    color: brand.gold,
-    background: "rgba(228,199,123,.14)",
-    borderLeft: `3px solid ${brand.gold}`,
-    fontWeight: 600,
+  navItemActive: { background: "var(--green-soft)", color: brand.greenMid, fontWeight: 600 },
+  note: {
+    margin: "10px 12px 0",
+    padding: "12px 14px",
+    fontSize: 11.5,
+    lineHeight: 1.55,
+    color: "var(--muted)",
+    background: "var(--field)",
+    borderRadius: radii.md,
   },
+  noteB: { color: brand.greenMid },
   footer: {
-    padding: "14px 16px 0",
-    marginTop: 4,
-    borderTop: "1px solid rgba(255,255,255,.09)",
+    margin: "8px 16px 0",
+    paddingTop: 14,
+    borderTop: "1px solid var(--line)",
     display: "flex",
     alignItems: "center",
     gap: 10,
   },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: "50%",
-    background: brand.gold,
-    color: brand.green,
+    width: 36,
+    height: 36,
+    borderRadius: radii.pill,
+    background: `linear-gradient(140deg, ${brand.gold}, ${brand.goldDk})`,
+    color: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontWeight: 800,
+    fontWeight: 700,
     fontSize: 13,
+    flexShrink: 0,
   },
-  footerName: { fontSize: 12.5, color: "#fff", fontWeight: 600 },
-  footerRole: { fontSize: 10.5, color: "rgba(255,255,255,.5)", textTransform: "capitalize" },
-  logout: { background: "transparent", border: "none", cursor: "pointer", padding: 0 },
+  footerName: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--ink)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  footerRole: { fontSize: 11, color: "var(--muted)", textTransform: "capitalize" },
+  logout: {
+    width: 30,
+    height: 30,
+    borderRadius: radii.sm,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    flexShrink: 0,
+  },
 };

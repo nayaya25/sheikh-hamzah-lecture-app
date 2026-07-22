@@ -9,13 +9,31 @@ interface ThemeValue {
 
 const ThemeContext = createContext<ThemeValue | null>(null);
 const KEY = "althaqalayn-admin-theme";
+const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 
-/** Light/dark toggle. Applies `.dark` on <html> (drives the CSS vars) + persists. */
+/**
+ * Light/dark toggle. Applies `.dark` on <html> (drives the CSS vars) + persists.
+ * On first load with no stored preference, follows the OS theme; a stored choice
+ * always wins, and the OS is only tracked live while the user hasn't chosen.
+ */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    setDark(localStorage.getItem(KEY) === "dark");
+    const stored = localStorage.getItem(KEY);
+    if (stored === "dark" || stored === "light") {
+      setDark(stored === "dark");
+      return; // a stored choice always overrides the system
+    }
+    // No stored preference → follow the OS, and keep following it live.
+    const mq = window.matchMedia(SYSTEM_DARK);
+    setDark(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => {
+      if (localStorage.getItem(KEY)) return; // user has since chosen — stop following
+      setDark(e.matches);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {

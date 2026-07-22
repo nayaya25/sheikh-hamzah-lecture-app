@@ -15,6 +15,7 @@ import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
 import { Scrubber } from "@/components/player/Scrubber";
 import { ValueSheet } from "@/components/player/ValueSheet";
+import { useBookmarks } from "@/lib/bookmarks";
 import { formatTime, gradientForLecture } from "@/lib/catalog";
 import { font } from "@/lib/fonts";
 import { useI18n } from "@/lib/i18n";
@@ -42,7 +43,6 @@ export default function PlayerScreen() {
     hasPrev,
     togglePlay,
     seekTo,
-    nudge,
     next,
     prev,
     cycleSpeed,
@@ -53,6 +53,7 @@ export default function PlayerScreen() {
 
   const speedSheetRef = useRef<BottomSheetModal>(null);
   const sleepSheetRef = useRef<BottomSheetModal>(null);
+  const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
   if (!current) {
@@ -60,8 +61,17 @@ export default function PlayerScreen() {
     return null;
   }
 
+  const bookmarked = isBookmarked(current.id);
+
   const gradient = gradientForLecture(current);
   const durSec = current.durSec;
+
+  // Seek by an absolute number of seconds (negative = rewind). seekTo takes a
+  // 0–1 fraction and clamps it, so [0, duration] is enforced for free.
+  const seekBySeconds = (sec: number) => {
+    if (!durSec) return;
+    seekTo(position + sec / durSec);
+  };
 
   const onShare = () => {
     void Share.share({ message: current.title });
@@ -86,7 +96,7 @@ export default function PlayerScreen() {
         <View style={styles.topBar}>
           <Touchable
             onPress={() => router.back()}
-            accessibilityLabel="Close player"
+            accessibilityLabel={msgs.player.closeA11y}
             style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
           >
             <Icon name="chevron-down" size={22} color="onBrand" />
@@ -101,7 +111,7 @@ export default function PlayerScreen() {
           </View>
           <Touchable
             onPress={onShare}
-            accessibilityLabel="Share"
+            accessibilityLabel={msgs.player.share}
             style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
           >
             <Icon name="share-2" size={18} color="onBrand" />
@@ -143,42 +153,76 @@ export default function PlayerScreen() {
             onPress={prev}
             disabled={!hasPrev}
             haptic="light"
-            accessibilityLabel="Previous"
+            accessibilityLabel={msgs.player.previousA11y}
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-back" size={26} color={hasPrev ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
           </Touchable>
-          <Touchable onPress={() => nudge(-0.05)} haptic="light" accessibilityLabel="Rewind 15 seconds" style={styles.skip}>
+          <Touchable onPress={() => seekBySeconds(-15)} haptic="light" accessibilityLabel={msgs.player.rewind15A11y} style={styles.skip}>
             <MaterialCommunityIcons name="rewind-15" size={30} color="#fff" />
           </Touchable>
-          <Touchable onPress={togglePlay} haptic="light" accessibilityLabel={isPlaying ? "Pause" : "Play"} style={styles.bigPlay}>
+          <Touchable onPress={togglePlay} haptic="light" accessibilityLabel={isPlaying ? msgs.common.pause : msgs.common.play} style={styles.bigPlay}>
             {buffering ? (
               <ActivityIndicator color={colors.greenDeep} />
             ) : (
               <Ionicons name={isPlaying ? "pause" : "play"} size={30} color={colors.greenDeep} />
             )}
           </Touchable>
-          <Touchable onPress={() => nudge(0.05)} haptic="light" accessibilityLabel="Forward 30 seconds" style={styles.skip}>
+          <Touchable onPress={() => seekBySeconds(30)} haptic="light" accessibilityLabel={msgs.player.forward30A11y} style={styles.skip}>
             <MaterialCommunityIcons name="fast-forward-30" size={30} color="#fff" />
           </Touchable>
           <Touchable
             onPress={next}
             disabled={!hasNext}
             haptic="light"
-            accessibilityLabel="Next"
+            accessibilityLabel={msgs.player.nextA11y}
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-forward" size={26} color={hasNext ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
           </Touchable>
         </View>
 
-        {/* Secondary controls */}
+        {/* Action row — Download / Save / Sleep / Speed */}
         <View style={styles.secondary}>
+          <View style={styles.secItem}>
+            <DownloadButton
+              lecture={current}
+              size={20}
+              showLabel
+              tint="onBrand"
+              activeTint="accentText"
+            />
+          </View>
+          <Touchable
+            style={styles.secItem}
+            onPress={() => toggleBookmark(current.id)}
+            accessibilityLabel={bookmarked ? msgs.reader.removeBookmark : msgs.reader.bookmark}
+            accessibilityState={{ selected: bookmarked }}
+          >
+            <Icon name="bookmark" size={20} color={bookmarked ? "accentText" : "onBrand"} />
+            <AppText
+              color={bookmarked ? "accentText" : "rgba(255,255,255,0.6)"}
+              style={styles.secLabel}
+            >
+              {bookmarked ? msgs.library.saved : msgs.reader.bookmark}
+            </AppText>
+          </Touchable>
+          <Touchable
+            style={styles.secItem}
+            onPress={cycleSleep}
+            onLongPress={() => sleepSheetRef.current?.present()}
+            accessibilityLabel={msgs.player.sleepTimerA11y}
+          >
+            <Icon name="clock" size={20} color={sleep ? "accentText" : "onBrand"} />
+            <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
+              {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
+            </AppText>
+          </Touchable>
           <Touchable
             style={styles.secItem}
             onPress={cycleSpeed}
             onLongPress={() => speedSheetRef.current?.present()}
-            accessibilityLabel="Playback speed"
+            accessibilityLabel={msgs.player.playbackSpeedA11y}
           >
             <AppText color="accentText" style={styles.speedLabel}>
               {speed}×
@@ -187,36 +231,12 @@ export default function PlayerScreen() {
               {msgs.player.speed}
             </AppText>
           </Touchable>
-          <Touchable
-            style={styles.secItem}
-            onPress={cycleSleep}
-            onLongPress={() => sleepSheetRef.current?.present()}
-            accessibilityLabel="Sleep timer"
-          >
-            <Icon name="clock" size={19} color={sleep ? "accentText" : "onBrand"} />
-            <AppText color={sleep ? "accentText" : "rgba(255,255,255,0.6)"} style={styles.secLabel}>
-              {sleep ? `Stops in ${formatTime(sleepRemainingSec)}` : msgs.player.sleep}
-            </AppText>
-          </Touchable>
-          <DownloadButton
-            lecture={current}
-            size={19}
-            showLabel
-            tint="onBrand"
-            activeTint="accentText"
-          />
-          <Touchable style={styles.secItem} onPress={onShare} accessibilityLabel="Share">
-            <Icon name="share-2" size={19} color="onBrand" />
-            <AppText color="rgba(255,255,255,0.6)" style={styles.secLabel}>
-              {msgs.player.share}
-            </AppText>
-          </Touchable>
         </View>
       </ScrollView>
 
       <ValueSheet
         ref={speedSheetRef}
-        title="Playback speed"
+        title={msgs.player.playbackSpeedA11y}
         options={SPEED_OPTIONS}
         selected={speed}
         onSelect={(v) => {
@@ -226,7 +246,7 @@ export default function PlayerScreen() {
       />
       <ValueSheet
         ref={sleepSheetRef}
-        title="Sleep timer"
+        title={msgs.player.sleepTimerA11y}
         options={SLEEP_OPTIONS}
         selected={sleep}
         onSelect={(v) => {
@@ -299,9 +319,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  secondary: { marginTop: 26, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 },
-  secItem: { alignItems: "center", gap: 4 },
-  speedLabel: { fontFamily: font.serif.semibold, fontSize: typePresets.cardTitle.fontSize, lineHeight: typePresets.cardTitle.lineHeight },
+  secondary: {
+    marginTop: 26,
+    paddingTop: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.12)",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  secItem: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: 6 },
+  speedLabel: { fontFamily: font.serif.semibold, fontSize: 18, lineHeight: 20 },
   secLabel: {
     fontFamily: font.sans.regular,
     fontSize: typePresets.caption.fontSize,

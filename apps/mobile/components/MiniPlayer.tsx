@@ -72,12 +72,14 @@ export function MiniPlayer() {
       >
         <Ionicons name={isPlaying ? "pause" : "play"} size={18} color={colors.greenDeep} />
       </Pressable>
-      <View
-        style={[
-          styles.progress,
-          { width: `${Math.min(1, Math.max(0, position)) * 100}%` },
-        ]}
-      />
+      <View style={styles.progressTrack} pointerEvents="none">
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${Math.min(1, Math.max(0, position)) * 100}%` },
+          ]}
+        />
+      </View>
     </Pressable>
   );
 }
@@ -113,13 +115,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  progress: {
+  progressTrack: {
     position: "absolute",
     left: 0,
+    right: 0,
     bottom: 0,
     height: 2,
-    backgroundColor: colors.goldLight,
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 2,
+    backgroundColor: colors.goldLight,
   },
 });

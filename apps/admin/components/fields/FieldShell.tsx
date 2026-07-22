@@ -1,16 +1,18 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import { radii, motion } from "@/lib/tokens";
 
 export const fieldInput: CSSProperties = {
   width: "100%",
-  border: "1.5px solid var(--line)",
-  borderRadius: 10,
-  padding: "11px 13px",
-  fontSize: 13.5,
-  background: "var(--input)",
+  border: "1px solid var(--line)",
+  borderRadius: radii.md,
+  padding: "12px 14px",
+  fontSize: 15,
+  background: "var(--field)",
   outline: "none",
   fontFamily: "inherit",
+  transition: `border-color ${motion.fast} ${motion.standard}, box-shadow ${motion.fast} ${motion.standard}`,
 };
 
 export const fieldInputError: CSSProperties = { ...fieldInput, borderColor: "#a23e3e" };
@@ -27,7 +29,7 @@ export function FieldShell({
   children: ReactNode;
 }) {
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 18 }}>
       <div style={styles.label}>{label}</div>
       {children}
       {error ? <div style={styles.error}>{error}</div> : hint ? <div style={styles.hint}>{hint}</div> : null}
@@ -36,7 +38,7 @@ export function FieldShell({
 }
 
 const styles: Record<string, CSSProperties> = {
-  label: { fontSize: 11, fontWeight: 800, letterSpacing: ".5px", color: "var(--faint)", marginBottom: 7 },
-  hint: { fontSize: 11, color: "var(--faint)", marginTop: 5 },
-  error: { fontSize: 11.5, color: "#a23e3e", marginTop: 5, fontWeight: 600 },
+  label: { fontSize: 12.5, fontWeight: 500, color: "var(--muted)", marginBottom: 8 },
+  hint: { fontSize: 12, color: "var(--faint)", marginTop: 6 },
+  error: { fontSize: 12, color: "#a23e3e", marginTop: 6, fontWeight: 500 },
 };

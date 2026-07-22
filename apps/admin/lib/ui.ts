@@ -1,21 +1,25 @@
-// Shared UI constants for the admin console. The deep green + gold are brand
-// constants (the sidebar stays green in both themes); surface colors come from
-// the CSS vars in globals.css.
+// Shared UI constants for the admin console. Brand green/gold, matching the
+// modern rebuild prototype (docs/superpowers/prototypes/admin-modern.html)
+// hex-for-hex — greenDeepest is an extra deep ramp (Login's brand panel,
+// pre-modern gradients) with no direct prototype var. Surface colors come
+// from the CSS vars in globals.css.
 
-import type { MediaType, PublishStatus } from "@althaqalayn/types";
+import type { CollectionKind, MediaType, PublishStatus } from "@althaqalayn/types";
 
 export const brand = {
-  green: "#0B4634",
-  greenMid: "#12634E",
+  green: "#0B4634", // --green
+  greenMid: "#12634E", // --green-2
   greenDeepest: "#08382A",
-  gold: "#E4C77B",
-  goldDk: "#C79A3B",
+  greenBright: "#17795E", // --green-bright
+  gold: "#E4C77B", // gold on dark / on green (--gold, dark theme)
+  goldDk: "#C79A3B", // gold on light surfaces, AA text (--gold, light theme)
+  goldWash: "#FBF1DA", // --gold-wash
 } as const;
 
 export const font = {
-  heading: "var(--font-sora)",
-  ui: "var(--font-instrument)",
-  arabic: "var(--font-amiri)",
+  heading: "var(--font-sora), system-ui, sans-serif",
+  ui: "var(--font-instrument), system-ui, sans-serif",
+  arabic: "var(--font-amiri), 'Amiri', Georgia, serif",
 } as const;
 
 // Year options for lecture/series editors: Gregorian 2026 → 1990, each labelled
@@ -44,6 +48,24 @@ const MEDIA_COLORS: Record<MediaType, { bg: string; fg: string }> = {
 
 export function mediaBadge(type: MediaType) {
   return MEDIA_COLORS[type];
+}
+
+/**
+ * The item vocabulary for a collection, driven by its kind — so a collection and
+ * its items share one consistent noun (episodes/sittings/talks/lectures) instead
+ * of the old lecture-vs-episode duality. Capitalize at call sites as needed.
+ */
+export function collectionVocab(kind: CollectionKind): { one: string; many: string } {
+  switch (kind) {
+    case "series":
+      return { one: "episode", many: "episodes" };
+    case "occasion":
+      return { one: "sitting", many: "sittings" };
+    case "topic":
+      return { one: "talk", many: "talks" };
+    default:
+      return { one: "lecture", many: "lectures" };
+  }
 }
 
 /** A cover gradient for a series/lecture tile, given its [from,to] colors. */

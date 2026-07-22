@@ -1,36 +1,29 @@
-export type View =
-  | "dashboard"
-  | "content"
-  | "media"
-  | "featured"
-  | "gallery"
-  | "transcripts"
-  | "settings";
+// Collections-first IA (see docs/superpowers/plans/2026-07-22-admin-modern-rebuild.md).
+// "collection" (singular) is the detail screen reached by clicking a card in
+// "collections" — it isn't a nav destination, so it's absent from NAV but still
+// a first-class View so Console can route to it and Sidebar can keep
+// "Collections" highlighted while a collection is open.
+export type View = "dashboard" | "collections" | "collection" | "gallery" | "settings";
 
 export interface NavItem {
   key: View;
   label: string;
   icon: string;
-  group: "MANAGE" | "SYSTEM";
+  group: "MENU" | "SYSTEM";
 }
 
 export const NAV: NavItem[] = [
-  { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "MANAGE" },
-  { key: "content", label: "Content", icon: "lectures", group: "MANAGE" },
-  { key: "media", label: "Media library", icon: "media", group: "MANAGE" },
-  { key: "featured", label: "Featured & Home", icon: "featured", group: "MANAGE" },
-  { key: "gallery", label: "Gallery & events", icon: "gallery", group: "MANAGE" },
-  { key: "transcripts", label: "Transcripts", icon: "transcripts", group: "MANAGE" },
+  { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "MENU" },
+  { key: "collections", label: "Collections", icon: "collections", group: "MENU" },
+  { key: "gallery", label: "Gallery", icon: "gallery", group: "MENU" },
   { key: "settings", label: "Settings", icon: "settings", group: "SYSTEM" },
 ];
 
-/** Topbar page title per view. */
+/** Topbar/page title per view. */
 export const VIEW_TITLES: Record<View, string> = {
   dashboard: "Dashboard",
-  content: "Content",
-  media: "Media library",
-  featured: "Featured & Home",
-  gallery: "Gallery & events",
-  transcripts: "Transcripts",
+  collections: "Collections",
+  collection: "Collection",
+  gallery: "Gallery",
   settings: "Settings",
 };
