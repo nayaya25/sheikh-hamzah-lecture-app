@@ -56,9 +56,8 @@ async function main() {
   console.log("Verification:");
   const checks = {
     "published lectures": "select count(*)::int c from lectures where status='published'",
-    series: "select count(*)::int c from series",
-    "featured series": "select count(*)::int c from series where featured",
-    "active categories": "select count(*)::int c from categories where active and not archived",
+    collections: "select count(*)::int c from collections",
+    "featured collections": "select count(*)::int c from collections where featured",
     "published albums": "select count(*)::int c from albums where published",
     "rls tables": "select count(*)::int c from pg_tables where schemaname='public' and rowsecurity",
   };

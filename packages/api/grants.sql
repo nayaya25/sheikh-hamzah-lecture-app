@@ -5,11 +5,11 @@
 grant usage on schema public to anon, authenticated;
 
 -- Public app (anon): read-only on content. RLS narrows this to published rows.
-grant select on programs, series, lectures, transcripts, categories, albums, photos
+grant select on collections, lectures, transcripts, albums, photos
   to anon, authenticated;
 
 -- Admin console (authenticated): full DML on content. RLS enforces editor/owner.
-grant insert, update, delete on programs, series, lectures, transcripts, categories, albums, photos
+grant insert, update, delete on collections, lectures, transcripts, albums, photos
   to authenticated;
 
 -- Admin roster: authenticated only (RLS restricts to owner / self).

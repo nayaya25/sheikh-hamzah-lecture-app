@@ -3,35 +3,22 @@
 // kept explicit here so the package typechecks without a running database.
 
 import type {
+  CollectionKind,
   Language,
-  LectureScope,
   MediaType,
   PublishStatus,
-  SeriesKind,
   TranscriptStatus,
   UserRole,
 } from "@althaqalayn/types";
 
-export interface ProgramRow {
+export interface CollectionRow {
   id: string;
   title_en: string;
   title_ha: string | null;
-  arabic: string | null;
-  description_en: string | null;
-  description_ha: string | null;
-}
-
-export interface SeriesRow {
-  id: string;
-  program_id: string | null;
-  title_en: string;
-  title_ha: string | null;
-  kind: SeriesKind;
-  year: string | null;
-  occasion: string | null;
+  kind: CollectionKind;
   language: Language;
-  cover_from: string;
-  cover_to: string;
+  cover_from: string | null;
+  cover_to: string | null;
   cover_arabic: string | null;
   description_en: string | null;
   description_ha: string | null;
@@ -41,22 +28,19 @@ export interface SeriesRow {
 
 export interface LectureRow {
   id: string;
+  collection_id: string;
   title_en: string;
   title_ha: string | null;
   type: MediaType;
-  scope: LectureScope;
   language: Language;
-  duration: number | null;
-  date: string;
-  year: string | null;
-  description_en: string | null;
-  description_ha: string | null;
+  group_label: string | null;
+  sort: number;
   media_url: string | null;
   body_en: string | null;
   body_ha: string | null;
-  program_id: string | null;
-  series_id: string | null;
-  episode: number | null;
+  duration: number | null;
+  date: string;
+  year: string | null;
   status: PublishStatus;
   scheduled_for: string | null;
   featured: boolean;
@@ -69,16 +53,6 @@ export interface TranscriptRow {
   status: TranscriptStatus;
   body_en: string | null;
   body_ha: string | null;
-}
-
-export interface CategoryRow {
-  id: string;
-  label: string;
-  ar: string;
-  meta: string | null;
-  active: boolean;
-  archived: boolean;
-  position: number;
 }
 
 export interface AlbumRow {

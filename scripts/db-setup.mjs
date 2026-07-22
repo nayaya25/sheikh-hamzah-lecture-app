@@ -70,9 +70,8 @@ async function main() {
     };
     console.log("Verification:");
     await q("published lectures", "select count(*)::int from lectures where status='published'");
-    await q("series", "select count(*)::int from series");
-    await q("featured series", "select count(*)::int from series where featured");
-    await q("active categories", "select count(*)::int from categories where active and not archived");
+    await q("collections", "select count(*)::int from collections");
+    await q("featured collections", "select count(*)::int from collections where featured");
     await q("published albums", "select count(*)::int from albums where published");
     await q("rls enabled tables",
       "select count(*)::int from pg_tables where schemaname='public' and rowsecurity");
