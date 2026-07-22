@@ -16,7 +16,7 @@ const KIND_LABELS: Record<CollectionKind, string> = { occasion: "Occasion", seri
 /**
  * Collection editor as a 2-step modal wizard — Details → Appearance, matching
  * the prototype's `#m-collection`. Re-houses the field logic + `upsertCollection`
- * call from CollectionForm. `collection` present ⇒ edit, absent ⇒ new.
+ * call from the legacy collection form. `collection` present ⇒ edit, absent ⇒ new.
  */
 export function CollectionModal({
   collection,

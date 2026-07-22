@@ -41,7 +41,7 @@ function nextSort(c: CollectionNode | null | undefined): number {
 /**
  * Lecture editor re-housed as a 4-step modal wizard — Details / Media /
  * Transcript / Publish, matching the prototype's `#m-lecture` modal. Carries the
- * same field/validation/save logic as {@link LectureForm} (bilingual title,
+ * same field/validation/save logic as the legacy lecture form (bilingual title,
  * group/year/sort, media upload via {@link MediaZone}, publish control) plus an
  * inline transcript step that persists through `admin.upsertTranscript`.
  *

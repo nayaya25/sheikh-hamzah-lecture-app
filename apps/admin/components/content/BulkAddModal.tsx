@@ -46,8 +46,8 @@ function titleFromFilename(name: string): string {
 const emptyRow = (key: number, sort: number): Row => ({ key, titleEn: "", titleHa: "", sort, mediaUrl: "" });
 
 /**
- * Bulk-add episodes as a modal — re-houses the pooled multi-file workflow from
- * BatchEpisodesForm (the Milal 200-episode flow) into the prototype's `#m-bulk`
+ * Bulk-add episodes as a modal — re-houses the pooled multi-file workflow of the
+ * legacy batch-episodes form (the Milal 200-episode flow) into the prototype's `#m-bulk`
  * shell. Pooled upload cap 3, pooled save cap 6, busy gating, and sort
  * continuation from the collection's current max are preserved intact.
  */
