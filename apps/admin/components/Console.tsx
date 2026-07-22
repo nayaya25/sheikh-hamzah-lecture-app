@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
-import { Categories } from "@/components/views/Categories";
 import { ContentWorkspace } from "@/components/content/ContentWorkspace";
 import { Dashboard } from "@/components/views/Dashboard";
 import { Featured } from "@/components/views/Featured";
@@ -31,8 +30,6 @@ export function Console() {
             <Dashboard onNavigate={setView} />
           ) : view === "content" ? (
             <ContentWorkspace />
-          ) : view === "categories" ? (
-            <Categories query={query} />
           ) : view === "featured" ? (
             <Featured />
           ) : view === "gallery" ? (

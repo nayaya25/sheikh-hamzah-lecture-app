@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { admin, mapSeries, unwrap, type SeriesRow } from "@althaqalayn/api";
-import type { Lecture, Series } from "@althaqalayn/types";
+import { admin } from "@althaqalayn/api";
+import type { Collection, Lecture } from "@althaqalayn/types";
 import { getClient } from "@/lib/supabase";
 import { brand, coverGradient, font, statusPill } from "@/lib/ui";
 import type { View } from "@/lib/views";
@@ -11,37 +11,33 @@ const pick = (t: { en: string; ha?: string }) => t.en;
 
 export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
-  const [series, setSeries] = useState<Series[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const client = getClient();
     void (async () => {
       try {
-        const [lecs, sers] = await Promise.all([
+        const [lecs, cols] = await Promise.all([
           admin.listAllLectures(client),
-          client
-            .from("series")
-            .select("*")
-            .order("position")
-            .then((r) => unwrap<SeriesRow[]>(r).map((row) => mapSeries(row))),
+          admin.listAllCollections(client),
         ]);
         setLectures(lecs);
-        setSeries(sers);
+        setCollections(cols);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load");
       }
     })();
   }, []);
 
-  const seriesById = new Map(series.map((s) => [s.id, s]));
+  const collectionsById = new Map(collections.map((c) => [c.id, c]));
   const all = lectures ?? [];
   const published = all.filter((l) => l.status === "published");
   const scheduled = all.filter((l) => l.status === "scheduled");
 
   const stats = [
     { label: "Total lectures", value: all.length, dot: brand.greenMid, delta: `${published.length} published` },
-    { label: "Programs & series", value: series.length, dot: "#2c7396", delta: "Across the archive" },
+    { label: "Collections", value: collections.length, dot: "#2c7396", delta: "Across the archive" },
     { label: "Published", value: published.length, dot: "#12634E", delta: "Live in the app" },
     { label: "Scheduled", value: scheduled.length, dot: "#9a7420", delta: "Auto-publishing" },
   ];
@@ -79,14 +75,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
               <div style={styles.emptyRow}>No lectures yet — create one to get started.</div>
             ) : (
               recent.map((l) => {
-                const s = l.seriesId ? seriesById.get(l.seriesId) : undefined;
+                const c = collectionsById.get(l.collectionId);
                 const pill = statusPill(l.status);
                 return (
                   <div key={l.id} style={styles.recentRow}>
-                    <div style={{ ...styles.thumb, background: coverGradient(s?.cover.gradient[0], s?.cover.gradient[1]) }} />
+                    <div style={{ ...styles.thumb, background: coverGradient(c?.cover.gradient[0], c?.cover.gradient[1]) }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={styles.recentTitle}>{pick(l.title)}</div>
-                      <div style={styles.recentSub}>{s ? pick(s.title) : (l.year ?? "Standalone")}</div>
+                      <div style={styles.recentSub}>{c ? pick(c.title) : (l.year ?? "—")}</div>
                     </div>
                     <span style={{ ...styles.pill, background: pill.bg, color: pill.fg }}>{pill.label}</span>
                   </div>

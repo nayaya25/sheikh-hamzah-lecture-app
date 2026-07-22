@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { admin, mapSeries, unwrap, type SeriesRow } from "@althaqalayn/api";
-import type { Lecture, Series } from "@althaqalayn/types";
+import { admin } from "@althaqalayn/api";
+import type { Collection, Lecture } from "@althaqalayn/types";
 import { SelectField } from "@/components/fields";
 import { ActionMenu } from "@/components/ActionMenu";
 import { getClient } from "@/lib/supabase";
@@ -11,36 +11,30 @@ import { brand, coverGradient, font } from "@/lib/ui";
 const pick = (t?: { en: string; ha?: string }) => t?.en ?? "";
 
 /**
- * Curation for the app's Home screen: pick which lectures/series surface as
- * "featured", no free text. Persistence is unchanged — this still just flips
- * the existing `featured` boolean via `admin.upsertLecture`/`upsertSeries`.
+ * Curation for the app's Home screen: pick which lectures/collections surface
+ * as "featured", no free text. Persistence is unchanged — this still just
+ * flips the existing `featured` boolean via
+ * `admin.upsertLecture`/`admin.upsertCollection`.
  *
- * Series additionally support reordering because the `series` table has a
- * `position` column (`admin.setSeriesPositions`). Lectures have no equivalent
- * home-order column, so featured lectures are shown newest-first (the same
- * date order `admin.listAllLectures` already returns) and are NOT
+ * Collections additionally support reordering because the `collections` table
+ * has a `position` column (`admin.setCollectionPositions`). Lectures have no
+ * equivalent home-order column, so featured lectures are shown newest-first
+ * (the same date order `admin.listAllLectures` already returns) and are NOT
  * reorderable — don't add drag/up-down controls for them.
  */
 export function Featured() {
-  const [series, setSeries] = useState<Series[] | null>(null);
+  const [collections, setCollections] = useState<Collection[] | null>(null);
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [addSeriesId, setAddSeriesId] = useState("");
+  const [addCollectionId, setAddCollectionId] = useState("");
   const [addLectureId, setAddLectureId] = useState("");
 
   const load = useCallback(async () => {
     try {
       const client = getClient();
-      const [seriesRows, lecs] = await Promise.all([
-        client
-          .from("series")
-          .select("*")
-          .order("position")
-          .then((r) => unwrap<SeriesRow[]>(r).map((row) => mapSeries(row))),
-        admin.listAllLectures(client),
-      ]);
-      setSeries(seriesRows);
+      const [cols, lecs] = await Promise.all([admin.listAllCollections(client), admin.listAllLectures(client)]);
+      setCollections(cols);
       setLectures(lecs);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
@@ -51,19 +45,18 @@ export function Featured() {
     void load();
   }, [load]);
 
-  const featuredSeries = useMemo(() => (series ?? []).filter((s) => s.featured), [series]);
-  const availableSeries = useMemo(() => (series ?? []).filter((s) => !s.featured), [series]);
+  const featuredCollections = useMemo(() => (collections ?? []).filter((c) => c.featured), [collections]);
+  const availableCollections = useMemo(() => (collections ?? []).filter((c) => !c.featured), [collections]);
   // No home-order column for lectures — order follows the date sort already
   // applied by admin.listAllLectures (newest first).
   const featuredLectures = useMemo(() => (lectures ?? []).filter((l) => l.featured), [lectures]);
   const availableLectures = useMemo(() => (lectures ?? []).filter((l) => !l.featured), [lectures]);
 
-  const setSeriesFeatured = async (s: Series, featured: boolean) => {
-    const { id, lectureIds, ...rest } = s;
-    void lectureIds;
+  const setCollectionFeatured = async (c: Collection, featured: boolean) => {
+    const { id, ...rest } = c;
     setBusy(true);
     try {
-      await admin.upsertSeries(getClient(), { ...rest, featured }, id);
+      await admin.upsertCollection(getClient(), { ...rest, featured }, id);
       await load();
     } finally {
       setBusy(false);
@@ -81,32 +74,32 @@ export function Featured() {
     }
   };
 
-  /** Swap two featured series' `position` values; visible order = position order. */
-  const moveFeaturedSeries = async (s: Series, dir: -1 | 1) => {
-    if (!series) return;
-    const featuredIds = series.filter((x) => x.featured).map((x) => x.id);
-    const i = featuredIds.indexOf(s.id);
+  /** Swap two featured collections' `position` values; visible order = position order. */
+  const moveFeaturedCollection = async (c: Collection, dir: -1 | 1) => {
+    if (!collections) return;
+    const featuredIds = collections.filter((x) => x.featured).map((x) => x.id);
+    const i = featuredIds.indexOf(c.id);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= featuredIds.length) return;
     const otherId = featuredIds[j];
-    const fullIds = series.map((x) => x.id);
-    const ia = fullIds.indexOf(s.id);
+    const fullIds = collections.map((x) => x.id);
+    const ia = fullIds.indexOf(c.id);
     const ib = fullIds.indexOf(otherId);
     [fullIds[ia], fullIds[ib]] = [fullIds[ib], fullIds[ia]];
     setBusy(true);
     try {
-      await admin.setSeriesPositions(getClient(), fullIds);
+      await admin.setCollectionPositions(getClient(), fullIds);
       await load();
     } finally {
       setBusy(false);
     }
   };
 
-  const addSeries = async () => {
-    const s = availableSeries.find((x) => x.id === addSeriesId);
-    if (!s) return;
-    await setSeriesFeatured(s, true);
-    setAddSeriesId("");
+  const addCollection = async () => {
+    const c = availableCollections.find((x) => x.id === addCollectionId);
+    if (!c) return;
+    await setCollectionFeatured(c, true);
+    setAddCollectionId("");
   };
 
   const addLecture = async () => {
@@ -117,7 +110,7 @@ export function Featured() {
   };
 
   if (error) return <div style={{ color: "var(--muted)" }}>Couldn’t load: {error}</div>;
-  if (!series || !lectures) return <div style={{ color: "var(--muted)" }}>Loading…</div>;
+  if (!collections || !lectures) return <div style={{ color: "var(--muted)" }}>Loading…</div>;
 
   return (
     <div style={{ display: "grid", gap: 30 }}>
@@ -163,25 +156,22 @@ export function Featured() {
       </section>
 
       <section>
-        <div style={styles.h2}>Featured series</div>
-        <div style={styles.sub}>Series picked here appear in the app’s Home “Featured series” rail, in this order.</div>
+        <div style={styles.h2}>Featured collections</div>
+        <div style={styles.sub}>Collections picked here appear in the app’s Home “Featured” rail, in this order.</div>
         <div style={styles.card}>
-          {featuredSeries.map((s, i) => (
-            <div key={s.id} style={styles.row}>
-              <div style={{ ...styles.cover, background: coverGradient(s.cover.gradient[0], s.cover.gradient[1]) }}>
-                <span style={styles.motif}>{s.cover.arabic}</span>
+          {featuredCollections.map((c, i) => (
+            <div key={c.id} style={styles.row}>
+              <div style={{ ...styles.cover, background: coverGradient(c.cover.gradient[0], c.cover.gradient[1]) }}>
+                <span style={styles.motif}>{c.cover.arabic}</span>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={styles.title}>{pick(s.title)}</div>
-                <div style={styles.meta}>
-                  {s.occasion ?? s.kind.toUpperCase()}
-                  {s.year ? ` · ${s.year}` : ""}
-                </div>
+                <div style={styles.title}>{pick(c.title)}</div>
+                <div style={styles.meta}>{c.kind.toUpperCase()}</div>
               </div>
               <div style={styles.reorder}>
                 <button
                   type="button"
-                  onClick={() => void moveFeaturedSeries(s, -1)}
+                  onClick={() => void moveFeaturedCollection(c, -1)}
                   disabled={i === 0 || busy}
                   style={styles.reorderBtn}
                   aria-label="Move up"
@@ -190,8 +180,8 @@ export function Featured() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void moveFeaturedSeries(s, 1)}
-                  disabled={i === featuredSeries.length - 1 || busy}
+                  onClick={() => void moveFeaturedCollection(c, 1)}
+                  disabled={i === featuredCollections.length - 1 || busy}
                   style={styles.reorderBtn}
                   aria-label="Move down"
                 >
@@ -199,26 +189,26 @@ export function Featured() {
                 </button>
               </div>
               <ActionMenu
-                items={[{ label: "Remove from Featured", onSelect: () => void setSeriesFeatured(s, false), danger: true }]}
+                items={[{ label: "Remove from Featured", onSelect: () => void setCollectionFeatured(c, false), danger: true }]}
               />
             </div>
           ))}
-          {featuredSeries.length === 0 ? <div style={styles.empty}>No featured series yet.</div> : null}
+          {featuredCollections.length === 0 ? <div style={styles.empty}>No featured collections yet.</div> : null}
         </div>
-        {availableSeries.length > 0 ? (
+        {availableCollections.length > 0 ? (
           <div style={styles.addRow}>
             <div style={{ flex: 1 }}>
               <SelectField
-                label="Add a series"
-                value={addSeriesId}
-                onChange={setAddSeriesId}
+                label="Add a collection"
+                value={addCollectionId}
+                onChange={setAddCollectionId}
                 options={[
-                  { value: "", label: "— Select a series —" },
-                  ...availableSeries.map((s) => ({ value: s.id, label: pick(s.title) })),
+                  { value: "", label: "— Select a collection —" },
+                  ...availableCollections.map((c) => ({ value: c.id, label: pick(c.title) })),
                 ]}
               />
             </div>
-            <button type="button" disabled={!addSeriesId || busy} onClick={() => void addSeries()} style={styles.addBtn}>
+            <button type="button" disabled={!addCollectionId || busy} onClick={() => void addCollection()} style={styles.addBtn}>
               Add
             </button>
           </div>

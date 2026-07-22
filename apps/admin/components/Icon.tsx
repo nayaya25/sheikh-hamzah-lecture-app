@@ -12,14 +12,6 @@ const PATHS: Record<string, ReactNode> = {
   ),
   lectures: <path d="M4 5h16M4 12h16M4 19h10" />,
   series: <path d="M4 5h5v14H4zM11 5h4v14h-4zM17 6l3.2.8-3 12.4-3.2-.8z" />,
-  categories: (
-    <>
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-    </>
-  ),
   media: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />

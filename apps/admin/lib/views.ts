@@ -1,7 +1,6 @@
 export type View =
   | "dashboard"
   | "content"
-  | "categories"
   | "media"
   | "featured"
   | "gallery"
@@ -18,7 +17,6 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard", group: "MANAGE" },
   { key: "content", label: "Content", icon: "lectures", group: "MANAGE" },
-  { key: "categories", label: "Categories", icon: "categories", group: "MANAGE" },
   { key: "media", label: "Media library", icon: "media", group: "MANAGE" },
   { key: "featured", label: "Featured & Home", icon: "featured", group: "MANAGE" },
   { key: "gallery", label: "Gallery & events", icon: "gallery", group: "MANAGE" },
@@ -30,7 +28,6 @@ export const NAV: NavItem[] = [
 export const VIEW_TITLES: Record<View, string> = {
   dashboard: "Dashboard",
   content: "Content",
-  categories: "Categories",
   media: "Media library",
   featured: "Featured & Home",
   gallery: "Gallery & events",
