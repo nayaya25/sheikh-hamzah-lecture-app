@@ -129,11 +129,26 @@ textarea::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
-/* Visible keyboard focus on every interactive element */
+/* Visible keyboard focus on interactive elements (gold ring) */
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: var(--r-xs);
+}
+
+/* Form controls get a calmer green focus ring (higher specificity wins over the
+   gold :focus-visible above), applied app-wide so no field needs per-input JS. */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--green-bright);
+  box-shadow: 0 0 0 3px rgba(23, 121, 94, 0.14);
+}
+:root.dark input:focus,
+:root.dark textarea:focus,
+:root.dark select:focus {
+  box-shadow: 0 0 0 3px rgba(23, 121, 94, 0.28);
 }
 
 /* Hide scrollbars on designated scroll areas */
