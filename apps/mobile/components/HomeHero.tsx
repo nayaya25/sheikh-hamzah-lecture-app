@@ -28,7 +28,7 @@ export interface HomeHeroProps {
 }
 
 /**
- * Green gradient home header: greeting + "Powered by Althaqalayn Foundation",
+ * Green gradient home header: greeting + "Powered by Althaqalayn Cultural Foundation",
  * a soft gold crescent, a subtle dotted pattern, a mosque silhouette along the
  * base, and the صدقة جارية verse. All decoration is drawn with RN primitives
  * (gradient + Views) so it themes to the brand greens without extra deps.

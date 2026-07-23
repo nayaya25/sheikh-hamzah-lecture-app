@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, typePresets } from "@althaqalayn/theme";
+import { useAddToPlaylist } from "@/components/AddToPlaylistSheet";
 import { DownloadButton } from "@/components/DownloadButton";
 import { EqBars } from "@/components/EqBars";
 import { MediaBadge } from "@/components/MediaBadge";
@@ -29,6 +30,7 @@ export default function CollectionDetailScreen() {
   const { current, isPlaying, progressFor, playCollection } = usePlayer();
   const { download } = useDownloads();
   const { collectionById, lecturesForCollection } = useCatalog();
+  const { open: openAddToPlaylist } = useAddToPlaylist();
 
   const collection = collectionById(id);
 
@@ -115,7 +117,7 @@ export default function CollectionDetailScreen() {
           isCurrent ? { backgroundColor: t.scheme === "dark" ? "rgba(199,154,59,0.14)" : "rgba(199,154,59,0.1)" } : null,
         ]}
       >
-        <Touchable onPress={() => openLectureAt(i)} style={styles.lectureMain}>
+        <Touchable onPress={() => openLectureAt(i)} onLongPress={() => openAddToPlaylist(l.id)} style={styles.lectureMain}>
           <View
             style={[
               styles.numChip,

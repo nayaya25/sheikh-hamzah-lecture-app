@@ -28,8 +28,8 @@ export default function DownloadsScreen() {
   const router = useRouter();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
-  const { play } = usePlayer();
-  const { lectureById } = useCatalog();
+  const { play, playCollection } = usePlayer();
+  const { lectureById, lecturesForCollection } = useCatalog();
   const { state, clearAll } = useDownloads();
 
   // Active (queued/downloading) entries, resolved against the catalog for a
@@ -59,7 +59,8 @@ export default function DownloadsScreen() {
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + MINI_PLAYER_GAP + MINI_PLAYER_HEIGHT + t.space.lg;
   const statusBarStyle = t.scheme === "dark" ? "light" : "dark";
 
-  const openDownload = (lecture: Playable) => openLecture(router, play, lecture);
+  const openDownload = (lecture: Playable) =>
+    openLecture(router, lecture, { play, playCollection, lecturesForCollection });
 
   const onClearAll = () => {
     Alert.alert(

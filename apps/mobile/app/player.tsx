@@ -11,8 +11,10 @@ import { AppText } from "@/components/ui/AppText";
 import { CoverArt } from "@/components/ui/CoverArt";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
+import { useAddToPlaylist } from "@/components/AddToPlaylistSheet";
 import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
+import { QueueSheet } from "@/components/player/QueueSheet";
 import { Scrubber } from "@/components/player/Scrubber";
 import { ValueSheet } from "@/components/player/ValueSheet";
 import { useBookmarks } from "@/lib/bookmarks";
@@ -35,14 +37,23 @@ export default function PlayerScreen() {
     current,
     isPlaying,
     position,
+    elapsedSec,
+    durationSec,
     speed,
     sleep,
     sleepRemainingSec,
     buffering,
+    repeat,
+    queue,
+    queueIndex,
     hasNext,
     hasPrev,
     togglePlay,
     seekTo,
+    seekBySeconds,
+    cycleRepeat,
+    playAt,
+    moveQueueItem,
     next,
     prev,
     cycleSpeed,
@@ -53,7 +64,9 @@ export default function PlayerScreen() {
 
   const speedSheetRef = useRef<BottomSheetModal>(null);
   const sleepSheetRef = useRef<BottomSheetModal>(null);
+  const queueSheetRef = useRef<BottomSheetModal>(null);
   const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
+  const { open: openAddToPlaylist } = useAddToPlaylist();
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
   if (!current) {
@@ -64,17 +77,13 @@ export default function PlayerScreen() {
   const bookmarked = isBookmarked(current.id);
 
   const gradient = gradientForLecture(current);
-  const durSec = current.durSec;
-
-  // Seek by an absolute number of seconds (negative = rewind). seekTo takes a
-  // 0–1 fraction and clamps it, so [0, duration] is enforced for free.
-  const seekBySeconds = (sec: number) => {
-    if (!durSec) return;
-    seekTo(position + sec / durSec);
-  };
 
   const onShare = () => {
-    void Share.share({ message: current.title });
+    const collection = current.collectionTitle ?? current.sub;
+    const message = collection
+      ? `${current.title} — ${collection} · Althaqalayn Lectures`
+      : `${current.title} · Althaqalayn Lectures`;
+    void Share.share({ message });
   };
 
   return (
@@ -109,13 +118,22 @@ export default function PlayerScreen() {
               {current.collectionTitle}
             </AppText>
           </View>
-          <Touchable
-            onPress={onShare}
-            accessibilityLabel={msgs.player.share}
-            style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
-          >
-            <Icon name="share-2" size={18} color="onBrand" />
-          </Touchable>
+          <View style={styles.topBarRight}>
+            <Touchable
+              onPress={() => openAddToPlaylist(current.id)}
+              accessibilityLabel={msgs.playlists.addToPlaylist}
+              style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+            >
+              <Icon name="list" size={18} color="onBrand" />
+            </Touchable>
+            <Touchable
+              onPress={onShare}
+              accessibilityLabel={msgs.player.share}
+              style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+            >
+              <Icon name="share-2" size={18} color="onBrand" />
+            </Touchable>
+          </View>
         </View>
 
         {/* Artwork */}
@@ -136,13 +154,13 @@ export default function PlayerScreen() {
 
         {/* Scrubber */}
         <View style={styles.scrubBlock}>
-          <Scrubber position={position} durationSec={durSec} onSeek={seekTo} />
+          <Scrubber position={position} durationSec={durationSec} onSeek={seekTo} />
           <View style={styles.timeRow}>
             <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
-              {formatTime(position * durSec)}
+              {formatTime(elapsedSec)}
             </AppText>
             <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
-              {formatTime(durSec)}
+              {formatTime(durationSec)}
             </AppText>
           </View>
         </View>
@@ -179,6 +197,40 @@ export default function PlayerScreen() {
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-forward" size={26} color={hasNext ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
+          </Touchable>
+        </View>
+
+        {/* Repeat + Up Next */}
+        <View style={styles.extraRow}>
+          <Touchable
+            onPress={cycleRepeat}
+            haptic="light"
+            accessibilityLabel={msgs.player.repeatA11y}
+            accessibilityState={{ selected: repeat !== "off" }}
+            style={styles.extraBtn}
+          >
+            <MaterialCommunityIcons
+              name={repeat === "one" ? "repeat-once" : repeat === "all" ? "repeat" : "repeat-off"}
+              size={22}
+              color={repeat === "off" ? "rgba(255,255,255,0.55)" : colors.goldLight}
+            />
+            <AppText
+              color={repeat === "off" ? "rgba(255,255,255,0.6)" : "accentText"}
+              style={styles.extraLabel}
+            >
+              {msgs.player.repeat}
+            </AppText>
+          </Touchable>
+          <Touchable
+            onPress={() => queueSheetRef.current?.present()}
+            haptic="light"
+            accessibilityLabel={msgs.player.queueA11y}
+            style={[styles.extraBtn, { justifyContent: "flex-end" }]}
+          >
+            <Ionicons name="list" size={22} color="rgba(255,255,255,0.85)" />
+            <AppText color="rgba(255,255,255,0.6)" style={styles.extraLabel}>
+              {msgs.player.upNext}
+            </AppText>
           </Touchable>
         </View>
 
@@ -254,6 +306,19 @@ export default function PlayerScreen() {
           sleepSheetRef.current?.dismiss();
         }}
       />
+      <QueueSheet
+        ref={queueSheetRef}
+        title={msgs.player.upNext}
+        queue={queue}
+        currentIndex={queueIndex}
+        moveUpLabel={msgs.player.moveUpA11y}
+        moveDownLabel={msgs.player.moveDownA11y}
+        onJump={(i) => {
+          playAt(i);
+          queueSheetRef.current?.dismiss();
+        }}
+        onMove={moveQueueItem}
+      />
     </View>
   );
 }
@@ -262,6 +327,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.greenDeepest },
   scroll: { paddingHorizontal: 22 },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   roundBtn: {
     width: 40,
     height: 40,
@@ -317,6 +383,20 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
+  },
+
+  extraRow: {
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  extraBtn: { flexDirection: "row", alignItems: "center", gap: 7, minWidth: 96 },
+  extraLabel: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.caption.fontSize,
+    lineHeight: typePresets.caption.lineHeight,
   },
 
   secondary: {

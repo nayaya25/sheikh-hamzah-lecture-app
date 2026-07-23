@@ -36,8 +36,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
-  const { play, progressFor } = usePlayer();
-  const { loading, error, refetch, latestLectures, featuredLectures, lectureById } = useCatalog();
+  const { play, playCollection, progressFor, current: playing, position, durationSec } = usePlayer();
+  const { loading, error, refetch, latestLectures, featuredLectures, lectureById, lecturesForCollection } = useCatalog();
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
@@ -66,8 +66,17 @@ export default function HomeScreen() {
   );
 
   const contLecture = contId ? lectureById(contId) : undefined;
-  const contProgress = contLecture ? progressFor(contLecture.id) : 0;
-  const contMinLeft = contLecture ? Math.round((contLecture.durSec * (1 - contProgress)) / 60) : 0;
+  // When the continue card's lecture is the track currently loaded in the
+  // player, reflect LIVE progress + remaining time; otherwise use the saved
+  // resume fraction and metadata duration.
+  const contIsLive = Boolean(contLecture && playing?.id === contLecture.id);
+  const contProgress = contLecture
+    ? contIsLive
+      ? position
+      : progressFor(contLecture.id)
+    : 0;
+  const contDurSec = contIsLive && durationSec > 0 ? durationSec : contLecture?.durSec ?? 0;
+  const contMinLeft = contLecture ? Math.max(0, Math.round((contDurSec * (1 - contProgress)) / 60)) : 0;
 
   // The featured "lecture of the day": first featured lecture, else the most recent.
   const spotlight = featuredLectures[0] ?? latestLectures[0];
@@ -75,13 +84,14 @@ export default function HomeScreen() {
   const open = (id?: string) => {
     if (!id) return;
     const lecture = lectureById(id);
-    if (lecture) openLecture(router, play, lecture);
+    if (lecture) openLecture(router, lecture, { play, playCollection, lecturesForCollection });
   };
 
   const browseTiles: BrowseTile[] = [
     { key: "occasion", label: msgs.library.occasions, icon: KIND_ICON.occasion, onPress: () => router.push("/library?segment=occasion") },
     { key: "series", label: msgs.library.series, icon: KIND_ICON.series, onPress: () => router.push("/library?segment=series") },
     { key: "topic", label: msgs.library.topics, icon: KIND_ICON.topic, onPress: () => router.push("/library?segment=topic") },
+    { key: "playlists", label: msgs.playlists.title, icon: "list", onPress: () => router.push("/playlists") },
     { key: "gallery", label: msgs.gallery.title, icon: "image", onPress: () => router.push("/gallery") },
   ];
 
@@ -102,7 +112,7 @@ export default function HomeScreen() {
           greeting={arabic.greeting}
           title={msgs.home.greetingTitle}
           poweredByLabel="Powered by"
-          foundationName="Althaqalayn Foundation"
+          foundationName="Althaqalayn Cultural Foundation"
           verseArabic={VERSE_ARABIC}
           verseTranslation={VERSE_TRANSLATION}
           topInset={insets.top}

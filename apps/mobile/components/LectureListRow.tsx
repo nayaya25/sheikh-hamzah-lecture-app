@@ -1,5 +1,7 @@
+import { useContext } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { AddToPlaylistContext } from "@/components/AddToPlaylistSheet";
 import { GradientCover } from "@/components/GradientCover";
 import { MediaBadge } from "@/components/MediaBadge";
 import { useBookmarks } from "@/lib/bookmarks";
@@ -26,8 +28,15 @@ export function LectureListRow({
   const t = useTheme();
   const { isBookmarked, toggle } = useBookmarks();
   const bookmarked = isBookmarked(lecture.id);
+  // Long-press → "Add to playlist" (global sheet). Optional: rows can render
+  // outside the provider (e.g. tests), in which case long-press is a no-op.
+  const addToPlaylist = useContext(AddToPlaylistContext);
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable
+      style={styles.row}
+      onPress={onPress}
+      onLongPress={addToPlaylist ? () => addToPlaylist.open(lecture.id) : undefined}
+    >
       <GradientCover
         gradient={gradientForLecture(lecture)}
         style={[styles.cover, { width: coverSize, height: coverSize }]}

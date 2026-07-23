@@ -33,8 +33,8 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ q?: string }>();
   const t = useTheme();
   const { t: msgs } = useI18n();
-  const { play } = usePlayer();
-  const { lectures, collections } = useCatalog();
+  const { play, playCollection } = usePlayer();
+  const { lectures, collections, lecturesForCollection } = useCatalog();
 
   const [query, setQuery] = useState(params.q ?? "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -88,7 +88,7 @@ export default function SearchScreen() {
     const lecture = lectures.find((l) => l.id === id);
     if (!lecture) return;
     if (query.trim()) saveRecent(query.trim());
-    openLecture(router, play, lecture);
+    openLecture(router, lecture, { play, playCollection, lecturesForCollection });
   };
 
   const openCollectionResult = (id: string) => {
