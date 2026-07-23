@@ -1,11 +1,6 @@
-import { forwardRef, useCallback } from "react";
+import { forwardRef } from "react";
 import { StyleSheet, View } from "react-native";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import { BottomPanel, type BottomPanelHandle } from "@/components/ui/BottomPanel";
 import { AppText } from "@/components/ui/AppText";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
@@ -24,32 +19,19 @@ export interface ValueSheetProps {
 }
 
 /**
- * A titled list of selectable numeric values presented as a
- * `BottomSheetModal`. The ref is forwarded straight onto the underlying
- * modal, so callers drive it with the library's own `present()`/`dismiss()`.
+ * A titled list of selectable numeric values presented as a {@link BottomPanel}.
+ * The ref is forwarded straight onto the panel, so callers drive it with
+ * `present()`/`dismiss()` exactly as before.
  */
-export const ValueSheet = forwardRef<BottomSheetModal, ValueSheetProps>(function ValueSheet(
+export const ValueSheet = forwardRef<BottomPanelHandle, ValueSheetProps>(function ValueSheet(
   { title, options, selected, onSelect },
   ref,
 ) {
   const t = useTheme();
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
-    ),
-    [],
-  );
-
   return (
-    <BottomSheetModal
-      ref={ref}
-      enableDynamicSizing
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: t.c.surface }}
-      handleIndicatorStyle={{ backgroundColor: t.c.border }}
-    >
-      <BottomSheetView style={[styles.content, { paddingBottom: t.space.xl }]}>
+    <BottomPanel ref={ref}>
+      <View style={[styles.content, { paddingBottom: t.space.xl }]}>
         <AppText variant="section" style={styles.title}>
           {title}
         </AppText>
@@ -72,8 +54,8 @@ export const ValueSheet = forwardRef<BottomSheetModal, ValueSheetProps>(function
             </Touchable>
           );
         })}
-      </BottomSheetView>
-    </BottomSheetModal>
+      </View>
+    </BottomPanel>
   );
 });
 

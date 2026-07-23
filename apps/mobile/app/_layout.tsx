@@ -5,6 +5,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { AddToPlaylistProvider } from "@/components/AddToPlaylistSheet";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MiniPlayer } from "@/components/MiniPlayer";
 import { SplashOverlay } from "@/components/SplashOverlay";
 import { BookmarksProvider } from "@/lib/bookmarks";
@@ -50,9 +51,10 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <BottomSheetModalProvider>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <BottomSheetModalProvider>
           <ThemeProvider>
             <I18nProvider>
               <DownloadsProvider>
@@ -74,8 +76,9 @@ export default function RootLayout() {
               </DownloadsProvider>
             </I18nProvider>
           </ThemeProvider>
-        </BottomSheetModalProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+          </BottomSheetModalProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

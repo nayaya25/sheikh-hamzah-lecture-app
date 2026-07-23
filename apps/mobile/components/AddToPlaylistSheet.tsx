@@ -8,14 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { StyleSheet, View } from "react-native";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetTextInput,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import { StyleSheet, TextInput, View } from "react-native";
+import { BottomPanel, type BottomPanelHandle } from "@/components/ui/BottomPanel";
 import { AppText } from "@/components/ui/AppText";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
@@ -34,10 +28,10 @@ export const AddToPlaylistContext = createContext<AddToPlaylistValue | null>(nul
  * Mounts a single global "Add to playlist" bottom sheet and exposes an
  * imperative `open(lectureId)` via `useAddToPlaylist()`, so the widely-reused
  * lecture rows and the player can open it without each owning a sheet. Follows
- * the `ValueSheet`/`QueueSheet` bottom-sheet pattern.
+ * the `ValueSheet`/`QueueSheet` bottom-panel pattern.
  */
 export function AddToPlaylistProvider({ children }: { children: ReactNode }) {
-  const sheetRef = useRef<BottomSheetModal>(null);
+  const sheetRef = useRef<BottomPanelHandle>(null);
   const [lectureId, setLectureId] = useState<string | null>(null);
 
   const open = useCallback((id: string) => {
@@ -61,20 +55,13 @@ export function useAddToPlaylist(): AddToPlaylistValue {
   return ctx;
 }
 
-const AddToPlaylistSheet = forwardRef<BottomSheetModal, { lectureId: string | null }>(
+const AddToPlaylistSheet = forwardRef<BottomPanelHandle, { lectureId: string | null }>(
   function AddToPlaylistSheet({ lectureId }, ref) {
   const t = useTheme();
   const { t: msgs } = useI18n();
   const { playlists, isInPlaylist, addToPlaylist, removeFromPlaylist, createPlaylist } = usePlaylists();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
-    ),
-    [],
-  );
 
   const toggle = (playlistId: string) => {
     if (!lectureId) return;
@@ -92,19 +79,14 @@ const AddToPlaylistSheet = forwardRef<BottomSheetModal, { lectureId: string | nu
   };
 
   return (
-    <BottomSheetModal
+    <BottomPanel
       ref={ref}
-      enableDynamicSizing
-      maxDynamicContentSize={520}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: t.c.surface }}
-      handleIndicatorStyle={{ backgroundColor: t.c.border }}
       onDismiss={() => {
         setCreating(false);
         setName("");
       }}
     >
-      <BottomSheetView style={[styles.content, { paddingBottom: t.space.xl }]}>
+      <View style={[styles.content, { paddingBottom: t.space.xl }]}>
         <AppText variant="section" style={styles.title}>
           {msgs.playlists.addToPlaylist}
         </AppText>
@@ -146,7 +128,7 @@ const AddToPlaylistSheet = forwardRef<BottomSheetModal, { lectureId: string | nu
 
         {creating ? (
           <View style={styles.createRow}>
-            <BottomSheetTextInput
+            <TextInput
               value={name}
               onChangeText={setName}
               placeholder={msgs.playlists.namePlaceholder}
@@ -184,8 +166,8 @@ const AddToPlaylistSheet = forwardRef<BottomSheetModal, { lectureId: string | nu
             </AppText>
           </Touchable>
         )}
-      </BottomSheetView>
-    </BottomSheetModal>
+      </View>
+    </BottomPanel>
   );
 });
 

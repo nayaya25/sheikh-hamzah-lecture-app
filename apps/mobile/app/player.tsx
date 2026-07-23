@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import type { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -11,6 +10,7 @@ import { AppText } from "@/components/ui/AppText";
 import { CoverArt } from "@/components/ui/CoverArt";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
+import type { BottomPanelHandle } from "@/components/ui/BottomPanel";
 import { useAddToPlaylist } from "@/components/AddToPlaylistSheet";
 import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
@@ -62,9 +62,9 @@ export default function PlayerScreen() {
     setSleepMinutes,
   } = usePlayer();
 
-  const speedSheetRef = useRef<BottomSheetModal>(null);
-  const sleepSheetRef = useRef<BottomSheetModal>(null);
-  const queueSheetRef = useRef<BottomSheetModal>(null);
+  const speedSheetRef = useRef<BottomPanelHandle>(null);
+  const sleepSheetRef = useRef<BottomPanelHandle>(null);
+  const queueSheetRef = useRef<BottomPanelHandle>(null);
   const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
   const { open: openAddToPlaylist } = useAddToPlaylist();
 
