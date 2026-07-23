@@ -148,6 +148,9 @@ export const ha: Messages = {
     shareApp: "Raba manhaja",
     contact: "Tuntuɓe mu",
     version: "Siga",
+    developer: "Developer",
+    emailDeveloper: "Imel",
+    callDeveloper: "Kira",
   },
   appearance: {
     title: "Shigar wayar",

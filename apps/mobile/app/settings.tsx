@@ -20,6 +20,9 @@ import { useTheme, useThemeMode, type ThemeMode } from "@/lib/theme";
 
 // Foundation contact address - the same one published on the /privacy page.
 const CONTACT_EMAIL = "althaqalaynfoundation@gmail.com";
+// App developer contact — tappable email / call in the Developer section.
+const DEVELOPER_EMAIL = "nayayaibrahim@gmail.com";
+const DEVELOPER_PHONE = "+2348106336111";
 const SHARE_MESSAGE =
   "Althaqalayn - a free archive of the lectures, sermons and tafsīr of Sheikh Hamzah Muhammad Lawal, preserved and shared by the Althaqalayn Cultural Foundation.";
 
@@ -62,6 +65,12 @@ export default function SettingsScreen() {
   };
   const onContact = () => {
     void Linking.openURL(`mailto:${CONTACT_EMAIL}`);
+  };
+  const onEmailDeveloper = () => {
+    void Linking.openURL(`mailto:${DEVELOPER_EMAIL}`);
+  };
+  const onCallDeveloper = () => {
+    void Linking.openURL(`tel:${DEVELOPER_PHONE}`);
   };
 
   return (
@@ -160,6 +169,26 @@ export default function SettingsScreen() {
               last
               onPress={() => router.push("/downloads")}
               right={<AppText variant="meta" color="textMuted">{storageUsed}</AppText>}
+              chevron
+            />
+          </View>
+
+          {/* Developer */}
+          <GroupLabel>{msgs.settings.developer.toUpperCase()}</GroupLabel>
+          <View style={[styles.card, { backgroundColor: t.c.surface, borderColor: t.c.borderSubtle, borderRadius: t.radii.lg }]}>
+            <Row
+              icon="mail"
+              label={msgs.settings.emailDeveloper}
+              onPress={onEmailDeveloper}
+              right={<AppText variant="meta" color="textMuted">{DEVELOPER_EMAIL}</AppText>}
+              chevron
+            />
+            <Row
+              icon="phone"
+              label={msgs.settings.callDeveloper}
+              last
+              onPress={onCallDeveloper}
+              right={<AppText variant="meta" color="textMuted">{DEVELOPER_PHONE}</AppText>}
               chevron
             />
           </View>

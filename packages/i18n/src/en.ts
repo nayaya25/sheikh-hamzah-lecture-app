@@ -145,6 +145,9 @@ export const en = {
     shareApp: "Share the app",
     contact: "Contact",
     version: "Version",
+    developer: "Developer",
+    emailDeveloper: "Email",
+    callDeveloper: "Call",
   },
   appearance: {
     title: "Appearance",
