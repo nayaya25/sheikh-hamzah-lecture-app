@@ -280,7 +280,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
     try {
       if (!lockScreenActiveRef.current) {
-        player.setActiveForLockScreen(true, metadata);
+        // Ask the OS to surface seek-backward/forward controls alongside
+        // play/pause (expo-audio exposes no next/prev remote command).
+        player.setActiveForLockScreen(true, metadata, {
+          showSeekBackward: true,
+          showSeekForward: true,
+        });
         lockScreenActiveRef.current = true;
       } else {
         player.updateLockScreenMetadata(metadata);

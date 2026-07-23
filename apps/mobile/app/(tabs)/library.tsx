@@ -38,8 +38,8 @@ export default function LibraryScreen() {
   const params = useLocalSearchParams<{ segment?: string }>();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
-  const { play } = usePlayer();
-  const { collections, loading, error, refetch, lectureById } = useCatalog();
+  const { play, playCollection } = usePlayer();
+  const { collections, loading, error, refetch, lectureById, lecturesForCollection } = useCatalog();
   const { ids: bookmarkIds } = useBookmarks();
 
   const [segment, setSegment] = useState<Segment>("occasion");
@@ -100,7 +100,7 @@ export default function LibraryScreen() {
 
   const openById = (lectureId: string) => {
     const lecture = lectureById(lectureId);
-    if (lecture) openLecture(router, play, lecture);
+    if (lecture) openLecture(router, lecture, { play, playCollection, lecturesForCollection });
   };
 
   const isSaved = segment === "saved";

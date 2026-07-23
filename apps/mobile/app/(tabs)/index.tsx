@@ -36,8 +36,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
-  const { play, progressFor } = usePlayer();
-  const { loading, error, refetch, latestLectures, featuredLectures, lectureById } = useCatalog();
+  const { play, playCollection, progressFor } = usePlayer();
+  const { loading, error, refetch, latestLectures, featuredLectures, lectureById, lecturesForCollection } = useCatalog();
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
@@ -75,7 +75,7 @@ export default function HomeScreen() {
   const open = (id?: string) => {
     if (!id) return;
     const lecture = lectureById(id);
-    if (lecture) openLecture(router, play, lecture);
+    if (lecture) openLecture(router, lecture, { play, playCollection, lecturesForCollection });
   };
 
   const browseTiles: BrowseTile[] = [
@@ -102,7 +102,7 @@ export default function HomeScreen() {
           greeting={arabic.greeting}
           title={msgs.home.greetingTitle}
           poweredByLabel="Powered by"
-          foundationName="Althaqalayn Foundation"
+          foundationName="Althaqalayn Cultural Foundation"
           verseArabic={VERSE_ARABIC}
           verseTranslation={VERSE_TRANSLATION}
           topInset={insets.top}

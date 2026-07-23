@@ -67,14 +67,23 @@ export default function PlayerScreen() {
   const durSec = current.durSec;
 
   // Seek by an absolute number of seconds (negative = rewind). seekTo takes a
-  // 0–1 fraction and clamps it, so [0, duration] is enforced for free.
+  // 0–1 fraction and clamps it, so [0, duration] is enforced for free. When the
+  // duration is unknown/0 (metadata not loaded yet), fall back to a small
+  // fractional nudge in the same direction so the buttons always do something.
   const seekBySeconds = (sec: number) => {
-    if (!durSec) return;
+    if (!durSec) {
+      seekTo(position + (sec < 0 ? -0.05 : 0.05));
+      return;
+    }
     seekTo(position + sec / durSec);
   };
 
   const onShare = () => {
-    void Share.share({ message: current.title });
+    const collection = current.collectionTitle ?? current.sub;
+    const message = collection
+      ? `${current.title} — ${collection} · Althaqalayn Lectures`
+      : `${current.title} · Althaqalayn Lectures`;
+    void Share.share({ message });
   };
 
   return (
