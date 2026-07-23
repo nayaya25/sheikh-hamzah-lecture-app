@@ -11,6 +11,7 @@ import { AppText } from "@/components/ui/AppText";
 import { CoverArt } from "@/components/ui/CoverArt";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
+import { useAddToPlaylist } from "@/components/AddToPlaylistSheet";
 import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
 import { QueueSheet } from "@/components/player/QueueSheet";
@@ -65,6 +66,7 @@ export default function PlayerScreen() {
   const sleepSheetRef = useRef<BottomSheetModal>(null);
   const queueSheetRef = useRef<BottomSheetModal>(null);
   const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
+  const { open: openAddToPlaylist } = useAddToPlaylist();
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
   if (!current) {
@@ -116,13 +118,22 @@ export default function PlayerScreen() {
               {current.collectionTitle}
             </AppText>
           </View>
-          <Touchable
-            onPress={onShare}
-            accessibilityLabel={msgs.player.share}
-            style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
-          >
-            <Icon name="share-2" size={18} color="onBrand" />
-          </Touchable>
+          <View style={styles.topBarRight}>
+            <Touchable
+              onPress={() => openAddToPlaylist(current.id)}
+              accessibilityLabel={msgs.playlists.addToPlaylist}
+              style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+            >
+              <Icon name="list" size={18} color="onBrand" />
+            </Touchable>
+            <Touchable
+              onPress={onShare}
+              accessibilityLabel={msgs.player.share}
+              style={[styles.roundBtn, { borderRadius: t.radii.pill }]}
+            >
+              <Icon name="share-2" size={18} color="onBrand" />
+            </Touchable>
+          </View>
         </View>
 
         {/* Artwork */}
@@ -316,6 +327,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.greenDeepest },
   scroll: { paddingHorizontal: 22 },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topBarRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   roundBtn: {
     width: 40,
     height: 40,

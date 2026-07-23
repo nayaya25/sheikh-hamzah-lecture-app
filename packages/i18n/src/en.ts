@@ -180,6 +180,22 @@ export const en = {
     noPhotosBody: "This album has no photos in it yet.",
     openPhotoA11y: "Open photo",
   },
+  playlists: {
+    title: "Playlists",
+    new: "New playlist",
+    namePlaceholder: "Playlist name",
+    addToPlaylist: "Add to playlist",
+    create: "Create",
+    rename: "Rename",
+    delete: "Delete",
+    deleteConfirm: "This playlist will be removed from this device. The lectures themselves are not deleted.",
+    playAll: "Play all",
+    empty: "No playlists yet",
+    emptyDetail: "Create a playlist to collect lectures you want to hear together.",
+    lecturesCount: "lectures",
+    removeItem: "Remove from playlist",
+    notFound: "Playlist not found",
+  },
 };
 
 // Shape of a full locale catalog. Derived from `en` (no `as const`, so values

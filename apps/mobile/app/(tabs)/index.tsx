@@ -91,6 +91,7 @@ export default function HomeScreen() {
     { key: "occasion", label: msgs.library.occasions, icon: KIND_ICON.occasion, onPress: () => router.push("/library?segment=occasion") },
     { key: "series", label: msgs.library.series, icon: KIND_ICON.series, onPress: () => router.push("/library?segment=series") },
     { key: "topic", label: msgs.library.topics, icon: KIND_ICON.topic, onPress: () => router.push("/library?segment=topic") },
+    { key: "playlists", label: msgs.playlists.title, icon: "list", onPress: () => router.push("/playlists") },
     { key: "gallery", label: msgs.gallery.title, icon: "image", onPress: () => router.push("/gallery") },
   ];
 

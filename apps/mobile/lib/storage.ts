@@ -17,6 +17,7 @@ export const StorageKeys = {
   wifiOnly: "wifiOnly", // boolean — download over Wi-Fi only preference (Settings)
   downloads: "downloads", // DownloadsState — persisted offline-download entries
   bookmarks: "bookmarks", // string[] — saved/bookmarked lecture ids
+  playlists: "playlists", // Playlist[] — user-created on-device playlists
   readerTheme: "readerTheme", // "light" | "dark" | null — local override for the reader's reading theme
   readerScroll: "readerScroll", // Record<lectureId, scrollFraction> — reader scroll position, 0..1
   readerFont: "readerFont", // number — reader body text scale factor

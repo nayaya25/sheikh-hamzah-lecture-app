@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { AddToPlaylistProvider } from "@/components/AddToPlaylistSheet";
 import { MiniPlayer } from "@/components/MiniPlayer";
 import { SplashOverlay } from "@/components/SplashOverlay";
 import { BookmarksProvider } from "@/lib/bookmarks";
@@ -12,6 +13,7 @@ import { DownloadsProvider } from "@/lib/downloads";
 import { useAppFonts } from "@/lib/fonts";
 import { I18nProvider } from "@/lib/i18n";
 import { PlayerProvider } from "@/lib/player";
+import { PlaylistsProvider } from "@/lib/playlists";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 
 // Keep the native splash up until fonts resolve, so text never flashes unstyled.
@@ -55,15 +57,19 @@ export default function RootLayout() {
             <I18nProvider>
               <DownloadsProvider>
                 <BookmarksProvider>
-                  <PlayerProvider>
-                    <CatalogProvider>
-                      <RootStack />
-                      {/* Global mini-player; hides itself on the full player + when idle. */}
-                      <MiniPlayer />
-                      {/* Launch splash over everything; self-dismisses once the catalog loads. */}
-                      <SplashOverlay />
-                    </CatalogProvider>
-                  </PlayerProvider>
+                  <PlaylistsProvider>
+                    <PlayerProvider>
+                      <CatalogProvider>
+                        <AddToPlaylistProvider>
+                          <RootStack />
+                          {/* Global mini-player; hides itself on the full player + when idle. */}
+                          <MiniPlayer />
+                          {/* Launch splash over everything; self-dismisses once the catalog loads. */}
+                          <SplashOverlay />
+                        </AddToPlaylistProvider>
+                      </CatalogProvider>
+                    </PlayerProvider>
+                  </PlaylistsProvider>
                 </BookmarksProvider>
               </DownloadsProvider>
             </I18nProvider>
