@@ -36,7 +36,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const t = useTheme();
   const { t: msgs, arabic } = useI18n();
-  const { play, playCollection, progressFor } = usePlayer();
+  const { play, playCollection, progressFor, current: playing, position, durationSec } = usePlayer();
   const { loading, error, refetch, latestLectures, featuredLectures, lectureById, lecturesForCollection } = useCatalog();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -66,8 +66,17 @@ export default function HomeScreen() {
   );
 
   const contLecture = contId ? lectureById(contId) : undefined;
-  const contProgress = contLecture ? progressFor(contLecture.id) : 0;
-  const contMinLeft = contLecture ? Math.round((contLecture.durSec * (1 - contProgress)) / 60) : 0;
+  // When the continue card's lecture is the track currently loaded in the
+  // player, reflect LIVE progress + remaining time; otherwise use the saved
+  // resume fraction and metadata duration.
+  const contIsLive = Boolean(contLecture && playing?.id === contLecture.id);
+  const contProgress = contLecture
+    ? contIsLive
+      ? position
+      : progressFor(contLecture.id)
+    : 0;
+  const contDurSec = contIsLive && durationSec > 0 ? durationSec : contLecture?.durSec ?? 0;
+  const contMinLeft = contLecture ? Math.max(0, Math.round((contDurSec * (1 - contProgress)) / 60)) : 0;
 
   // The featured "lecture of the day": first featured lecture, else the most recent.
   const spotlight = featuredLectures[0] ?? latestLectures[0];

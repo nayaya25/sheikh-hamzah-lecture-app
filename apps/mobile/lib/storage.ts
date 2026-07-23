@@ -9,6 +9,7 @@ const PREFIX = "althaqalayn:";
 export const StorageKeys = {
   language: "language",
   speed: "speed",
+  repeat: "repeat", // "off" | "one" | "all" — player repeat mode
   resume: "resume", // Record<lectureId, positionFraction>
   lastPlayed: "lastPlayed", // { id: string } — most recent track for "Continue listening"
   recentSearches: "recentSearches", // string[] — recent search queries

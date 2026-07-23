@@ -110,6 +110,12 @@ export const ha: Messages = {
     forward30A11y: "Koma gaba daƙiƙa 30",
     sleepTimerA11y: "Ma'aunin barci",
     playbackSpeedA11y: "Gudun kunnawa",
+    repeat: "Maimaita",
+    repeatA11y: "Yanayin maimaitawa",
+    upNext: "Jerin gaba",
+    queueA11y: "Jerin abubuwan gaba",
+    moveUpA11y: "Matsa sama",
+    moveDownA11y: "Matsa ƙasa",
   },
   reader: {
     reading: "Karatu",

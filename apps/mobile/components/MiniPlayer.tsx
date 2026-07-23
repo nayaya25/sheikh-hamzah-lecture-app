@@ -40,11 +40,9 @@ export function MiniPlayer() {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTheme();
-  const { current, isPlaying, position, seekTo, togglePlay } = usePlayer();
+  const { current, isPlaying, position, elapsedSec, durationSec, seekTo, togglePlay } = usePlayer();
 
   if (!current || pathname === "/player") return null;
-
-  const durSec = current.durSec ?? 0;
 
   return (
     <View style={[styles.bar, { bottom: insets.bottom + TAB_BAR_HEIGHT + MINI_PLAYER_GAP }]}>
@@ -79,13 +77,13 @@ export function MiniPlayer() {
 
       <View style={styles.scrubRow}>
         <AppText color="rgba(255,255,255,0.7)" style={styles.time}>
-          {formatTime(position * durSec)}
+          {formatTime(elapsedSec)}
         </AppText>
         <View style={styles.scrubWrap}>
-          <Scrubber position={position} durationSec={durSec} onSeek={seekTo} />
+          <Scrubber position={position} durationSec={durationSec} onSeek={seekTo} />
         </View>
         <AppText color="rgba(255,255,255,0.7)" style={styles.time}>
-          {formatTime(durSec)}
+          {formatTime(durationSec)}
         </AppText>
       </View>
     </View>

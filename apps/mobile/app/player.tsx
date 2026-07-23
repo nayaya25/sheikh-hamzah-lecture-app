@@ -13,6 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
 import { DownloadButton } from "@/components/DownloadButton";
 import { RotatingRing } from "@/components/RotatingRing";
+import { QueueSheet } from "@/components/player/QueueSheet";
 import { Scrubber } from "@/components/player/Scrubber";
 import { ValueSheet } from "@/components/player/ValueSheet";
 import { useBookmarks } from "@/lib/bookmarks";
@@ -35,14 +36,23 @@ export default function PlayerScreen() {
     current,
     isPlaying,
     position,
+    elapsedSec,
+    durationSec,
     speed,
     sleep,
     sleepRemainingSec,
     buffering,
+    repeat,
+    queue,
+    queueIndex,
     hasNext,
     hasPrev,
     togglePlay,
     seekTo,
+    seekBySeconds,
+    cycleRepeat,
+    playAt,
+    moveQueueItem,
     next,
     prev,
     cycleSpeed,
@@ -53,6 +63,7 @@ export default function PlayerScreen() {
 
   const speedSheetRef = useRef<BottomSheetModal>(null);
   const sleepSheetRef = useRef<BottomSheetModal>(null);
+  const queueSheetRef = useRef<BottomSheetModal>(null);
   const { isBookmarked, toggle: toggleBookmark } = useBookmarks();
 
   // Nothing loaded (e.g. deep-linked cold) — bail back to the tabs.
@@ -64,19 +75,6 @@ export default function PlayerScreen() {
   const bookmarked = isBookmarked(current.id);
 
   const gradient = gradientForLecture(current);
-  const durSec = current.durSec;
-
-  // Seek by an absolute number of seconds (negative = rewind). seekTo takes a
-  // 0–1 fraction and clamps it, so [0, duration] is enforced for free. When the
-  // duration is unknown/0 (metadata not loaded yet), fall back to a small
-  // fractional nudge in the same direction so the buttons always do something.
-  const seekBySeconds = (sec: number) => {
-    if (!durSec) {
-      seekTo(position + (sec < 0 ? -0.05 : 0.05));
-      return;
-    }
-    seekTo(position + sec / durSec);
-  };
 
   const onShare = () => {
     const collection = current.collectionTitle ?? current.sub;
@@ -145,13 +143,13 @@ export default function PlayerScreen() {
 
         {/* Scrubber */}
         <View style={styles.scrubBlock}>
-          <Scrubber position={position} durationSec={durSec} onSeek={seekTo} />
+          <Scrubber position={position} durationSec={durationSec} onSeek={seekTo} />
           <View style={styles.timeRow}>
             <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
-              {formatTime(position * durSec)}
+              {formatTime(elapsedSec)}
             </AppText>
             <AppText color="rgba(255,255,255,0.65)" style={styles.time}>
-              {formatTime(durSec)}
+              {formatTime(durationSec)}
             </AppText>
           </View>
         </View>
@@ -188,6 +186,40 @@ export default function PlayerScreen() {
             style={styles.skipEnd}
           >
             <Ionicons name="play-skip-forward" size={26} color={hasNext ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)"} />
+          </Touchable>
+        </View>
+
+        {/* Repeat + Up Next */}
+        <View style={styles.extraRow}>
+          <Touchable
+            onPress={cycleRepeat}
+            haptic="light"
+            accessibilityLabel={msgs.player.repeatA11y}
+            accessibilityState={{ selected: repeat !== "off" }}
+            style={styles.extraBtn}
+          >
+            <MaterialCommunityIcons
+              name={repeat === "one" ? "repeat-once" : repeat === "all" ? "repeat" : "repeat-off"}
+              size={22}
+              color={repeat === "off" ? "rgba(255,255,255,0.55)" : colors.goldLight}
+            />
+            <AppText
+              color={repeat === "off" ? "rgba(255,255,255,0.6)" : "accentText"}
+              style={styles.extraLabel}
+            >
+              {msgs.player.repeat}
+            </AppText>
+          </Touchable>
+          <Touchable
+            onPress={() => queueSheetRef.current?.present()}
+            haptic="light"
+            accessibilityLabel={msgs.player.queueA11y}
+            style={[styles.extraBtn, { justifyContent: "flex-end" }]}
+          >
+            <Ionicons name="list" size={22} color="rgba(255,255,255,0.85)" />
+            <AppText color="rgba(255,255,255,0.6)" style={styles.extraLabel}>
+              {msgs.player.upNext}
+            </AppText>
           </Touchable>
         </View>
 
@@ -263,6 +295,19 @@ export default function PlayerScreen() {
           sleepSheetRef.current?.dismiss();
         }}
       />
+      <QueueSheet
+        ref={queueSheetRef}
+        title={msgs.player.upNext}
+        queue={queue}
+        currentIndex={queueIndex}
+        moveUpLabel={msgs.player.moveUpA11y}
+        moveDownLabel={msgs.player.moveDownA11y}
+        onJump={(i) => {
+          playAt(i);
+          queueSheetRef.current?.dismiss();
+        }}
+        onMove={moveQueueItem}
+      />
     </View>
   );
 }
@@ -326,6 +371,20 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
+  },
+
+  extraRow: {
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  extraBtn: { flexDirection: "row", alignItems: "center", gap: 7, minWidth: 96 },
+  extraLabel: {
+    fontFamily: font.sans.regular,
+    fontSize: typePresets.caption.fontSize,
+    lineHeight: typePresets.caption.lineHeight,
   },
 
   secondary: {

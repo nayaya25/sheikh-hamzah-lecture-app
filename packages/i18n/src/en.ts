@@ -107,6 +107,12 @@ export const en = {
     forward30A11y: "Forward 30 seconds",
     sleepTimerA11y: "Sleep timer",
     playbackSpeedA11y: "Playback speed",
+    repeat: "Repeat",
+    repeatA11y: "Repeat mode",
+    upNext: "Up next",
+    queueA11y: "Up next queue",
+    moveUpA11y: "Move up",
+    moveDownA11y: "Move down",
   },
   reader: {
     reading: "Reading",
