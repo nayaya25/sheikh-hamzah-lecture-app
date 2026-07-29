@@ -19,6 +19,9 @@ interface Row {
   titleEn: string;
   titleHa: string;
   sort: number;
+  /** The order field's raw text, so it can be cleared/retyped freely (empty
+   * while editing); `sort` stays the last valid number. Reconciled on blur. */
+  sortText: string;
   mediaUrl: string;
   file?: File;
   uploadStatus?: UploadStatus;
@@ -43,7 +46,7 @@ function titleFromFilename(name: string): string {
   return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const emptyRow = (key: number, sort: number): Row => ({ key, titleEn: "", titleHa: "", sort, mediaUrl: "" });
+const emptyRow = (key: number, sort: number): Row => ({ key, titleEn: "", titleHa: "", sort, sortText: String(sort), mediaUrl: "" });
 
 /**
  * Bulk-add episodes as a modal — re-houses the pooled multi-file workflow of the
@@ -126,6 +129,7 @@ export function BulkAddModal({
       titleEn: titleFromFilename(file.name),
       titleHa: "",
       sort: maxSort + 1 + idx,
+      sortText: String(maxSort + 1 + idx),
       mediaUrl: "",
       file,
       uploadStatus: "uploading",
@@ -184,7 +188,7 @@ export function BulkAddModal({
       title={`Add several ${many}`}
       subtitle={`${collection.title.en} · continues from #${startSort}`}
       onClose={onClose}
-      width={560}
+      width={760}
       footer={
         <>
           <span style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }} className="tnum">
@@ -207,7 +211,7 @@ export function BulkAddModal({
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ flex: 1 }}>
           <SelectField
-            label="MEDIA TYPE (ALL)"
+            label={`Media type · applies to all ${many}`}
             value={type}
             onChange={(v) => setType(v as MediaType)}
             options={[{ value: "audio", label: "Audio" }, { value: "video", label: "Video" }, { value: "text", label: "Text" }]}
@@ -215,7 +219,7 @@ export function BulkAddModal({
         </div>
         {groupable ? (
           <div style={{ flex: 1 }}>
-            <div style={groupLabelHeading}>GROUP (ALL, OPTIONAL)</div>
+            <div style={groupLabelHeading}>Group label · optional</div>
             <input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)} placeholder="e.g. 1445 AH" style={fieldInput} />
           </div>
         ) : null}
@@ -223,7 +227,7 @@ export function BulkAddModal({
 
       {type !== "text" ? (
         <>
-          <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--muted)", margin: "18px 0 8px" }}>SELECT MULTIPLE FILES</div>
+          <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--muted)", margin: "18px 0 8px" }}>Select files</div>
           <div
             onClick={() => { if (!mediaBusy) fileInputRef.current?.click(); }}
             onDragOver={(e) => { e.preventDefault(); if (!mediaBusy) setDragOver(true); }}
@@ -278,15 +282,37 @@ export function BulkAddModal({
       <div style={{ marginTop: 10 }}>
         {rows.map((r) => (
           <div key={r.key} style={rowCard}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>Sort {r.sort}</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "70%" }}>
+                {r.file?.name ?? `New ${one}`}
+              </span>
               {rows.length > 1 ? <button type="button" onClick={() => remove(r.key)} style={{ background: "transparent", border: "none", color: "#a23e3e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Remove</button> : null}
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={r.titleEn} onChange={(e) => patch(r.key, { titleEn: e.target.value })} placeholder="Title (English)" style={{ ...fieldInput, flex: 1 }} />
-              <input value={String(r.sort)} onChange={(e) => { const n = Number(e.target.value); patch(r.key, { sort: e.target.value.trim() === "" || Number.isNaN(n) ? r.sort : n }); }} inputMode="numeric" style={{ ...fieldInput, width: 64 }} />
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={miniLabel}>Title (English)</div>
+                <input value={r.titleEn} onChange={(e) => patch(r.key, { titleEn: e.target.value })} placeholder="e.g. Episode 40" style={{ ...fieldInput, width: "100%" }} />
+              </div>
+              <div style={{ width: 96, flexShrink: 0 }}>
+                <div style={miniLabel}>Order</div>
+                <input
+                  value={r.sortText}
+                  inputMode="numeric"
+                  aria-label="Order"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (!/^\d*$/.test(raw)) return; // digits only; empty allowed while editing
+                    patch(r.key, raw === "" ? { sortText: "" } : { sortText: raw, sort: Number(raw) });
+                  }}
+                  onBlur={() => { if (r.sortText.trim() === "") patch(r.key, { sortText: String(r.sort) }); }}
+                  style={{ ...fieldInput, width: "100%", textAlign: "center" }}
+                />
+              </div>
             </div>
-            <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Title (Hausa)" style={{ ...fieldInput, marginTop: 8 }} />
+            <div style={{ marginTop: 10 }}>
+              <div style={miniLabel}>Title (Hausa) · optional</div>
+              <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Take a rubutu…" style={{ ...fieldInput, width: "100%" }} />
+            </div>
             {type !== "text" ? (
               <div style={{ marginTop: 8 }}>
                 {r.uploadStatus === "uploading" ? (
@@ -315,9 +341,10 @@ export function BulkAddModal({
 }
 
 const groupLabelHeading: CSSProperties = { fontSize: 12.5, fontWeight: 500, color: "var(--muted)", marginBottom: 8 };
+const miniLabel: CSSProperties = { fontSize: 11.5, fontWeight: 500, color: "var(--muted)", marginBottom: 6 };
 const drop: CSSProperties = { border: "1.5px dashed var(--line-2)", borderRadius: "var(--r-md)", padding: 30, textAlign: "center", background: "var(--field)", cursor: "pointer" };
 const callout: CSSProperties = { marginTop: 14, fontSize: 12.5, color: "var(--green-2)", background: "var(--green-soft)", borderRadius: "var(--r-sm)", padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start", lineHeight: 1.5 };
-const rowCard: CSSProperties = { border: "1px solid var(--line)", borderRadius: 12, padding: 14, marginBottom: 12, background: "var(--bg)" };
+const rowCard: CSSProperties = { border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 16, marginBottom: 12, background: "var(--card-raised)", boxShadow: "var(--sh-1)" };
 const addRow: CSSProperties = { width: "100%", padding: 12, border: "1.5px dashed var(--line)", borderRadius: 10, background: "transparent", color: brand.greenMid, fontSize: 13, fontWeight: 700, cursor: "pointer" };
 const clearAllBtn: CSSProperties = { background: "transparent", border: "none", color: "var(--muted)", fontSize: 12, fontWeight: 700, cursor: "pointer", textDecoration: "underline" };
 const uploadingBox: CSSProperties = { border: "1.5px solid var(--line)", borderRadius: 10, padding: 12, background: "var(--input)" };
