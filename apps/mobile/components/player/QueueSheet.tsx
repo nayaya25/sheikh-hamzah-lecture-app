@@ -1,11 +1,6 @@
-import { forwardRef, useCallback } from "react";
+import { forwardRef } from "react";
 import { StyleSheet, View } from "react-native";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import { BottomPanel, type BottomPanelHandle } from "@/components/ui/BottomPanel";
 import { AppText } from "@/components/ui/AppText";
 import { Icon } from "@/components/ui/Icon";
 import { Touchable } from "@/components/ui/Touchable";
@@ -30,29 +25,15 @@ export interface QueueSheetProps {
  * track highlighted. Tapping a row jumps to it; per-row up/down buttons reorder
  * the queue (a drag lib would add a dependency, so move buttons are used).
  */
-export const QueueSheet = forwardRef<BottomSheetModal, QueueSheetProps>(function QueueSheet(
+export const QueueSheet = forwardRef<BottomPanelHandle, QueueSheetProps>(function QueueSheet(
   { title, queue, currentIndex, moveUpLabel, moveDownLabel, onJump, onMove },
   ref,
 ) {
   const t = useTheme();
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
-    ),
-    [],
-  );
-
   return (
-    <BottomSheetModal
-      ref={ref}
-      enableDynamicSizing
-      maxDynamicContentSize={480}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: t.c.surface }}
-      handleIndicatorStyle={{ backgroundColor: t.c.border }}
-    >
-      <BottomSheetScrollView contentContainerStyle={[styles.content, { paddingBottom: t.space.xl }]}>
+    <BottomPanel ref={ref}>
+      <View style={[styles.content, { paddingBottom: t.space.xl }]}>
         <AppText variant="section" style={styles.title}>
           {title}
         </AppText>
@@ -116,8 +97,8 @@ export const QueueSheet = forwardRef<BottomSheetModal, QueueSheetProps>(function
             </View>
           );
         })}
-      </BottomSheetScrollView>
-    </BottomSheetModal>
+      </View>
+    </BottomPanel>
   );
 });
 
