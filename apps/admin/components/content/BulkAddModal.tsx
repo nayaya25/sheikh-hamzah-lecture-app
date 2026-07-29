@@ -282,12 +282,67 @@ export function BulkAddModal({
       <div style={{ marginTop: 10 }}>
         {rows.map((r) => (
           <div key={r.key} style={rowCard}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "70%" }}>
-                {r.file?.name ?? `New ${one}`}
+            {/* File header: icon · name/size · delete */}
+            <div style={fileHead}>
+              <span style={fileChip}>
+                <Icon name={type === "text" ? "file" : "upload"} size={18} color="var(--green-2)" strokeWidth={1.8} />
               </span>
-              {rows.length > 1 ? <button type="button" onClick={() => remove(r.key)} style={{ background: "transparent", border: "none", color: "#a23e3e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Remove</button> : null}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={fileName}>{r.file?.name ?? `New ${one}`}</div>
+                {r.file ? <div style={fileSize} className="tnum">{(r.file.size / 1024 / 1024).toFixed(1)} MB</div> : null}
+              </div>
+              {rows.length > 1 ? (
+                <button type="button" onClick={() => remove(r.key)} aria-label="Remove" style={trashBtn}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(162,62,62,.1)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <Icon name="trash" size={17} color="#a23e3e" strokeWidth={1.8} />
+                </button>
+              ) : null}
             </div>
+
+            {/* Upload progress/state (slothui-style), for multi-selected media files */}
+            {type !== "text" && (r.file || r.uploadStatus) ? (
+              <div style={{ marginBottom: 14 }}>
+                <div style={progTrack}>
+                  <div
+                    style={{
+                      ...progFill,
+                      ...(r.uploadStatus === "error"
+                        ? { width: "100%", background: "#e5484d" }
+                        : r.uploadStatus === "uploading"
+                          ? { width: "40%", background: brand.greenBright, animation: "mediaZoneBar 1s ease-in-out infinite" }
+                          : { width: "100%", background: brand.greenMid }),
+                    }}
+                  />
+                </div>
+                <div style={progStatus}>
+                  <span style={{ color: r.uploadStatus === "error" ? "#a23e3e" : "var(--muted)" }}>
+                    {r.uploadStatus === "uploading"
+                      ? "Uploading…"
+                      : r.uploadStatus === "error"
+                        ? r.uploadError || "Upload failed. Please try again."
+                        : "Upload successful!"}
+                  </span>
+                  {r.uploadStatus === "error" ? (
+                    <button type="button" onClick={() => retryUpload(r.key)} disabled={mediaBusy}
+                      style={{ ...tryAgain, ...(mediaBusy ? { opacity: 0.5, cursor: "not-allowed" } : {}) }}>
+                      Try again <Icon name="refresh" size={13} strokeWidth={2} />
+                    </button>
+                  ) : r.uploadStatus === "uploading" ? null : (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: brand.greenMid, fontWeight: 700 }} className="tnum">
+                      <Icon name="check" size={14} strokeWidth={2.6} /> 100%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : type !== "text" ? (
+              <div style={{ marginBottom: 14 }}>
+                <MediaZone type={type} value={r.mediaUrl} onChange={(url) => patch(r.key, { mediaUrl: url })} onBusyChange={(b) => setRowBusy(r.key, b)} compact />
+              </div>
+            ) : null}
+
+            {/* Editable metadata */}
             <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={miniLabel}>Title (English)</div>
@@ -313,23 +368,6 @@ export function BulkAddModal({
               <div style={miniLabel}>Title (Hausa) · optional</div>
               <input value={r.titleHa} onChange={(e) => patch(r.key, { titleHa: e.target.value })} placeholder="Take a rubutu…" style={{ ...fieldInput, width: "100%" }} />
             </div>
-            {type !== "text" ? (
-              <div style={{ marginTop: 8 }}>
-                {r.uploadStatus === "uploading" ? (
-                  <div style={uploadingBox}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>Uploading {r.file?.name}…</div>
-                    <div style={barTrack}><div style={barFill} /></div>
-                  </div>
-                ) : r.uploadStatus === "error" ? (
-                  <div style={errorBox}>
-                    <div style={{ fontSize: 12, color: "#a23e3e", fontWeight: 600, marginBottom: 6 }}>{r.uploadError || "Upload failed"}</div>
-                    <button type="button" onClick={() => retryUpload(r.key)} disabled={mediaBusy} style={{ ...retryBtn, ...(mediaBusy ? { opacity: 0.5, cursor: "not-allowed" } : {}) }}>Retry upload</button>
-                  </div>
-                ) : (
-                  <MediaZone type={type} value={r.mediaUrl} onChange={(url) => patch(r.key, { mediaUrl: url })} onBusyChange={(b) => setRowBusy(r.key, b)} compact />
-                )}
-              </div>
-            ) : null}
           </div>
         ))}
         <button type="button" onClick={add} style={addRow}>+ Add another {one}</button>
@@ -347,11 +385,15 @@ const callout: CSSProperties = { marginTop: 14, fontSize: 12.5, color: "var(--gr
 const rowCard: CSSProperties = { border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 16, marginBottom: 12, background: "var(--card-raised)", boxShadow: "var(--sh-1)" };
 const addRow: CSSProperties = { width: "100%", padding: 12, border: "1.5px dashed var(--line)", borderRadius: 10, background: "transparent", color: brand.greenMid, fontSize: 13, fontWeight: 700, cursor: "pointer" };
 const clearAllBtn: CSSProperties = { background: "transparent", border: "none", color: "var(--muted)", fontSize: 12, fontWeight: 700, cursor: "pointer", textDecoration: "underline" };
-const uploadingBox: CSSProperties = { border: "1.5px solid var(--line)", borderRadius: 10, padding: 12, background: "var(--input)" };
-const errorBox: CSSProperties = { border: "1.5px solid #a23e3e", borderRadius: 10, padding: 12, background: "var(--input)" };
-const retryBtn: CSSProperties = { padding: "6px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: brand.greenMid, fontSize: 12, fontWeight: 700, cursor: "pointer" };
-const barTrack: CSSProperties = { height: 4, borderRadius: 4, background: "var(--line)", overflow: "hidden", marginTop: 8 };
-const barFill: CSSProperties = { height: "100%", width: "40%", background: brand.greenMid, borderRadius: 4, animation: "mediaZoneBar 1s ease-in-out infinite" };
+const fileHead: CSSProperties = { display: "flex", alignItems: "center", gap: 12, marginBottom: 12 };
+const fileChip: CSSProperties = { width: 40, height: 40, borderRadius: "var(--r-md)", background: "var(--green-soft)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
+const fileName: CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const fileSize: CSSProperties = { fontSize: 12, color: "var(--muted)", marginTop: 2 };
+const trashBtn: CSSProperties = { width: 34, height: 34, borderRadius: "var(--r-sm)", display: "inline-flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0, transition: "background 140ms" };
+const progTrack: CSSProperties = { height: 8, borderRadius: 999, background: "var(--line)", overflow: "hidden" };
+const progFill: CSSProperties = { height: "100%", borderRadius: 999 };
+const progStatus: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, fontSize: 12.5, fontWeight: 600 };
+const tryAgain: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "none", color: "#a23e3e", fontSize: 12.5, fontWeight: 700, cursor: "pointer" };
 const errorText: CSSProperties = { fontSize: 12.5, color: "#a23e3e", marginTop: 16, fontWeight: 600 };
 const btnGhost: CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 16px", borderRadius: "var(--r-md)",
