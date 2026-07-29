@@ -94,6 +94,14 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />,
+  trash: <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13M10 11v6M14 11v6" />,
+  file: (
+    <>
+      <path d="M6 3h9l5 5v13H6z" />
+      <path d="M15 3v5h5" />
+    </>
+  ),
+  refresh: <path d="M20 11a8 8 0 10-2 5m2 3v-5h-5" />,
   eye: (
     <>
       <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
